@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
 import { formatCurrency } from "../lib/utils";
 
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import {
   Receipt,
   Printer,
@@ -21,13 +21,14 @@ import {
   Hash
 } from "lucide-react";
 
-interface TransactionReceiptProps {
-  transactionId: Id<"transactions">;
+interface CustomerTransactionReceiptProps {
+  transactionId: string;
   onClose: () => void;
+  isOpen?: boolean;
 }
 
-export function TransactionReceipt({ transactionId, onClose }: TransactionReceiptProps) {
-  const transaction = useQuery(api.transactions.get, { id: transactionId });
+export function CustomerTransactionReceipt({ transactionId, onClose, isOpen = true }: CustomerTransactionReceiptProps) {
+  const transaction = useQuery(api.customerTransactions.getByTransactionId, { transactionId });
   const customer = useQuery(
     api.customers.get,
     transaction?.customerId ? { id: transaction.customerId } : "skip"
@@ -36,13 +37,16 @@ export function TransactionReceipt({ transactionId, onClose }: TransactionReceip
 
   if (!transaction) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <Card className="w-full max-w-md mx-4">
-          <CardContent className="p-6 text-center">
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Loading Transaction</DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-6">
             <p>Loading transaction...</p>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   }
 
@@ -69,36 +73,38 @@ export function TransactionReceipt({ transactionId, onClose }: TransactionReceip
 
   const generateReceiptText = () => {
     return `
-TRANSACTION RECEIPT
-==================
+CURRENCY EXCHANGE RECEIPT
+========================
 
 Transaction ID: ${transaction._id}
 Date: ${new Date(transaction._creationTime).toLocaleString()}
-Customer: ${customer?.firstName} ${customer?.lastName}
+Customer: ${customer?.fullName || customer?.legalBusinessName || 'Unknown'}
 Type: ${transaction.type}
-Amount: ${formatCurrency(transaction.amount, transaction.currency || "USD")}
 
-Details:
-${transaction.details ? JSON.stringify(transaction.details, null, 2) : "N/A"}
+Exchange Details:
+Foreign Currency: ${transaction.foreignCurrency}
+Foreign Amount: ${formatCurrency(transaction.foreignAmount, transaction.foreignCurrency)}
+Local Currency: ${transaction.localCurrency}
+Local Amount: ${formatCurrency(transaction.localAmount, transaction.localCurrency)}
+Exchange Rate: ${transaction.exchangeRate}
+Service Fee: ${formatCurrency(transaction.flatFee, transaction.localCurrency)}
+Payment Method: ${transaction.paymentMethod}
 
 Thank you for your business!
 `;
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
             <Receipt className="h-5 w-5" />
-            Transaction Receipt
-          </CardTitle>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </CardHeader>
+            Currency Exchange Receipt
+          </DialogTitle>
+        </DialogHeader>
 
-        <CardContent className="p-6 space-y-6">
+        <div className="space-y-6">
           {/* Header */}
           <div className="text-center space-y-2">
             <div className="flex items-center justify-center gap-2">
@@ -137,7 +143,7 @@ Thank you for your business!
                   Customer
                 </div>
                 <p className="text-sm font-medium">
-                  {customer.firstName} {customer.lastName}
+                  {customer.fullName || customer.legalBusinessName || 'Unknown Customer'}
                 </p>
               </div>
             )}
@@ -155,38 +161,44 @@ Thank you for your business!
 
           <Separator />
 
-          {/* Amount */}
-          <div className="text-center space-y-2">
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Banknote className="h-4 w-4" />
-              Amount
-            </div>
-            <p className="text-3xl font-bold">
-              {formatCurrency(transaction.amount, transaction.currency || "USD")}
-            </p>
-          </div>
-
-          {/* Transaction Details */}
-          {transaction.details && (
-            <>
-              <Separator />
+          {/* Exchange Details */}
+          <div className="space-y-4">
+            <h4 className="font-medium">Exchange Details</h4>
+            
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <h4 className="font-medium">Transaction Details</h4>
-                <Card className="bg-muted/50">
-                  <CardContent className="p-3 text-sm space-y-2">
-                    {Object.entries(transaction.details).map(([key, value]) => (
-                      <div key={key} className="flex justify-between">
-                        <span className="text-muted-foreground capitalize">
-                          {key.replace(/([A-Z])/g, " $1").trim()}:
-                        </span>
-                        <span className="font-medium">{String(value)}</span>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
+                <div className="text-sm text-muted-foreground">Foreign Currency</div>
+                <div className="text-lg font-semibold">
+                  {formatCurrency(transaction.foreignAmount, transaction.foreignCurrency)}
+                </div>
               </div>
-            </>
-          )}
+              
+              <div className="space-y-2">
+                <div className="text-sm text-muted-foreground">Local Currency</div>
+                <div className="text-lg font-semibold">
+                  {formatCurrency(transaction.localAmount, transaction.localCurrency)}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">Exchange Rate:</span>
+                <span className="ml-2 font-medium">{transaction.exchangeRate}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Service Fee:</span>
+                <span className="ml-2 font-medium">
+                  {formatCurrency(transaction.flatFee, transaction.localCurrency)}
+                </span>
+              </div>
+            </div>
+
+            <div className="text-sm">
+              <span className="text-muted-foreground">Payment Method:</span>
+              <span className="ml-2 font-medium">{transaction.paymentMethod}</span>
+            </div>
+          </div>
 
           {/* Status */}
           <div className="flex items-center justify-center">
@@ -232,8 +244,8 @@ Thank you for your business!
               Close
             </Button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

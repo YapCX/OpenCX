@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 
 type SortField = "currencyCode" | "value" | "isCoin";
 type SortDirection = "asc" | "desc";
@@ -175,26 +176,33 @@ export function DenominationsModule() {
         </CardContent>
       </Card>
 
-      {/* Simple form dialog */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-lg font-semibold mb-4">
+      {/* Form dialog */}
+      <Dialog open={showForm} onOpenChange={(open) => {
+        if (!open) {
+          setShowForm(false);
+          setEditingId(null);
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
               {editingId ? "Edit Denomination" : "New Denomination"}
-            </h2>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
             <p>Form temporarily disabled for debugging</p>
             <Button
               onClick={() => {
                 setShowForm(false);
                 setEditingId(null);
               }}
-              className="mt-4"
+              className="w-full"
             >
               Close
             </Button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -3,7 +3,6 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { CustomerForm } from "./CustomerForm";
-import { AMLSettingsDialog } from "./AMLSettingsDialog";
 import { toast } from "sonner";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 
@@ -27,7 +26,6 @@ import {
   Pencil,
   Trash2,
   Search,
-  Shield,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
@@ -46,7 +44,6 @@ export function CustomersModule() {
   const [sortField, setSortField] = useState<SortField>("customerId");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [customerTypeFilter, setCustomerTypeFilter] = useState<CustomerType>("all");
-  const [showAMLSettings, setShowAMLSettings] = useState(false);
 
   const customers = useQuery(api.customers.list, {
     searchTerm,
@@ -232,18 +229,6 @@ export function CustomersModule() {
 
             <Separator orientation="vertical" className="h-6" />
 
-            <Button
-              onClick={() => setShowAMLSettings(true)}
-              variant="secondary"
-              className="gap-2"
-              title="AML/Sanctions Settings"
-            >
-              <Shield className="h-4 w-4" />
-              AML Settings
-            </Button>
-
-            <Separator orientation="vertical" className="h-6" />
-
             <Select value={customerTypeFilter} onValueChange={(value) => setCustomerTypeFilter(value as CustomerType)}>
               <SelectTrigger className="w-40">
                 <SelectValue />
@@ -399,14 +384,6 @@ export function CustomersModule() {
             setShowForm(false);
             setEditingId(null);
           }}
-        />
-      )}
-
-      {/* AML Settings Dialog */}
-      {showAMLSettings && (
-        <AMLSettingsDialog
-          isOpen={showAMLSettings}
-          onClose={() => setShowAMLSettings(false)}
         />
       )}
     </div>

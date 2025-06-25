@@ -17,6 +17,7 @@ import type * as aml from "../aml.js";
 import type * as auth from "../auth.js";
 import type * as currencies from "../currencies.js";
 import type * as currencyData from "../currencyData.js";
+import type * as customerTransactions from "../customerTransactions.js";
 import type * as customers from "../customers.js";
 import type * as denominations from "../denominations.js";
 import type * as http from "../http.js";
@@ -24,8 +25,8 @@ import type * as idTypes from "../idTypes.js";
 import type * as initialization from "../initialization.js";
 import type * as router from "../router.js";
 import type * as settings from "../settings.js";
+import type * as tillTransactions from "../tillTransactions.js";
 import type * as tills from "../tills.js";
-import type * as transactions from "../transactions.js";
 import type * as users from "../users.js";
 
 /**
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   currencies: typeof currencies;
   currencyData: typeof currencyData;
+  customerTransactions: typeof customerTransactions;
   customers: typeof customers;
   denominations: typeof denominations;
   http: typeof http;
@@ -48,8 +50,8 @@ declare const fullApi: ApiFromModules<{
   initialization: typeof initialization;
   router: typeof router;
   settings: typeof settings;
+  tillTransactions: typeof tillTransactions;
   tills: typeof tills;
-  transactions: typeof transactions;
   users: typeof users;
 }>;
 export declare const api: FilterApi<

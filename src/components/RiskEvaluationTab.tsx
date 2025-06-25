@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 
 interface RiskEvaluationTabProps {
   customerId: Id<"customers">;
@@ -443,60 +444,60 @@ export function RiskEvaluationTab({ customerId }: RiskEvaluationTabProps) {
       </div>
 
       {/* Override Hold Dialog */}
-      {showOverrideDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4">Override Customer Hold</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  New Status
-                </label>
-                <select
-                  value={selectedNewStatus}
-                  onChange={(e) => setSelectedNewStatus(e.target.value as "clear" | "under_review" | "approved")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="clear">Clear</option>
-                  <option value="under_review">Under Review</option>
-                  <option value="approved">Approved</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Override Reason *
-                </label>
-                <textarea
-                  value={overrideReason}
-                  onChange={(e) => setOverrideReason(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                  placeholder="Provide detailed justification for removing the hold..."
-                  required
-                />
-              </div>
+      <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Override Customer Hold</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                New Status
+              </label>
+              <select
+                value={selectedNewStatus}
+                onChange={(e) => setSelectedNewStatus(e.target.value as "clear" | "under_review" | "approved")}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="clear">Clear</option>
+                <option value="under_review">Under Review</option>
+                <option value="approved">Approved</option>
+              </select>
             </div>
 
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={handleRemoveHold}
-                disabled={!overrideReason.trim()}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
-              >
-                Remove Hold
-              </button>
-              <button
-                onClick={() => setShowOverrideDialog(false)}
-                className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 font-medium"
-              >
-                Cancel
-              </button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Override Reason *
+              </label>
+              <textarea
+                value={overrideReason}
+                onChange={(e) => setOverrideReason(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={3}
+                placeholder="Provide detailed justification for removing the hold..."
+                required
+              />
             </div>
           </div>
-        </div>
-      )}
+
+          <div className="flex gap-3 mt-6">
+            <button
+              onClick={handleRemoveHold}
+              disabled={!overrideReason.trim()}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
+            >
+              Remove Hold
+            </button>
+            <button
+              onClick={() => setShowOverrideDialog(false)}
+              className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { CurrencyForm } from "./CurrencyForm";
@@ -52,8 +52,7 @@ export function CurrencyModule() {
   const currencies = useQuery(api.currencies.list, {}) || [];
   const deleteCurrency = useMutation(api.currencies.remove);
   const updateCurrency = useMutation(api.currencies.update);
-  // Note: bulkUpdateRates doesn't exist in backend yet, commented out for now
-  // const bulkUpdateRates = useMutation(api.currencies.bulkUpdateRates);
+  const bulkUpdateRates = useAction(api.currencies.bulkUpdateRates);
 
   // Define handler functions first
   const handleSort = (field: SortField) => {
@@ -99,16 +98,34 @@ export function CurrencyModule() {
   };
 
   const handleRefreshRates = async () => {
-    // Temporarily disabled until bulkUpdateRates is implemented in backend
-    toast.info("Bulk rate refresh will be available once backend is updated");
-    /*
     try {
-      await bulkUpdateRates({});
-      toast.success("Currency rates updated successfully");
+      toast.loading("Refreshing currency rates...", { id: "bulk-refresh" });
+
+      const result = await bulkUpdateRates({});
+
+      if (result.updated > 0) {
+        toast.success(
+          `Successfully updated ${result.updated} currency rates` +
+          (result.failed > 0 ? `, ${result.failed} failed` : ''),
+          { id: "bulk-refresh" }
+        );
+      } else if (result.failed > 0) {
+        toast.error(
+          `Failed to update ${result.failed} currency rates. Check console for details.`,
+          { id: "bulk-refresh" }
+        );
+      } else {
+        toast.info("No currencies to update", { id: "bulk-refresh" });
+      }
+
+      // Log detailed errors for debugging
+      if (result.errors.length > 0) {
+        console.error("Bulk update errors:", result.errors);
+      }
     } catch (error) {
-      toast.error("Failed to update currency rates");
+      toast.error("Failed to refresh currency rates", { id: "bulk-refresh" });
+      console.error("Bulk refresh error:", error);
     }
-    */
   };
 
   const handleExportData = () => {
@@ -132,8 +149,8 @@ export function CurrencyModule() {
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        // Handle CSV import here
-        toast.info("Import functionality would be implemented here");
+        // TODO: Implement CSV import functionality
+        console.log('CSV file selected:', file.name);
       }
     };
     input.click();
@@ -440,7 +457,7 @@ export function CurrencyModule() {
                     <TableCell>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="h-3 w-3" />
-                        {new Date(currency.lastUpdated).toLocaleDateString()}
+                        {new Date(currency.lastUpdated).toLocaleString()}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">

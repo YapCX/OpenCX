@@ -26,115 +26,6 @@ async function requireTillAccess(ctx: any) {
   return { userId, tillId: currentTill.tillId };
 }
 
-export const list = query({
-  args: {
-    tillId: v.optional(v.string()),
-    type: v.optional(v.string()),
-    limit: v.optional(v.number()),
-  },
-  handler: async (ctx, args) => {
-    await requireAuth(ctx);
-    
-    let transactions;
-    
-    // Apply filters
-    if (args.tillId) {
-      transactions = await ctx.db
-        .query("transactions")
-        .withIndex("by_till", (q: any) => q.eq("tillId", args.tillId))
-        .order("desc")
-        .take(args.limit || 50);
-    } else if (args.type) {
-      transactions = await ctx.db
-        .query("transactions")
-        .withIndex("by_type", (q: any) => q.eq("type", args.type))
-        .order("desc")
-        .take(args.limit || 50);
-    } else {
-      transactions = await ctx.db
-        .query("transactions")
-        .withIndex("by_date")
-        .order("desc")
-        .take(args.limit || 50);
-    }
-    
-    // Get user information for each transaction
-    const transactionsWithUsers = await Promise.all(
-      transactions.map(async (transaction) => {
-        const user = await ctx.db.get(transaction.userId);
-        return {
-          ...transaction,
-          user: user ? {
-            _id: user._id,
-            name: (user as any).name || (user as any).email || "User",
-            email: (user as any).email,
-          } : null,
-        };
-      })
-    );
-    
-    return transactionsWithUsers;
-  },
-});
-
-export const create = mutation({
-  args: {
-    type: v.union(
-      v.literal("cash_in"),
-      v.literal("cash_out"),
-      v.literal("transfer"),
-      v.literal("adjustment")
-    ),
-    amount: v.number(),
-    currency: v.string(),
-    notes: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const { userId, tillId } = await requireTillAccess(ctx);
-    
-    if (args.amount <= 0) {
-      throw new Error("Amount must be greater than zero");
-    }
-    
-    // Generate transaction ID
-    const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    const transactionData = {
-      transactionId,
-      tillId,
-      userId,
-      customerId: null,
-      type: args.type,
-      category: "cash_movement" as const,
-      amount: args.amount,
-      currency: args.currency,
-      status: "completed",
-      notes: args.notes,
-      createdAt: Date.now(),
-    };
-    
-    await ctx.db.insert("transactions", transactionData);
-    
-    // Update cash ledger account balance
-    const ledgerAccount = await ctx.db
-      .query("cashLedgerAccounts")
-      .withIndex("by_till_and_currency", (q: any) => 
-        q.eq("tillId", tillId).eq("currencyCode", args.currency)
-      )
-      .first();
-    
-    if (ledgerAccount) {
-      const balanceChange = args.type === "cash_in" ? args.amount : -args.amount;
-      await ctx.db.patch(ledgerAccount._id, {
-        balance: ledgerAccount.balance + balanceChange,
-        lastUpdated: Date.now(),
-      });
-    }
-    
-    return transactionId;
-  },
-});
-
 export const createBuyTransaction = mutation({
   args: {
     customerId: v.union(v.id("customers"), v.null()),
@@ -313,6 +204,11 @@ export const getByTransactionId = query({
       return null;
     }
     
+    // Only return currency exchange transactions
+    if (transaction.category !== "currency_exchange") {
+      return null;
+    }
+    
     // Get user information
     const user = await ctx.db.get(transaction.userId);
     
@@ -340,32 +236,47 @@ export const getByTransactionId = query({
   },
 });
 
-export const getCurrentTillTransactions = query({
-  args: {},
-  handler: async (ctx) => {
-    const { tillId } = await requireTillAccess(ctx);
-    
-    const transactions = await ctx.db
-      .query("transactions")
-      .withIndex("by_till", (q: any) => q.eq("tillId", tillId))
-      .order("desc")
-      .take(20);
-    
-    return transactions;
+export const list = query({
+  args: {
+    tillId: v.optional(v.string()),
+    limit: v.optional(v.number()),
   },
-});
-
-export const getTillBalance = query({
-  args: { tillId: v.string() },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
     
-    const accounts = await ctx.db
-      .query("cashLedgerAccounts")
-      .withIndex("by_till_id", (q: any) => q.eq("tillId", args.tillId))
-      .filter((q: any) => q.eq(q.field("isActive"), true))
-      .collect();
+    let transactions;
     
-    return accounts;
+    // Apply filters - only get currency exchange transactions
+    if (args.tillId) {
+      transactions = await ctx.db
+        .query("transactions")
+        .withIndex("by_till", (q: any) => q.eq("tillId", args.tillId))
+        .filter((q: any) => q.eq(q.field("category"), "currency_exchange"))
+        .order("desc")
+        .take(args.limit || 50);
+    } else {
+      transactions = await ctx.db
+        .query("transactions")
+        .filter((q: any) => q.eq(q.field("category"), "currency_exchange"))
+        .order("desc")
+        .take(args.limit || 50);
+    }
+    
+    // Get user information for each transaction
+    const transactionsWithUsers = await Promise.all(
+      transactions.map(async (transaction) => {
+        const user = await ctx.db.get(transaction.userId);
+        return {
+          ...transaction,
+          user: user ? {
+            _id: user._id,
+            name: (user as any).name || (user as any).email || "User",
+            email: (user as any).email,
+          } : null,
+        };
+      })
+    );
+    
+    return transactionsWithUsers;
   },
 });

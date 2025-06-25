@@ -20,7 +20,7 @@ const applicationTables = {
     .index("by_code", ["code"])
     .index("by_name", ["name"])
     .index("by_country", ["country"]),
-  
+
   denominations: defineTable({
     currencyCode: v.string(),
     value: v.number(),
@@ -30,37 +30,37 @@ const applicationTables = {
     .index("by_currency", ["currencyCode"])
     .index("by_currency_and_value", ["currencyCode", "value"])
     .index("by_value", ["value"]),
-  
+
   customers: defineTable({
     customerId: v.string(),
     customerType: v.union(v.literal("individual"), v.literal("corporate")),
-    
+
     // Individual customer fields
     fullName: v.optional(v.string()),
     dateOfBirth: v.optional(v.string()),
     fullAddress: v.optional(v.string()),
     phoneNumber: v.optional(v.string()),
     occupation: v.optional(v.string()),
-    
+
     // Corporate customer fields
     legalBusinessName: v.optional(v.string()),
     typeOfBusiness: v.optional(v.string()),
     incorporationNumber: v.optional(v.string()),
     businessAddress: v.optional(v.string()),
     businessPhone: v.optional(v.string()),
-    
+
     // Corporate classification flags
     isWholesalerOrBank: v.optional(v.boolean()),
     isMSB: v.optional(v.boolean()),
     msbRegistrationNumber: v.optional(v.string()),
     msbExpirationDate: v.optional(v.string()),
-    
+
     // Contact person for corporate customers
     contactPersonName: v.optional(v.string()),
     contactPersonTitle: v.optional(v.string()),
     contactPersonEmail: v.optional(v.string()),
     contactPersonPhone: v.optional(v.string()),
-    
+
     // Sanctions screening
     sanctionsScreeningStatus: v.optional(v.union(
       v.literal("pending"),
@@ -70,7 +70,7 @@ const applicationTables = {
     )),
     sanctionsScreeningDate: v.optional(v.number()),
     sanctionsScreeningDetails: v.optional(v.string()),
-    
+
     // AML & Risk Management
     riskLevel: v.optional(v.union(
       v.literal("low"),
@@ -85,7 +85,7 @@ const applicationTables = {
     )),
     complianceNotes: v.optional(v.string()),
     lastRiskAssessment: v.optional(v.number()),
-    
+
     idDocuments: v.optional(v.array(v.object({
       idNumber: v.string(),
       idType: v.string(),
@@ -97,7 +97,7 @@ const applicationTables = {
     status: v.string(),
     createdAt: v.number(),
     lastUpdated: v.number(),
-    createdBy: v.string(), // Auth user ID
+    createdBy: v.id("users"), // Properly typed user ID
   })
     .index("by_customer_id", ["customerId"])
     .index("by_name", ["fullName"])
@@ -110,7 +110,7 @@ const applicationTables = {
     .index("by_sanctions_status", ["sanctionsScreeningStatus"])
     .index("by_risk_level", ["riskLevel"])
     .index("by_aml_status", ["amlStatus"]),
-  
+
   idTypes: defineTable({
     name: v.string(),
     isActive: v.boolean(),
@@ -129,7 +129,7 @@ const applicationTables = {
     isComplianceOfficer: v.boolean(),
     isTemplate: v.boolean(),
     isActive: v.boolean(),
-    
+
     // Financial Controls
     canModifyExchangeRates: v.boolean(),
     maxModificationIndividual: v.optional(v.number()),
@@ -137,7 +137,7 @@ const applicationTables = {
     canEditFeesCommissions: v.boolean(),
     canTransferBetweenAccounts: v.boolean(),
     canReconcileAccounts: v.boolean(),
-    
+
     // Default Privileges
     defaultPrivileges: v.object({
       view: v.boolean(),
@@ -146,7 +146,7 @@ const applicationTables = {
       delete: v.boolean(),
       print: v.boolean(),
     }),
-    
+
     // Module-specific exceptions
     moduleExceptions: v.array(v.object({
       moduleName: v.string(),
@@ -158,7 +158,7 @@ const applicationTables = {
         print: v.boolean(),
       }),
     })),
-    
+
     createdAt: v.number(),
     lastUpdated: v.number(),
   })
@@ -285,7 +285,7 @@ const applicationTables = {
     description: v.optional(v.string()),
     category: v.optional(v.string()),
     lastUpdated: v.number(),
-    updatedBy: v.optional(v.string()), // Auth user ID
+    updatedBy: v.optional(v.id("users")), // Properly typed user ID
   })
     .index("by_key", ["key"])
     .index("by_category", ["category"]),
@@ -297,11 +297,11 @@ const applicationTables = {
     reserveForAdmin: v.boolean(),
     shareTill: v.boolean(),
     isActive: v.boolean(),
-    currentUserId: v.optional(v.string()), // Auth user ID
+    currentUserId: v.optional(v.id("users")), // Properly typed user ID
     signInTime: v.optional(v.number()),
     createdAt: v.number(),
     lastUpdated: v.number(),
-    createdBy: v.string(), // Auth user ID
+    createdBy: v.id("users"), // Properly typed user ID
   })
     .index("by_till_id", ["tillId"])
     .index("by_current_user", ["currentUserId"])
@@ -343,7 +343,7 @@ const applicationTables = {
     tillId: v.string(),
     userId: v.id("users"),
     customerId: v.union(v.id("customers"), v.null()),
-    
+
     // Transaction type and category
     type: v.union(
       v.literal("cash_in"),
@@ -358,11 +358,11 @@ const applicationTables = {
       v.literal("currency_exchange"),
       v.literal("internal")
     ),
-    
+
     // Basic transaction fields
     amount: v.number(),
     currency: v.string(),
-    
+
     // Currency exchange specific fields (optional)
     foreignCurrency: v.optional(v.string()),
     foreignAmount: v.optional(v.number()),
@@ -370,12 +370,12 @@ const applicationTables = {
     localAmount: v.optional(v.number()),
     exchangeRate: v.optional(v.number()),
     flatFee: v.optional(v.number()),
-    
+
     // Payment and processing
     paymentMethod: v.optional(v.string()),
     status: v.string(),
     notes: v.optional(v.string()),
-    
+
     // Timestamps
     createdAt: v.number(),
   })

@@ -32,7 +32,7 @@ import {
 
 type TransactionType = "cash_in" | "cash_out" | "adjustment";
 
-export function TransactionsModule() {
+export function TillTransactionsModule() {
   const [transactionType, setTransactionType] = useState<TransactionType>("cash_in");
   const [selectedCurrency, setSelectedCurrency] = useState<string | undefined>(undefined);
   const [amount, setAmount] = useState("");
@@ -42,16 +42,26 @@ export function TransactionsModule() {
   const currentUserTill = useQuery(api.tills.getCurrentUserTill);
   const currencies = useQuery(api.currencies.list, {}) || [];
   const baseCurrency = useQuery(api.settings.getBaseCurrency) || "USD";
-  const tillBalances = useQuery(api.transactions.getTillBalance,
+
+  // Re-enabled till balances query
+  const tillBalances = useQuery(
+    api.tillTransactions.getTillBalance,
     currentUserTill ? { tillId: currentUserTill.tillId } : "skip"
   ) || [];
-  const recentTransactions = useQuery(api.transactions.list, {
-    tillId: tillFilter && tillFilter !== "all" ? tillFilter : undefined,
-    limit: 50
-  }) || [];
-  const tills = useQuery(api.tills.list, { searchTerm: "" }) || [];
 
-  const createTransaction = useMutation(api.transactions.create);
+  const recentTransactions = useQuery(
+    api.tillTransactions.list,
+    currentUserTill ? {
+      tillId: tillFilter && tillFilter !== "all" ? tillFilter : undefined,
+      limit: 50,
+    } : "skip"
+  ) || [];
+  const tills = useQuery(
+    api.tills.list,
+    currentUserTill ? { searchTerm: "" } : "skip"
+  ) || [];
+
+  const createTransaction = useMutation(api.tillTransactions.create);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,7 +128,7 @@ export function TransactionsModule() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Receipt className="h-6 w-6" />
-            Transactions
+            Till Transactions
           </h1>
           <p className="text-muted-foreground">Record till transactions and view balances</p>
         </div>
@@ -140,7 +150,7 @@ export function TransactionsModule() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Receipt className="h-6 w-6" />
-          Transactions
+          Till Transactions
         </h1>
         <p className="text-muted-foreground">Record till transactions and view balances</p>
       </div>
@@ -233,38 +243,31 @@ export function TransactionsModule() {
       </Card>
 
       {/* Till Balances */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Till Balances - {currentUserTill.tillName}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {tillBalances.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {tillBalances.map((balance: any) => (
-                <Card key={balance.currencyCode} className="border-dashed">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium">{balance.currencyCode}</h3>
-                        <p className="text-2xl font-bold">
-                          {formatCurrency(balance.balance, balance.currencyCode)}
-                        </p>
-                      </div>
-                      <Badge variant={balance.currencyCode === baseCurrency ? "default" : "secondary"}>
-                        {balance.currencyCode === baseCurrency ? "Base" : "Foreign"}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No till balances found. Record your first transaction to see balances.
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {tillBalances.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {tillBalances.map((balance: any) => (
+            <Card key={balance.currencyCode} className="border-dashed">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">{balance.currencyCode}</h3>
+                    <p className="text-2xl font-bold">
+                      {formatCurrency(balance.balance, balance.currencyCode)}
+                    </p>
+                  </div>
+                  <Badge variant={balance.currencyCode === baseCurrency ? "default" : "secondary"}>
+                    {balance.currencyCode === baseCurrency ? "Base" : "Foreign"}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8 text-muted-foreground">
+          No till balances found. Record your first transaction to see balances.
+        </div>
+      )}
 
       {/* Recent Transactions */}
       <Card>

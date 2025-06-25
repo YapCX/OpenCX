@@ -16,6 +16,7 @@ import { Separator } from "./ui/separator";
 import { Skeleton } from "./ui/skeleton";
 import { SupportedCurrenciesDialog } from "./SupportedCurrenciesDialog";
 import { Info, RefreshCw, Loader2, CheckCircle, TrendingUp, Calculator } from "lucide-react";
+import { VALIDATION_LIMITS } from "../lib/validation";
 
 interface CurrencyFormProps {
   editingId: Id<"currencies"> | null;
@@ -25,7 +26,26 @@ interface CurrencyFormProps {
 
 export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) {
   const baseCurrencyQuery = useQuery(api.settings.getBaseCurrency);
-  const baseCurrency = baseCurrencyQuery ?? "USD"; // Use nullish coalescing to handle undefined vs null
+  const defaultDiscountQuery = useQuery(api.settings.getDefaultDiscountPercent);
+  const defaultMarkupQuery = useQuery(api.settings.getDefaultMarkupPercent);
+
+  // Show loading if any required data is not yet loaded
+  if (baseCurrencyQuery === undefined || defaultDiscountQuery === undefined || defaultMarkupQuery === undefined) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Edit Currency" : "Add New Currency"}</DialogTitle>
+            <DialogDescription>Loading currency settings...</DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  const baseCurrency = baseCurrencyQuery;
+  const defaultDiscountPercent = defaultDiscountQuery;
+  const defaultMarkupPercent = defaultMarkupQuery;
 
   const [formData, setFormData] = useState({
     code: "",
@@ -73,6 +93,36 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
       });
     }
   }, [existingCurrency]);
+
+  // Set default discount and markup percentages for new currencies
+  useEffect(() => {
+    if (!editingId && defaultDiscountQuery !== undefined && defaultMarkupQuery !== undefined) {
+      setFormData(prev => ({
+        ...prev,
+        discountPercent: prev.discountPercent === "" ? defaultDiscountPercent.toString() : prev.discountPercent,
+        markupPercent: prev.markupPercent === "" ? defaultMarkupPercent.toString() : prev.markupPercent,
+      }));
+    }
+  }, [editingId, defaultDiscountQuery, defaultMarkupQuery, defaultDiscountPercent, defaultMarkupPercent]);
+
+  // Reset form when dialog opens for new currency
+  useEffect(() => {
+    if (isOpen && !editingId) {
+      setFormData({
+        code: "",
+        name: "",
+        country: "",
+        flag: "",
+        marketRate: "",
+        discountPercent: defaultDiscountPercent.toString(),
+        markupPercent: defaultMarkupPercent.toString(),
+        buyRate: "",
+        sellRate: "",
+        manualBuyRate: false,
+        manualSellRate: false,
+      });
+    }
+  }, [isOpen, editingId, defaultDiscountPercent, defaultMarkupPercent]);
 
   // Auto-populate currency info when code changes
   useEffect(() => {
@@ -443,7 +493,7 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
                     <Input
                       id="marketRate"
                       type="number"
-                      step="0.000001"
+                      step={VALIDATION_LIMITS.CURRENCY_MARKET_STEP}
                       value={formData.marketRate}
                       readOnly
                       placeholder={baseCurrencyQuery === undefined ? "Loading base currency..." : "Auto-fetched..."}
@@ -499,11 +549,11 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
                   <Input
                     id="discountPercent"
                     type="number"
-                    step="0.01"
+                    step={VALIDATION_LIMITS.PERCENTAGE_STEP}
                     value={formData.discountPercent}
                     onChange={(e) => handleChange("discountPercent", e.target.value)}
                     disabled={formData.manualBuyRate}
-                    placeholder="2.50"
+                    placeholder={defaultDiscountPercent.toString()}
                     required
                   />
                   <p className="text-xs text-muted-foreground">
@@ -516,11 +566,11 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
                   <Input
                     id="markupPercent"
                     type="number"
-                    step="0.01"
+                    step={VALIDATION_LIMITS.PERCENTAGE_STEP}
                     value={formData.markupPercent}
                     onChange={(e) => handleChange("markupPercent", e.target.value)}
                     disabled={formData.manualSellRate}
-                    placeholder="3.50"
+                    placeholder={defaultMarkupPercent.toString()}
                     required
                   />
                   <p className="text-xs text-muted-foreground">
@@ -546,7 +596,7 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
                   </div>
                   <Input
                     type="number"
-                    step="0.0001"
+                    step={VALIDATION_LIMITS.CURRENCY_PRECISION_STEP}
                     value={formData.buyRate}
                     onChange={(e) => handleChange("buyRate", e.target.value)}
                     readOnly={!formData.manualBuyRate}
@@ -569,7 +619,7 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
                   </div>
                   <Input
                     type="number"
-                    step="0.0001"
+                    step={VALIDATION_LIMITS.CURRENCY_PRECISION_STEP}
                     value={formData.sellRate}
                     onChange={(e) => handleChange("sellRate", e.target.value)}
                     readOnly={!formData.manualSellRate}

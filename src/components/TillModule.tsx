@@ -16,10 +16,8 @@ import {
   Pencil,
   Trash2,
   LogIn,
-  LogOut,
   History,
-  Store,
-  Info
+  Store
 } from "lucide-react";
 
 export function TillModule() {
@@ -32,7 +30,6 @@ export function TillModule() {
   const currentUserTill = useQuery(api.tills.getCurrentUserTill);
   const deleteTill = useMutation(api.tills.remove);
   const signIntoTill = useMutation(api.tills.signIn);
-  const signOutOfTill = useMutation(api.tills.signOut);
 
   const handleNew = () => {
     setEditingId(null);
@@ -69,15 +66,6 @@ export function TillModule() {
     }
   };
 
-  const handleSignOut = async () => {
-    try {
-      await signOutOfTill();
-      toast.success("Signed out of till successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to sign out of till");
-    }
-  };
-
   const handleViewSessions = (tillId: Id<"tills">) => {
     setSelectedTillId(tillId);
     setShowSessionsDialog(true);
@@ -102,24 +90,6 @@ export function TillModule() {
 
       {/* Current Till Status */}
       <TillStatusIndicator />
-
-      {currentUserTill && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            You are currently signed into <strong>{currentUserTill.tillName}</strong> (ID: {currentUserTill.tillId})
-            <Button
-              variant="outline"
-              size="sm"
-              className="ml-4 gap-1"
-              onClick={handleSignOut}
-            >
-              <LogOut className="h-3 w-3" />
-              Sign Out
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
 
       {/* Tills Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

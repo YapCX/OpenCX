@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { TillStatusIndicator } from "./TillStatusIndicator";
 import { CustomerSelector } from "./CustomerSelector";
 import { CustomerForm } from "./CustomerForm";
-import { TransactionReceipt } from "./TransactionReceipt";
+import { CustomerTransactionReceipt } from "./CustomerTransactionReceipt";
 import { formatCurrency } from "../lib/utils";
 
 // shadcn/ui components
@@ -32,6 +32,7 @@ interface TransactionLineItem {
 type OrderType = "buy" | "sell";
 
 export function OrderModule() {
+  // All useState hooks first
   const [orderType, setOrderType] = useState<OrderType>("buy");
   const [selectedCustomerId, setSelectedCustomerId] = useState<Id<"customers"> | "walk-in">("walk-in");
   const [foreignCurrency, setForeignCurrency] = useState<string>("EUR");
@@ -43,38 +44,46 @@ export function OrderModule() {
   const [lastTransactionId, setLastTransactionId] = useState<string | null>(null);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
 
+  // All useQuery hooks - must be called unconditionally
   const currentUserTill = useQuery(api.tills.getCurrentUserTill);
-  const currencies = useQuery(api.currencies.list, {}) || [];
+  const currencies = useQuery(api.currencies.list, {});
+  const defaultServiceFee = useQuery(api.settings.getDefaultServiceFee);
+  const baseCurrencyQuery = useQuery(api.settings.getBaseCurrency);
   const selectedCustomer = useQuery(
     api.customers.get,
     selectedCustomerId !== "walk-in" ? { id: selectedCustomerId } : "skip"
   );
 
-  const createBuyTransaction = useMutation(api.transactions.createBuyTransaction);
-  const createSellTransaction = useMutation(api.transactions.createSellTransaction);
+  // All useMutation hooks
+  const createBuyTransaction = useMutation(api.customerTransactions.createBuyTransaction);
+  const createSellTransaction = useMutation(api.customerTransactions.createSellTransaction);
 
-  // Get base currency from settings
-  const baseCurrency = useQuery(api.settings.getBaseCurrency) || "USD";
-  const localCurrency = currencies.find(c => c.code === baseCurrency);
-  const selectedForeignCurrencyData = currencies.find(c => c.code === foreignCurrency);
+  // All useEffect hooks
+  // Initialize flatFee with default service fee
+  useEffect(() => {
+    if (defaultServiceFee && !flatFee) {
+      setFlatFee(defaultServiceFee.toString());
+    }
+  }, [defaultServiceFee, flatFee]);
 
-  // Calculate totals based on order type
-  const foreignAmountNum = parseFloat(foreignAmount) || 0;
-  const flatFeeNum = parseFloat(flatFee) || 0;
-
-  const rate = orderType === "buy"
-    ? selectedForeignCurrencyData?.buyRate || 0
-    : selectedForeignCurrencyData?.sellRate || 0;
-
-  const localAmountBeforeFee = foreignAmountNum * rate;
-  const totalLocalAmount = localAmountBeforeFee + flatFeeNum;
-
-  // Check if transaction exceeds threshold
-  const THRESHOLD_AMOUNT = 1000; // $1,000 base currency threshold
-  const exceedsThreshold = totalLocalAmount > THRESHOLD_AMOUNT;
-  const canUseWalkIn = !exceedsThreshold || selectedCustomerId !== "walk-in";
-
+  // All useMemo hooks
   const transactionItems = useMemo(() => {
+    const foreignAmountNum = parseFloat(foreignAmount) || 0;
+    const flatFeeNum = parseFloat(flatFee) || 0;
+
+    if (!currencies || !baseCurrencyQuery || !currentUserTill) {
+      return [];
+    }
+
+    const baseCurrency = baseCurrencyQuery;
+    const selectedForeignCurrencyData = currencies.find(c => c.code === foreignCurrency);
+    const rate = orderType === "buy"
+      ? selectedForeignCurrencyData?.sellRate || 0
+      : selectedForeignCurrencyData?.buyRate || 0;
+
+    const localAmountBeforeFee = rate > 0 ? foreignAmountNum / rate : 0;
+    const totalLocalAmount = localAmountBeforeFee + flatFeeNum;
+
     if (foreignAmountNum > 0 && rate > 0) {
       if (orderType === "buy") {
         // Customer buys foreign currency from us
@@ -119,7 +128,68 @@ export function OrderModule() {
       }
     }
     return [];
-  }, [foreignAmountNum, rate, totalLocalAmount, flatFeeNum, foreignCurrency, currentUserTill?.tillId, orderType, baseCurrency]);
+  }, [foreignAmount, flatFee, foreignCurrency, currentUserTill?.tillId, orderType, currencies, baseCurrencyQuery]);
+
+  // Now we can do conditional logic and early returns
+  // Show loading if required data is not yet loaded
+  if (currencies === undefined || defaultServiceFee === undefined || baseCurrencyQuery === undefined) {
+    return (
+      <div className="container mx-auto max-w-6xl p-6">
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight">Currency Exchange</h1>
+            <p className="text-muted-foreground">Loading exchange data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user is signed into a till
+  if (!currentUserTill) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <CreditCard />
+            Orders
+          </CardTitle>
+          <CardDescription>Process currency buy and sell orders</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TillStatusIndicator />
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              You must be signed into a till to process currency orders.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const baseCurrency = baseCurrencyQuery;
+
+  // Get base currency from settings
+  const localCurrency = currencies.find(c => c.code === baseCurrency);
+  const selectedForeignCurrencyData = currencies.find(c => c.code === foreignCurrency);
+
+  // Calculate totals based on order type
+  const foreignAmountNum = parseFloat(foreignAmount) || 0;
+  const flatFeeNum = parseFloat(flatFee) || 0;
+
+  const rate = orderType === "buy"
+    ? selectedForeignCurrencyData?.sellRate || 0
+    : selectedForeignCurrencyData?.buyRate || 0;
+
+  const localAmountBeforeFee = rate > 0 ? foreignAmountNum / rate : 0;
+  const totalLocalAmount = localAmountBeforeFee + flatFeeNum;
+
+  // Check if transaction exceeds threshold
+  const THRESHOLD_AMOUNT = 1000; // $1,000 base currency threshold
+  const exceedsThreshold = totalLocalAmount > THRESHOLD_AMOUNT;
+  const canUseWalkIn = !exceedsThreshold || selectedCustomerId !== "walk-in";
 
   const handleAddToTransaction = () => {
     if (!canUseWalkIn) {
@@ -179,7 +249,7 @@ export function OrderModule() {
 
       // Reset form
       setForeignAmount("");
-      setFlatFee("");
+      setFlatFee(defaultServiceFee.toString());
       setIsFinalized(false);
       setSelectedCustomerId("walk-in");
 
@@ -203,29 +273,6 @@ export function OrderModule() {
     // Note: The CustomerForm doesn't currently return the new customer ID
     // Users will need to manually select the new customer from the dropdown
   };
-
-  if (!currentUserTill) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <CreditCard />
-            Orders
-          </CardTitle>
-          <CardDescription>Process currency buy and sell orders</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TillStatusIndicator />
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              You must be signed into a till to process currency orders.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card>
@@ -278,9 +325,6 @@ export function OrderModule() {
           <CardContent>
             {/* Customer Selection */}
             <Card>
-              <CardHeader>
-                <Label>Customer</Label>
-              </CardHeader>
               <CardContent>
                 <CustomerSelector
                   value={selectedCustomerId === "walk-in" ? null : selectedCustomerId}
@@ -327,7 +371,7 @@ export function OrderModule() {
                 <Card>
                   <CardHeader>
                     <Label htmlFor="foreignAmount">
-                      {orderType === "buy" ? "Amount to Sell" : "Amount Received"}
+                      {orderType === "buy" ? "Foreign Currency Amount" : "Amount Received"}
                     </Label>
                   </CardHeader>
                   <CardContent>
@@ -501,9 +545,10 @@ export function OrderModule() {
 
         {/* Transaction Receipt Modal */}
         {showReceipt && lastTransactionId && (
-          <TransactionReceipt
-            transactionId={lastTransactionId as Id<"transactions">}
+          <CustomerTransactionReceipt
+            transactionId={lastTransactionId}
             onClose={() => setShowReceipt(false)}
+            isOpen={showReceipt}
           />
         )}
 

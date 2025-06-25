@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
+import { VALIDATION_LIMITS } from "../lib/validation";
 
 // shadcn/ui components
 import { Button } from "./ui/button";
@@ -374,9 +375,9 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
                           <Input
                             id="maxIndividual"
                             type="number"
-                            step="0.1"
-                            min="0"
-                            max="100"
+                            step={VALIDATION_LIMITS.USER_PERMISSION_STEP}
+                            min={VALIDATION_LIMITS.PERCENTAGE_MIN}
+                            max={VALIDATION_LIMITS.PERCENTAGE_MAX}
                             value={maxModificationIndividual || ""}
                             onChange={(e) => setMaxModificationIndividual(e.target.value ? parseFloat(e.target.value) : undefined)}
                             placeholder="2.0"
@@ -389,9 +390,9 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
                           <Input
                             id="maxCorporate"
                             type="number"
-                            step="0.1"
-                            min="0"
-                            max="100"
+                            step={VALIDATION_LIMITS.USER_PERMISSION_STEP}
+                            min={VALIDATION_LIMITS.PERCENTAGE_MIN}
+                            max={VALIDATION_LIMITS.PERCENTAGE_MAX}
                             value={maxModificationCorporate || ""}
                             onChange={(e) => setMaxModificationCorporate(e.target.value ? parseFloat(e.target.value) : undefined)}
                             placeholder="1.5"

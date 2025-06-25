@@ -1,10 +1,19 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { Id } from "./_generated/dataModel";
+
+async function requireAuth(ctx: any): Promise<Id<"users">> {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) {
+    throw new Error("Authentication required");
+  }
+  return userId;
+}
 
 // Helper function to get user display info from auth user
 export const getUserInfo = query({
-  args: { userId: v.string() },
+  args: { userId: v.id("users") },
   returns: v.union(v.object({
     email: v.optional(v.string()),
     name: v.optional(v.string()),
@@ -12,13 +21,18 @@ export const getUserInfo = query({
   }), v.null()),
   handler: async (ctx, args) => {
     try {
-      // Try to get user from auth tables
-      const user = await ctx.db.get(args.userId as any);
+      // Get user from users table
+      const user = await ctx.db.get(args.userId);
       if (user) {
+        // Safely access properties that exist on the user table
+        const email = user.email || undefined;
+        const name = user.name || undefined;
+        const displayName = name || email || "Unknown User";
+
         return {
-          email: user.email || undefined,
-          name: user.name || undefined,
-          displayName: user.name || user.email || "Unknown User",
+          email,
+          name,
+          displayName,
         };
       }
       return null;
@@ -29,6 +43,9 @@ export const getUserInfo = query({
 });
 
 export const DEFAULT_BASE_CURRENCY = "USD";
+export const DEFAULT_DISCOUNT_PERCENT = 2.5;
+export const DEFAULT_MARKUP_PERCENT = 2.5;
+export const DEFAULT_SERVICE_FEE = 2.0;
 
 export const getBaseCurrency = query({
   args: {},
@@ -49,10 +66,7 @@ export const setBaseCurrency = mutation({
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+    const userId = await requireAuth(ctx);
 
     const now = Date.now();
 
@@ -121,10 +135,7 @@ export const setSetting = mutation({
   },
   returns: v.union(v.string(), v.number(), v.boolean()),
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Not authenticated");
-    }
+    const userId = await requireAuth(ctx);
 
     const now = Date.now();
 
@@ -153,5 +164,152 @@ export const setSetting = mutation({
     }
 
     return args.value;
+  },
+});
+
+export const getDefaultDiscountPercent = query({
+  args: {},
+  returns: v.number(),
+  handler: async (ctx) => {
+    const setting = await ctx.db
+      .query("settings")
+      .filter((q) => q.eq(q.field("key"), "defaultDiscountPercent"))
+      .first();
+
+    return setting?.value as number || DEFAULT_DISCOUNT_PERCENT;
+  },
+});
+
+export const getDefaultMarkupPercent = query({
+  args: {},
+  returns: v.number(),
+  handler: async (ctx) => {
+    const setting = await ctx.db
+      .query("settings")
+      .filter((q) => q.eq(q.field("key"), "defaultMarkupPercent"))
+      .first();
+
+    return setting?.value as number || DEFAULT_MARKUP_PERCENT;
+  },
+});
+
+export const setDefaultDiscountPercent = mutation({
+  args: {
+    percent: v.number(),
+  },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+
+    const now = Date.now();
+
+    const existingSetting = await ctx.db
+      .query("settings")
+      .filter((q) => q.eq(q.field("key"), "defaultDiscountPercent"))
+      .first();
+
+    if (existingSetting) {
+      await ctx.db.patch(existingSetting._id, {
+        value: args.percent,
+        lastUpdated: now,
+        updatedBy: userId,
+      });
+    } else {
+      await ctx.db.insert("settings", {
+        key: "defaultDiscountPercent",
+        value: args.percent,
+        description: "Default discount percentage from spot rate for new currencies",
+        category: "currency",
+        lastUpdated: now,
+        updatedBy: userId,
+      });
+    }
+
+    return args.percent;
+  },
+});
+
+export const setDefaultMarkupPercent = mutation({
+  args: {
+    percent: v.number(),
+  },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+
+    const now = Date.now();
+
+    const existingSetting = await ctx.db
+      .query("settings")
+      .filter((q) => q.eq(q.field("key"), "defaultMarkupPercent"))
+      .first();
+
+    if (existingSetting) {
+      await ctx.db.patch(existingSetting._id, {
+        value: args.percent,
+        lastUpdated: now,
+        updatedBy: userId,
+      });
+    } else {
+      await ctx.db.insert("settings", {
+        key: "defaultMarkupPercent",
+        value: args.percent,
+        description: "Default markup percentage from spot rate for new currencies",
+        category: "currency",
+        lastUpdated: now,
+        updatedBy: userId,
+      });
+    }
+
+    return args.percent;
+  },
+});
+
+export const getDefaultServiceFee = query({
+  args: {},
+  returns: v.number(),
+  handler: async (ctx) => {
+    const setting = await ctx.db
+      .query("settings")
+      .filter((q) => q.eq(q.field("key"), "defaultServiceFee"))
+      .first();
+
+    return setting?.value as number || DEFAULT_SERVICE_FEE;
+  },
+});
+
+export const setDefaultServiceFee = mutation({
+  args: {
+    fee: v.number(),
+  },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+
+    const now = Date.now();
+
+    const existingSetting = await ctx.db
+      .query("settings")
+      .filter((q) => q.eq(q.field("key"), "defaultServiceFee"))
+      .first();
+
+    if (existingSetting) {
+      await ctx.db.patch(existingSetting._id, {
+        value: args.fee,
+        lastUpdated: now,
+        updatedBy: userId,
+      });
+    } else {
+      await ctx.db.insert("settings", {
+        key: "defaultServiceFee",
+        value: args.fee,
+        description: "Default service fee for currency exchange transactions",
+        category: "transaction",
+        lastUpdated: now,
+        updatedBy: userId,
+      });
+    }
+
+    return args.fee;
   },
 });

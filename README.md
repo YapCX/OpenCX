@@ -1,7 +1,5 @@
 # OpenCX App
 
-This is a project built with [Chef](https://chef.convex.dev) using [Convex](https://convex.dev) as its backend.
-
 ## Getting Started
 
 To set up your own instance of this project:

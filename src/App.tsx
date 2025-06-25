@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Authenticated, Unauthenticated } from "convex/react";
 import { SignInForm } from "./SignInForm";
-import { SignOutButton } from "./SignOutButton";
+import { UserDropdown } from "./UserDropdown";
 import { CurrencyModule } from "./components/CurrencyModule";
 import { DenominationsModule } from "./components/DenominationsModule";
 import { CustomersModule } from "./components/CustomersModule";
 import { UserModule } from "./components/UserModule";
 import { TillModule } from "./components/TillModule";
-import { TransactionsModule } from "./components/TransactionsModule";
+import { TillTransactionsModule } from "./components/TillTransactionsModule";
 import { OrderModule } from "./components/OrderModule";
 import { SettingsModule } from "./components/SettingsModule";
 
@@ -37,49 +37,41 @@ const navigationItems = [
     id: "orders" as const,
     label: "Orders",
     icon: CreditCard,
-    description: "Process currency exchanges"
   },
   {
     id: "currencies" as const,
     label: "Currencies",
     icon: Coins,
-    description: "Manage exchange rates"
   },
   {
     id: "denominations" as const,
     label: "Denominations",
     icon: BarChart3,
-    description: "Currency denominations"
   },
   {
     id: "customers" as const,
     label: "Customers",
     icon: Users,
-    description: "Customer management"
   },
   {
     id: "tills" as const,
     label: "Tills",
     icon: Store,
-    description: "Cash drawer operations"
   },
   {
     id: "transactions" as const,
-    label: "Transactions",
+    label: "Till Transactions",
     icon: Receipt,
-    description: "Transaction history"
   },
   {
     id: "users" as const,
     label: "Users",
     icon: ShieldCheck,
-    description: "User permissions"
   },
   {
     id: "settings" as const,
     label: "Settings",
     icon: Settings,
-    description: "System configuration"
   }
 ];
 
@@ -99,7 +91,7 @@ function App() {
       case "tills":
         return <TillModule />;
       case "transactions":
-        return <TransactionsModule />;
+        return <TillTransactionsModule />;
       case "orders":
         return <OrderModule />;
       case "settings":
@@ -157,12 +149,7 @@ function App() {
                         onClick={() => setActiveModule(item.id)}
                       >
                         <Icon className="h-4 w-4 mr-3" />
-                        <div className="text-left">
-                          <div className="font-medium">{item.label}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {item.description}
-                          </div>
-                        </div>
+                        <span className="font-medium">{item.label}</span>
                       </Button>
                     );
                   })}
@@ -170,8 +157,8 @@ function App() {
               </div>
 
               {/* Footer */}
-              <div className="p-4 border-t">
-                <SignOutButton />
+              <div className="p-2 border-t">
+                <UserDropdown />
               </div>
             </div>
 
