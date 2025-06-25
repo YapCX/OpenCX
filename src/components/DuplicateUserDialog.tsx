@@ -23,14 +23,13 @@ import { Alert, AlertDescription } from "./ui/alert";
 import { Copy, User, Info } from "lucide-react";
 
 interface DuplicateUserDialogProps {
-  sourceId: Id<"systemUsers">;
+  sourceId: Id<"users">;
   onClose: () => void;
 }
 
 export function DuplicateUserDialog({ sourceId, onClose }: DuplicateUserDialogProps) {
   const [newUsername, setNewUsername] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [newPasswordReminder, setNewPasswordReminder] = useState("");
+  const [newEmail, setNewEmail] = useState("");
   const [newFullName, setNewFullName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -49,25 +48,28 @@ export function DuplicateUserDialog({ sourceId, onClose }: DuplicateUserDialogPr
         return;
       }
 
-      if (!newPassword.trim()) {
-        toast.error("Password is required");
+      if (!newEmail.trim()) {
+        toast.error("Email is required");
         return;
       }
 
-      if (!newPasswordReminder.trim()) {
-        toast.error("Password reminder is required");
+
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newEmail.trim())) {
+        toast.error("Please enter a valid email address");
         return;
       }
 
       await duplicateUser({
         sourceId,
         newUsername: newUsername.trim(),
-        newPassword: newPassword.trim(),
-        newPasswordReminder: newPasswordReminder.trim(),
+        newEmail: newEmail.trim(),
         newFullName: newFullName.trim() || undefined,
       });
 
-      toast.success("User duplicated successfully. The new user is inactive by default.");
+      toast.success("User duplicated successfully. Invitation sent to the new user.");
       onClose();
     } catch (error: any) {
       toast.error(error.message || "Failed to duplicate user");
@@ -148,6 +150,18 @@ export function DuplicateUserDialog({ sourceId, onClose }: DuplicateUserDialogPr
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="email">New Email Address *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="new.user@company.com"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="fullName">New Full Name</Label>
               <Input
                 id="fullName"
@@ -155,29 +169,6 @@ export function DuplicateUserDialog({ sourceId, onClose }: DuplicateUserDialogPr
                 value={newFullName}
                 onChange={(e) => setNewFullName(e.target.value)}
                 placeholder="New User Name"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">New Password *</Label>
-              <Input
-                id="password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="passwordReminder">New Password Reminder *</Label>
-              <Input
-                id="passwordReminder"
-                type="text"
-                value={newPasswordReminder}
-                onChange={(e) => setNewPasswordReminder(e.target.value)}
-                placeholder="Password hint"
-                required
               />
             </div>
 

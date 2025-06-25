@@ -19,7 +19,7 @@ import { Badge } from "./ui/badge";
 import { Alert, AlertDescription } from "./ui/alert";
 
 interface UserFormProps {
-  editingId: Id<"systemUsers"> | null;
+  editingId: Id<"users"> | null;
   onClose: () => void;
 }
 
@@ -42,8 +42,7 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
 
   // Basic Information
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [passwordReminder, setPasswordReminder] = useState("");
+  const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [isManager, setIsManager] = useState(false);
   const [isComplianceOfficer, setIsComplianceOfficer] = useState(false);
@@ -81,13 +80,13 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
 
   useEffect(() => {
     if (existingUser) {
-      setUsername(existingUser.username);
-      setPasswordReminder(existingUser.passwordReminder);
+      setUsername(existingUser.username || "");
+      setEmail(existingUser.email || "");
       setFullName(existingUser.fullName || "");
-      setIsManager(existingUser.isManager);
-      setIsComplianceOfficer(existingUser.isComplianceOfficer);
-      setIsTemplate(existingUser.isTemplate);
-      setIsActive(existingUser.isActive);
+      setIsManager(existingUser.isManager || false);
+      setIsComplianceOfficer(existingUser.isComplianceOfficer || false);
+      setIsTemplate(existingUser.isTemplate || false);
+      setIsActive(existingUser.isActive !== false);
 
       // Financial Controls
       setCanModifyExchangeRates(existingUser.canModifyExchangeRates);
@@ -115,19 +114,23 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
         return;
       }
 
-      if (!editingId && !password.trim()) {
-        toast.error("Password is required for new users");
+      if (!email.trim()) {
+        toast.error("Email is required");
         return;
       }
 
-      if (!passwordReminder.trim()) {
-        toast.error("Password reminder is required");
+
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        toast.error("Please enter a valid email address");
         return;
       }
 
       const userData = {
         username: username.trim(),
-        passwordReminder: passwordReminder.trim(),
+        email: email.trim(),
         fullName: fullName.trim() || undefined,
         isManager,
         isComplianceOfficer,
@@ -150,11 +153,8 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
         });
         toast.success("User updated successfully");
       } else {
-        await createUser({
-          ...userData,
-          password: password.trim(),
-        });
-        toast.success("User created successfully");
+        const result = await createUser(userData);
+        toast.success(`User created successfully. Invitation sent to ${email.trim()}.`);
       }
 
       onClose();
@@ -246,6 +246,21 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
                     </div>
 
                     <div className="space-y-2">
+                      <Label htmlFor="email">
+                        Email Address *
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="john.doe@company.com"
+                        required
+                        disabled={!!editingId}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
                       <Label htmlFor="fullName">
                         Full Name
                       </Label>
@@ -255,35 +270,6 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="John Doe"
-                      />
-                    </div>
-
-                    {!editingId && (
-                      <div className="space-y-2">
-                        <Label htmlFor="password">
-                          Password *
-                        </Label>
-                        <Input
-                          id="password"
-                          type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required={!editingId}
-                        />
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <Label htmlFor="passwordReminder">
-                        Password Reminder *
-                      </Label>
-                      <Input
-                        id="passwordReminder"
-                        type="text"
-                        value={passwordReminder}
-                        onChange={(e) => setPasswordReminder(e.target.value)}
-                        placeholder="Mother's maiden name"
-                        required
                       />
                     </div>
                   </div>
@@ -328,6 +314,30 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
                     </div>
                   </AlertDescription>
                 </Alert>
+
+                {editingId && existingUser && (
+                  <Alert variant={existingUser.invitationStatus === "pending" ? "destructive" : "default"}>
+                    <AlertDescription>
+                      <h4 className="font-medium mb-3">Invitation Status</h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm">Status:</span>
+                          <Badge variant={
+                            existingUser.invitationStatus === "accepted" ? "default" :
+                            existingUser.invitationStatus === "pending" ? "secondary" : "destructive"
+                          }>
+                            {existingUser.invitationStatus || "N/A"}
+                          </Badge>
+                        </div>
+                        {existingUser.invitationStatus === "pending" && (
+                          <div className="text-sm text-muted-foreground">
+                            Employee needs to accept invitation to activate account
+                          </div>
+                        )}
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
 
                 <Alert variant="default">
                   <AlertDescription>

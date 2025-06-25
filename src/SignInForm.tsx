@@ -7,15 +7,13 @@ import { toast } from "sonner";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
 import { Label } from "./components/ui/label";
-import { Separator } from "./components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card";
 
 // Icons
-import { Mail, Lock, UserPlus, LogIn } from "lucide-react";
+import { Mail, Lock, LogIn } from "lucide-react";
 
 export function SignInForm() {
   const { signIn } = useAuthActions();
-  const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
   const [submitting, setSubmitting] = useState(false);
 
   return (
@@ -23,13 +21,10 @@ export function SignInForm() {
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl text-center">
-            {flow === "signIn" ? "Welcome back" : "Create account"}
+            Welcome back
           </CardTitle>
           <CardDescription className="text-center">
-            {flow === "signIn" 
-              ? "Sign in to your OpenCX account" 
-              : "Create a new OpenCX account"
-            }
+            Sign in to your OpenCX account
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -38,16 +33,15 @@ export function SignInForm() {
               e.preventDefault();
               setSubmitting(true);
               const formData = new FormData(e.target as HTMLFormElement);
-              formData.set("flow", flow);
+              formData.set("flow", "signIn");
               void signIn("password", formData).catch((error) => {
                 let toastTitle = "";
                 if (error.message.includes("Invalid password")) {
                   toastTitle = "Invalid password. Please try again.";
+                } else if (error.message.includes("User not found")) {
+                  toastTitle = "Account not found. Please contact your manager to create an account.";
                 } else {
-                  toastTitle =
-                    flow === "signIn"
-                      ? "Could not sign in, did you mean to sign up?"
-                      : "Could not sign up, did you mean to sign in?";
+                  toastTitle = "Could not sign in. Please check your credentials and try again.";
                 }
                 toast.error(toastTitle);
                 setSubmitting(false);
@@ -87,57 +81,24 @@ export function SignInForm() {
             
             <Button type="submit" disabled={submitting} className="w-full">
               {submitting ? (
-                "Loading..."
+                "Signing in..."
               ) : (
                 <>
-                  {flow === "signIn" ? (
-                    <LogIn className="mr-2 h-4 w-4" />
-                  ) : (
-                    <UserPlus className="mr-2 h-4 w-4" />
-                  )}
-                  {flow === "signIn" ? "Sign in" : "Sign up"}
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Sign in
                 </>
               )}
             </Button>
             
             <div className="text-center">
               <span className="text-sm text-muted-foreground">
-                {flow === "signIn"
-                  ? "Don't have an account? "
-                  : "Already have an account? "}
+                Need an account? Contact your manager to create one.
               </span>
-              <Button
-                type="button"
-                variant="link"
-                className="p-0 h-auto font-medium"
-                onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
-              >
-                {flow === "signIn" ? "Sign up instead" : "Sign in instead"}
-              </Button>
             </div>
           </form>
         </CardContent>
       </Card>
       
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <Separator className="w-full" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">
-            Or continue with
-          </span>
-        </div>
-      </div>
-      
-      <Button 
-        variant="outline" 
-        onClick={() => void signIn("anonymous")}
-        className="w-full"
-      >
-        <UserPlus className="mr-2 h-4 w-4" />
-        Continue as Guest
-      </Button>
     </div>
   );
 }

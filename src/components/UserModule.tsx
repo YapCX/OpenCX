@@ -35,9 +35,9 @@ export function UserModule() {
   const [searchTerm, setSearchTerm] = useState("");
   const [includeInactive, setIncludeInactive] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<Id<"systemUsers"> | null>(null);
+  const [editingId, setEditingId] = useState<Id<"users"> | null>(null);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
-  const [duplicateSourceId, setDuplicateSourceId] = useState<Id<"systemUsers"> | null>(null);
+  const [duplicateSourceId, setDuplicateSourceId] = useState<Id<"users"> | null>(null);
 
   const users = useQuery(api.users.list, {
     searchTerm,
@@ -54,17 +54,17 @@ export function UserModule() {
     setShowForm(true);
   };
 
-  const handleEdit = (id: Id<"systemUsers">) => {
+  const handleEdit = (id: Id<"users">) => {
     setEditingId(id);
     setShowForm(true);
   };
 
-  const handleDuplicate = (id: Id<"systemUsers">) => {
+  const handleDuplicate = (id: Id<"users">) => {
     setDuplicateSourceId(id);
     setShowDuplicateDialog(true);
   };
 
-  const handleDelete = async (id: Id<"systemUsers">) => {
+  const handleDelete = async (id: Id<"users">) => {
     const confirmed = window.confirm("Are you sure you want to delete this user?");
 
     if (confirmed) {
@@ -97,7 +97,7 @@ export function UserModule() {
             <ShieldCheck className="h-6 w-6" />
             Users
           </h1>
-          <p className="text-muted-foreground">Manage system users and permissions</p>
+          <p className="text-muted-foreground">Manage employee accounts and permissions</p>
         </div>
 
         <Button onClick={handleNew} className="gap-2">
@@ -179,12 +179,6 @@ export function UserModule() {
 
       {/* Users Table */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            System Users
-          </CardTitle>
-        </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>

@@ -119,54 +119,6 @@ const applicationTables = {
     .index("by_name", ["name"])
     .index("by_active", ["isActive"]),
 
-  // System Users for privilege management
-  systemUsers: defineTable({
-    username: v.string(),
-    password: v.string(), // In production, this should be hashed
-    passwordReminder: v.string(),
-    fullName: v.optional(v.string()),
-    isManager: v.boolean(),
-    isComplianceOfficer: v.boolean(),
-    isTemplate: v.boolean(),
-    isActive: v.boolean(),
-
-    // Financial Controls
-    canModifyExchangeRates: v.boolean(),
-    maxModificationIndividual: v.optional(v.number()),
-    maxModificationCorporate: v.optional(v.number()),
-    canEditFeesCommissions: v.boolean(),
-    canTransferBetweenAccounts: v.boolean(),
-    canReconcileAccounts: v.boolean(),
-
-    // Default Privileges
-    defaultPrivileges: v.object({
-      view: v.boolean(),
-      create: v.boolean(),
-      modify: v.boolean(),
-      delete: v.boolean(),
-      print: v.boolean(),
-    }),
-
-    // Module-specific exceptions
-    moduleExceptions: v.array(v.object({
-      moduleName: v.string(),
-      privileges: v.object({
-        view: v.boolean(),
-        create: v.boolean(),
-        modify: v.boolean(),
-        delete: v.boolean(),
-        print: v.boolean(),
-      }),
-    })),
-
-    createdAt: v.number(),
-    lastUpdated: v.number(),
-  })
-    .index("by_username", ["username"])
-    .index("by_active", ["isActive"])
-    .index("by_template", ["isTemplate"])
-    .index("by_manager", ["isManager"])
-    .index("by_compliance", ["isComplianceOfficer"]),
 
   // AML Settings
   amlSettings: defineTable({
@@ -389,7 +341,80 @@ const applicationTables = {
     .index("by_status", ["status"]),
 };
 
+// Extend the auth users table with business-specific fields
+const extendedAuthTables = {
+  users: defineTable({
+    // Convex Auth built-in fields (email, emailVerified, image, name)
+    
+    // System user fields
+    username: v.optional(v.string()),
+    fullName: v.optional(v.string()),
+    
+    // Roles & Status
+    isManager: v.optional(v.boolean()),
+    isComplianceOfficer: v.optional(v.boolean()),
+    isTemplate: v.optional(v.boolean()),
+    isActive: v.optional(v.boolean()),
+    
+    // Financial Controls
+    canModifyExchangeRates: v.optional(v.boolean()),
+    maxModificationIndividual: v.optional(v.number()),
+    maxModificationCorporate: v.optional(v.number()),
+    canEditFeesCommissions: v.optional(v.boolean()),
+    canTransferBetweenAccounts: v.optional(v.boolean()),
+    canReconcileAccounts: v.optional(v.boolean()),
+    
+    // Default Privileges
+    defaultPrivileges: v.optional(v.object({
+      view: v.boolean(),
+      create: v.boolean(),
+      modify: v.boolean(),
+      delete: v.boolean(),
+      print: v.boolean(),
+    })),
+    
+    // Module-specific exceptions
+    moduleExceptions: v.optional(v.array(v.object({
+      moduleName: v.string(),
+      privileges: v.object({
+        view: v.boolean(),
+        create: v.boolean(),
+        modify: v.boolean(),
+        delete: v.boolean(),
+        print: v.boolean(),
+      }),
+    }))),
+    
+    // Invitation tracking
+    invitationStatus: v.optional(v.union(
+      v.literal("pending"),
+      v.literal("accepted"), 
+      v.literal("expired")
+    )),
+    invitationToken: v.optional(v.string()),
+    invitationSentAt: v.optional(v.number()),
+    invitationExpiresAt: v.optional(v.number()),
+    
+    // Audit fields
+    createdBy: v.optional(v.id("users")),
+    lastUpdated: v.optional(v.number()),
+  })
+    .index("by_username", ["username"])
+    .index("by_active", ["isActive"])
+    .index("by_template", ["isTemplate"])
+    .index("by_manager", ["isManager"])
+    .index("by_compliance", ["isComplianceOfficer"])
+    .index("by_invitation_token", ["invitationToken"])
+    .index("by_invitation_status", ["invitationStatus"]),
+  
+  // Keep other auth tables as-is
+  authSessions: authTables.authSessions,
+  authAccounts: authTables.authAccounts,
+  authVerificationCodes: authTables.authVerificationCodes,
+  authRateLimits: authTables.authRateLimits,
+};
+
 export default defineSchema({
-  ...authTables,
+  ...extendedAuthTables,
   ...applicationTables,
 });

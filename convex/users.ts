@@ -1,4 +1,4 @@
-import { query, mutation, internalMutation } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
@@ -10,11 +10,22 @@ async function requireAuth(ctx: any) {
   return userId;
 }
 
+async function requireManager(ctx: any) {
+  const userId = await requireAuth(ctx);
+  const user = await ctx.db.get(userId);
+  if (!user?.isManager) {
+    throw new Error("Manager permissions required");
+  }
+  return { userId, user };
+}
+
 async function requireManagerOrCompliance(ctx: any) {
   const userId = await requireAuth(ctx);
-  // For now, allow all authenticated users to manage system users
-  // In production, you'd check against systemUsers table or implement role checking
-  return userId;
+  const user = await ctx.db.get(userId);
+  if (!user?.isManager && !user?.isComplianceOfficer) {
+    throw new Error("Manager or Compliance Officer permissions required");
+  }
+  return { userId, user };
 }
 
 export const list = query({
@@ -25,29 +36,38 @@ export const list = query({
   handler: async (ctx, args) => {
     await requireManagerOrCompliance(ctx);
 
-    let users = await ctx.db.query("systemUsers").collect();
+    let users = await ctx.db.query("users").collect();
+
+    // Filter out users without system roles (basic auth users)
+    users = users.filter(user => 
+      user.isManager !== undefined || 
+      user.isComplianceOfficer !== undefined ||
+      user.isTemplate !== undefined
+    );
 
     if (!args.includeInactive) {
-      users = users.filter(user => user.isActive);
+      users = users.filter(user => user.isActive !== false);
     }
 
     if (args.searchTerm) {
       const searchLower = args.searchTerm.toLowerCase();
       users = users.filter(user =>
-        user.username.toLowerCase().includes(searchLower) ||
-        (user.fullName && user.fullName.toLowerCase().includes(searchLower))
+        (user.username && user.username.toLowerCase().includes(searchLower)) ||
+        (user.fullName && user.fullName.toLowerCase().includes(searchLower)) ||
+        (user.email && user.email.toLowerCase().includes(searchLower))
       );
     }
 
     return users.map(user => ({
       ...user,
-      password: undefined, // Never return passwords
+      // Never return sensitive auth data
+      password: undefined,
     }));
   },
 });
 
 export const get = query({
-  args: { id: v.id("systemUsers") },
+  args: { id: v.id("users") },
   handler: async (ctx, args) => {
     await requireManagerOrCompliance(ctx);
 
@@ -56,7 +76,8 @@ export const get = query({
 
     return {
       ...user,
-      password: undefined, // Never return passwords
+      // Never return sensitive auth data
+      password: undefined,
     };
   },
 });
@@ -64,8 +85,7 @@ export const get = query({
 export const create = mutation({
   args: {
     username: v.string(),
-    password: v.string(),
-    passwordReminder: v.string(),
+    email: v.string(),
     fullName: v.optional(v.string()),
     isManager: v.boolean(),
     isComplianceOfficer: v.boolean(),
@@ -102,27 +122,45 @@ export const create = mutation({
     })),
   },
   handler: async (ctx, args) => {
-    await requireManagerOrCompliance(ctx);
+    const { userId: creatorId } = await requireManager(ctx);
 
     // Check if username already exists
-    const existingUser = await ctx.db
-      .query("systemUsers")
+    const existingByUsername = await ctx.db
+      .query("users")
       .withIndex("by_username", (q) => q.eq("username", args.username))
       .first();
 
-    if (existingUser) {
+    if (existingByUsername) {
       throw new Error("Username already exists");
     }
 
-    const userId = await ctx.db.insert("systemUsers", {
+    // Check if email already exists
+    const existingByEmail = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), args.email))
+      .first();
+
+    if (existingByEmail) {
+      throw new Error("Email already exists");
+    }
+
+    // Generate invitation token and expiration
+    const invitationToken = crypto.randomUUID();
+    const invitationExpiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days
+
+    // Create user record with invitation status
+    const userId = await ctx.db.insert("users", {
+      // Auth fields
+      email: args.email,
+      emailVerified: false,
+      
+      // System user fields
       username: args.username,
-      password: args.password,
-      passwordReminder: args.passwordReminder,
       fullName: args.fullName,
       isManager: args.isManager,
       isComplianceOfficer: args.isComplianceOfficer,
       isTemplate: args.isTemplate,
-      isActive: args.isActive,
+      isActive: false, // User starts inactive until they accept invitation
 
       // Financial Controls
       canModifyExchangeRates: args.canModifyExchangeRates,
@@ -134,23 +172,31 @@ export const create = mutation({
 
       // Default Privileges
       defaultPrivileges: args.defaultPrivileges,
-
-      // Module-specific exceptions
       moduleExceptions: args.moduleExceptions,
 
-      createdAt: Date.now(),
+      // Invitation tracking
+      invitationStatus: "pending",
+      invitationToken,
+      invitationSentAt: Date.now(),
+      invitationExpiresAt,
+
+      // Audit fields
+      createdBy: creatorId,
       lastUpdated: Date.now(),
     });
 
-    return userId;
+    // TODO: Send invitation email here
+    // This would integrate with your email service
+    // Example: await sendInvitationEmail(args.email, invitationToken, args.fullName);
+
+    return { userId, invitationToken };
   },
 });
 
 export const update = mutation({
   args: {
-    id: v.id("systemUsers"),
-    username: v.string(),
-    passwordReminder: v.string(),
+    id: v.id("users"),
+    username: v.optional(v.string()),
     fullName: v.optional(v.string()),
     isManager: v.boolean(),
     isComplianceOfficer: v.boolean(),
@@ -187,18 +233,20 @@ export const update = mutation({
     })),
   },
   handler: async (ctx, args) => {
-    await requireManagerOrCompliance(ctx);
+    await requireManager(ctx);
 
     const { id, ...updateData } = args;
 
     // Check if username already exists (excluding current user)
-    const existingUser = await ctx.db
-      .query("systemUsers")
-      .withIndex("by_username", (q) => q.eq("username", args.username))
-      .first();
+    if (args.username) {
+      const existingUser = await ctx.db
+        .query("users")
+        .withIndex("by_username", (q) => q.eq("username", args.username))
+        .first();
 
-    if (existingUser && existingUser._id !== id) {
-      throw new Error("Username already exists");
+      if (existingUser && existingUser._id !== id) {
+        throw new Error("Username already exists");
+      }
     }
 
     await ctx.db.patch(id, {
@@ -212,29 +260,32 @@ export const update = mutation({
 
 export const resetPassword = mutation({
   args: {
-    id: v.id("systemUsers"),
+    id: v.id("users"),
     newPassword: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireManagerOrCompliance(ctx);
+    await requireManager(ctx);
 
+    // TODO: Integrate with Convex Auth password reset
+    // For now, just update the timestamp
     await ctx.db.patch(args.id, {
-      password: args.newPassword,
       lastUpdated: Date.now(),
     });
+
+    // Note: This needs to be integrated with Convex Auth's password management
+    throw new Error("Password reset needs to be integrated with Convex Auth");
   },
 });
 
 export const duplicate = mutation({
   args: {
-    sourceId: v.id("systemUsers"),
+    sourceId: v.id("users"),
     newUsername: v.string(),
-    newPassword: v.string(),
-    newPasswordReminder: v.string(),
+    newEmail: v.string(),
     newFullName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireManagerOrCompliance(ctx);
+    const { userId: creatorId } = await requireManager(ctx);
 
     const sourceUser = await ctx.db.get(args.sourceId);
     if (!sourceUser) {
@@ -242,49 +293,87 @@ export const duplicate = mutation({
     }
 
     // Check if new username already exists
-    const existingUser = await ctx.db
-      .query("systemUsers")
+    const existingByUsername = await ctx.db
+      .query("users")
       .withIndex("by_username", (q) => q.eq("username", args.newUsername))
       .first();
 
-    if (existingUser) {
+    if (existingByUsername) {
       throw new Error("Username already exists");
     }
 
-    const newUserId = await ctx.db.insert("systemUsers", {
+    // Check if new email already exists
+    const existingByEmail = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), args.newEmail))
+      .first();
+
+    if (existingByEmail) {
+      throw new Error("Email already exists");
+    }
+
+    // Generate invitation token and expiration for the duplicated user
+    const invitationToken = crypto.randomUUID();
+    const invitationExpiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days
+
+    const newUserId = await ctx.db.insert("users", {
+      // Auth fields
+      email: args.newEmail,
+      emailVerified: false,
+      
+      // New user fields
       username: args.newUsername,
-      password: args.newPassword,
-      passwordReminder: args.newPasswordReminder,
       fullName: args.newFullName,
-      isManager: sourceUser.isManager,
-      isComplianceOfficer: sourceUser.isComplianceOfficer,
+      
+      // Copy from source user
+      isManager: sourceUser.isManager || false,
+      isComplianceOfficer: sourceUser.isComplianceOfficer || false,
       isTemplate: false, // New users are not templates
-      isActive: false, // New users start inactive
+      isActive: false, // New users start inactive until invitation accepted
 
       // Copy financial controls
-      canModifyExchangeRates: sourceUser.canModifyExchangeRates,
+      canModifyExchangeRates: sourceUser.canModifyExchangeRates || false,
       maxModificationIndividual: sourceUser.maxModificationIndividual,
       maxModificationCorporate: sourceUser.maxModificationCorporate,
-      canEditFeesCommissions: sourceUser.canEditFeesCommissions,
-      canTransferBetweenAccounts: sourceUser.canTransferBetweenAccounts,
-      canReconcileAccounts: sourceUser.canReconcileAccounts,
+      canEditFeesCommissions: sourceUser.canEditFeesCommissions || false,
+      canTransferBetweenAccounts: sourceUser.canTransferBetweenAccounts || false,
+      canReconcileAccounts: sourceUser.canReconcileAccounts || false,
 
       // Copy privileges
-      defaultPrivileges: sourceUser.defaultPrivileges,
-      moduleExceptions: sourceUser.moduleExceptions,
+      defaultPrivileges: sourceUser.defaultPrivileges || {
+        view: false,
+        create: false,
+        modify: false,
+        delete: false,
+        print: false,
+      },
+      moduleExceptions: sourceUser.moduleExceptions || [],
 
-      createdAt: Date.now(),
+      // Invitation tracking
+      invitationStatus: "pending",
+      invitationToken,
+      invitationSentAt: Date.now(),
+      invitationExpiresAt,
+
+      // Audit fields
+      createdBy: creatorId,
       lastUpdated: Date.now(),
     });
 
-    return newUserId;
+    // TODO: Send invitation email to the duplicated user
+    // await sendInvitationEmail(args.newEmail, invitationToken, args.newFullName);
+
+    return { userId: newUserId, invitationToken };
   },
 });
 
 export const remove = mutation({
-  args: { id: v.id("systemUsers") },
+  args: { id: v.id("users") },
   handler: async (ctx, args) => {
-    await requireManagerOrCompliance(ctx);
+    await requireManager(ctx);
+    
+    // Note: This will delete the entire user including auth data
+    // In production, you might want to just deactivate instead
     await ctx.db.delete(args.id);
   },
 });
@@ -295,12 +384,13 @@ export const getTemplates = query({
     await requireManagerOrCompliance(ctx);
 
     const templates = await ctx.db
-      .query("systemUsers")
+      .query("users")
       .withIndex("by_template", (q) => q.eq("isTemplate", true))
       .collect();
 
     return templates.map(template => ({
       ...template,
+      // Never return sensitive data
       password: undefined,
     }));
   },
@@ -314,12 +404,150 @@ export const getModules = query({
     // Return available modules for privilege management
     return [
       "Customers",
-      "Currencies",
+      "Currencies", 
       "Denominations",
       "Invoices",
       "Reports",
       "AML",
       "Settings",
     ];
+  },
+});
+
+// Invitation acceptance flow
+export const validateInvitation = query({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_invitation_token", (q) => q.eq("invitationToken", args.token))
+      .first();
+
+    if (!user) {
+      throw new Error("Invalid invitation token");
+    }
+
+    if (user.invitationStatus !== "pending") {
+      throw new Error("Invitation has already been used or expired");
+    }
+
+    if (Date.now() > (user.invitationExpiresAt || 0)) {
+      // Mark as expired
+      await ctx.db.patch(user._id, {
+        invitationStatus: "expired",
+        lastUpdated: Date.now(),
+      });
+      throw new Error("Invitation has expired");
+    }
+
+    return {
+      email: user.email,
+      fullName: user.fullName,
+      username: user.username,
+    };
+  },
+});
+
+export const acceptInvitation = mutation({
+  args: {
+    token: v.string(),
+    password: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_invitation_token", (q) => q.eq("invitationToken", args.token))
+      .first();
+
+    if (!user) {
+      throw new Error("Invalid invitation token");
+    }
+
+    if (user.invitationStatus !== "pending") {
+      throw new Error("Invitation has already been used or expired");
+    }
+
+    if (Date.now() > (user.invitationExpiresAt || 0)) {
+      throw new Error("Invitation has expired");
+    }
+
+    // TODO: Create Convex Auth account with the provided password
+    // This would integrate with Convex Auth's account creation
+    // For now, we'll just mark the invitation as accepted
+
+    // Update user status
+    await ctx.db.patch(user._id, {
+      invitationStatus: "accepted",
+      isActive: true,
+      invitationToken: undefined, // Clear the token for security
+      lastUpdated: Date.now(),
+    });
+
+    return { success: true, email: user.email };
+  },
+});
+
+export const resendInvitation = mutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    await requireManager(ctx);
+
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    if (user.invitationStatus !== "pending") {
+      throw new Error("User has already accepted invitation or invitation has expired");
+    }
+
+    // Generate new token and extend expiration
+    const newToken = crypto.randomUUID();
+    const newExpiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days
+
+    await ctx.db.patch(args.userId, {
+      invitationToken: newToken,
+      invitationSentAt: Date.now(),
+      invitationExpiresAt: newExpiresAt,
+      lastUpdated: Date.now(),
+    });
+
+    // TODO: Send new invitation email
+    // await sendInvitationEmail(user.email, newToken, user.fullName);
+
+    return { success: true, token: newToken };
+  },
+});
+
+// New function to get current user's permissions
+export const getCurrentUserPermissions = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireAuth(ctx);
+    const user = await ctx.db.get(userId);
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return {
+      isManager: user.isManager || false,
+      isComplianceOfficer: user.isComplianceOfficer || false,
+      isActive: user.isActive !== false,
+      canModifyExchangeRates: user.canModifyExchangeRates || false,
+      maxModificationIndividual: user.maxModificationIndividual,
+      maxModificationCorporate: user.maxModificationCorporate,
+      canEditFeesCommissions: user.canEditFeesCommissions || false,
+      canTransferBetweenAccounts: user.canTransferBetweenAccounts || false,
+      canReconcileAccounts: user.canReconcileAccounts || false,
+      defaultPrivileges: user.defaultPrivileges || {
+        view: false,
+        create: false,
+        modify: false,
+        delete: false,
+        print: false,
+      },
+      moduleExceptions: user.moduleExceptions || [],
+    };
   },
 });
