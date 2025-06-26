@@ -1,6 +1,9 @@
-import { useState } from "react";
-import { Authenticated, Unauthenticated } from "convex/react";
+import { useState, useEffect } from "react";
+import { Authenticated, Unauthenticated, useQuery } from "convex/react";
 import { SignInForm } from "./SignInForm";
+import { AcceptInvitationForm } from "./AcceptInvitationForm";
+import { InitialSetupForm } from "./InitialSetupForm";
+import { api } from "../convex/_generated/api";
 import { UserDropdown } from "./UserDropdown";
 import { CurrencyModule } from "./components/CurrencyModule";
 import { DenominationsModule } from "./components/DenominationsModule";
@@ -77,6 +80,19 @@ const navigationItems = [
 
 function App() {
   const [activeModule, setActiveModule] = useState<ActiveModule>("orders");
+  const [invitationToken, setInvitationToken] = useState<string | null>(null);
+  
+  // Check if initial setup is needed (no users exist)
+  const needsSetup = useQuery(api.seed.needsInitialSetup);
+
+  useEffect(() => {
+    // Check URL for invitation token
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (token && window.location.pathname === '/accept-invitation') {
+      setInvitationToken(token);
+    }
+  }, []);
 
   const renderActiveModule = () => {
     switch (activeModule) {
@@ -105,18 +121,26 @@ function App() {
     <ThemeProvider defaultTheme="system" storageKey="opencx-ui-theme">
       <div className="min-h-screen bg-background">
         <Unauthenticated>
-          <div className="flex items-center justify-center min-h-screen p-4">
-            <Card className="w-full max-w-md p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-6 w-6 text-primary" />
-                  <h1 className="text-2xl font-bold">OpenCX</h1>
+          {needsSetup === true ? (
+            <InitialSetupForm />
+          ) : (
+            <div className="flex items-center justify-center min-h-screen p-4">
+              <Card className="w-full max-w-md p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-6 w-6 text-primary" />
+                    <h1 className="text-2xl font-bold">OpenCX</h1>
+                  </div>
+                  <ModeToggle />
                 </div>
-                <ModeToggle />
-              </div>
-                <SignInForm />
-            </Card>
-          </div>
+                {invitationToken ? (
+                  <AcceptInvitationForm token={invitationToken} />
+                ) : (
+                  <SignInForm />
+                )}
+              </Card>
+            </div>
+          )}
         </Unauthenticated>
 
         <Authenticated>

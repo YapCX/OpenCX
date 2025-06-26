@@ -8,6 +8,7 @@ const applicationTables = {
     name: v.string(),
     country: v.string(),
     flag: v.string(),
+    symbol: v.string(),
     marketRate: v.number(),
     discountPercent: v.number(),
     markupPercent: v.number(),
@@ -341,13 +342,20 @@ const applicationTables = {
     .index("by_status", ["status"]),
 };
 
-// Extend the auth users table with business-specific fields
+// Use Convex Auth tables and add our business-specific fields
 const extendedAuthTables = {
+  ...authTables,
   users: defineTable({
-    // Convex Auth built-in fields (email, emailVerified, image, name)
+    // Convex Auth built-in fields (from authTables.users)
+    name: v.optional(v.string()),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    image: v.optional(v.string()),
+    emailVerificationTime: v.optional(v.number()),
+    phoneVerificationTime: v.optional(v.number()),
+    isAnonymous: v.optional(v.boolean()),
     
     // System user fields
-    username: v.optional(v.string()),
     fullName: v.optional(v.string()),
     
     // Roles & Status
@@ -399,19 +407,13 @@ const extendedAuthTables = {
     createdBy: v.optional(v.id("users")),
     lastUpdated: v.optional(v.number()),
   })
-    .index("by_username", ["username"])
+    .index("by_email", ["email"])
     .index("by_active", ["isActive"])
     .index("by_template", ["isTemplate"])
     .index("by_manager", ["isManager"])
     .index("by_compliance", ["isComplianceOfficer"])
     .index("by_invitation_token", ["invitationToken"])
     .index("by_invitation_status", ["invitationStatus"]),
-  
-  // Keep other auth tables as-is
-  authSessions: authTables.authSessions,
-  authAccounts: authTables.authAccounts,
-  authVerificationCodes: authTables.authVerificationCodes,
-  authRateLimits: authTables.authRateLimits,
 };
 
 export default defineSchema({

@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { toast } from "sonner";
-import { VALIDATION_LIMITS, getCurrencySymbol } from "../lib/validation";
+import { VALIDATION_LIMITS } from "../lib/validation";
+import { useCurrencySymbols } from "../hooks/useCurrency";
 
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
@@ -25,6 +26,8 @@ export function SettingsModule() {
   const defaultDiscountPercent = useQuery(api.settings.getDefaultDiscountPercent);
   const defaultMarkupPercent = useQuery(api.settings.getDefaultMarkupPercent);
   const defaultServiceFee = useQuery(api.settings.getDefaultServiceFee);
+  
+  const { getCurrencySymbol } = useCurrencySymbols();
 
   const setBaseCurrency = useMutation(api.settings.setBaseCurrency);
   const setDefaultDiscountPercent = useMutation(api.settings.setDefaultDiscountPercent);

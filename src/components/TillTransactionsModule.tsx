@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { TillStatusIndicator } from "./TillStatusIndicator";
 import { toast } from "sonner";
-import { formatCurrency } from "../lib/utils";
+import { useCurrencySymbols } from "../hooks/useCurrency";
 
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -42,6 +42,7 @@ export function TillTransactionsModule() {
   const currentUserTill = useQuery(api.tills.getCurrentUserTill);
   const currencies = useQuery(api.currencies.list, {}) || [];
   const baseCurrency = useQuery(api.settings.getBaseCurrency) || "USD";
+  const { formatCurrency } = useCurrencySymbols();
 
   // Re-enabled till balances query
   const tillBalances = useQuery(

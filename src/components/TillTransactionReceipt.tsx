@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { formatCurrency } from "../lib/utils";
+import { useCurrencySymbols } from "../hooks/useCurrency";
 
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -31,6 +31,7 @@ interface TillTransactionReceiptProps {
 export function TillTransactionReceipt({ transactionId, onClose, isOpen = true }: TillTransactionReceiptProps) {
   const transaction = useQuery(api.tillTransactions.getByTransactionId, { transactionId });
   const [printing, setPrinting] = useState(false);
+  const { formatCurrency } = useCurrencySymbols();
 
   if (!transaction) {
     return (

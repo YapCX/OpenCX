@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { formatCurrency } from "../lib/utils";
+import { useCurrencySymbols } from "../hooks/useCurrency";
 
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -33,6 +33,7 @@ export function CustomerTransactionReceipt({ transactionId, onClose, isOpen = tr
     api.customers.get,
     transaction?.customerId ? { id: transaction.customerId } : "skip"
   );
+  const { formatCurrency } = useCurrencySymbols();
   const [printing, setPrinting] = useState(false);
 
   if (!transaction) {

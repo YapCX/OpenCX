@@ -7,7 +7,7 @@ import { TillStatusIndicator } from "./TillStatusIndicator";
 import { CustomerSelector } from "./CustomerSelector";
 import { CustomerForm } from "./CustomerForm";
 import { CustomerTransactionReceipt } from "./CustomerTransactionReceipt";
-import { formatCurrency } from "../lib/utils";
+import { useCurrencySymbols } from "../hooks/useCurrency";
 
 // shadcn/ui components
 import { Button } from "./ui/button";
@@ -42,6 +42,8 @@ export function OrderModule() {
   const [isFinalized, setIsFinalized] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastTransactionId, setLastTransactionId] = useState<string | null>(null);
+  
+  const { formatCurrency } = useCurrencySymbols();
   const [showCustomerForm, setShowCustomerForm] = useState(false);
 
   // All useQuery hooks - must be called unconditionally

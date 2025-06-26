@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Separator } from "./ui/separator";
 import { Badge } from "./ui/badge";
 import { Alert, AlertDescription } from "./ui/alert";
+import { Copy, Check } from "lucide-react";
 
 interface UserFormProps {
   editingId: Id<"users"> | null;
@@ -39,9 +40,10 @@ interface ModuleException {
 export function UserForm({ editingId, onClose }: UserFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<"basic" | "financial" | "privileges">("basic");
+  const [invitationResult, setInvitationResult] = useState<{ email: string; token: string; } | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Basic Information
-  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [isManager, setIsManager] = useState(false);
@@ -80,7 +82,6 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
 
   useEffect(() => {
     if (existingUser) {
-      setUsername(existingUser.username || "");
       setEmail(existingUser.email || "");
       setFullName(existingUser.fullName || "");
       setIsManager(existingUser.isManager || false);
@@ -109,11 +110,6 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
     setIsSubmitting(true);
 
     try {
-      if (!username.trim()) {
-        toast.error("Username is required");
-        return;
-      }
-
       if (!email.trim()) {
         toast.error("Email is required");
         return;
@@ -129,7 +125,6 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
       }
 
       const userData = {
-        username: username.trim(),
         email: email.trim(),
         fullName: fullName.trim() || undefined,
         isManager,
@@ -154,10 +149,12 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
         toast.success("User updated successfully");
       } else {
         const result = await createUser(userData);
-        toast.success(`User created successfully. Invitation sent to ${email.trim()}.`);
+        setInvitationResult({
+          email: email.trim(),
+          token: result.invitationToken
+        });
+        // Don't close the dialog yet - show the invitation link first
       }
-
-      onClose();
     } catch (error: any) {
       toast.error(error.message || "Failed to save user");
     } finally {
@@ -202,6 +199,39 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
     setModuleExceptions(prev => prev.filter(ex => ex.moduleName !== moduleName));
   };
 
+  const handleCopyInvitationLink = async () => {
+    if (!invitationResult) return;
+    
+    const invitationUrl = `${window.location.origin}/accept-invitation?token=${invitationResult.token}`;
+    
+    try {
+      await navigator.clipboard.writeText(invitationUrl);
+      setLinkCopied(true);
+      toast.success("Invitation link copied to clipboard!");
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (error) {
+      toast.error("Failed to copy link. Please copy it manually.");
+    }
+  };
+
+  const handleCloseInvitation = () => {
+    setInvitationResult(null);
+    setLinkCopied(false);
+    onClose();
+  };
+
+  // Show invitation success dialog if we have invitation result
+  if (invitationResult) {
+    return (
+      <InvitationSuccessDialog 
+        invitationResult={invitationResult}
+        onClose={handleCloseInvitation}
+        onCopyLink={handleCopyInvitationLink}
+        linkCopied={linkCopied}
+      />
+    );
+  }
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
@@ -230,21 +260,6 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="username">
-                        Username *
-                      </Label>
-                      <Input
-                        id="username"
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="john.doe"
-                        required
-                        disabled={!!editingId}
-                      />
-                    </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="email">
                         Email Address *
@@ -585,6 +600,79 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
             </div>
           </form>
         </Tabs>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Invitation Success Dialog Component
+function InvitationSuccessDialog({ 
+  invitationResult, 
+  onClose, 
+  onCopyLink,
+  linkCopied 
+}: { 
+  invitationResult: { email: string; token: string; };
+  onClose: () => void;
+  onCopyLink: () => void;
+  linkCopied: boolean;
+}) {
+  const invitationUrl = `${window.location.origin}/accept-invitation?token=${invitationResult.token}`;
+  
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-2xl text-green-600">
+            ✅ User Created Successfully!
+          </DialogTitle>
+          <DialogDescription>
+            Share this invitation link with {invitationResult.email}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <Alert>
+            <AlertDescription>
+              <div className="space-y-3">
+                <div className="font-medium">Invitation Link:</div>
+                <div className="bg-gray-50 p-3 rounded border font-mono text-sm break-all">
+                  {invitationUrl}
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={onCopyLink}
+                    className="gap-2"
+                    variant={linkCopied ? "secondary" : "default"}
+                  >
+                    {linkCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {linkCopied ? "Copied!" : "Copy Link"}
+                  </Button>
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+
+          <Alert variant="default">
+            <AlertDescription>
+              <div className="space-y-2">
+                <div className="font-medium">📧 How to share:</div>
+                <ul className="text-sm space-y-1 ml-4">
+                  <li>• Copy the link and send via email, Slack, or SMS</li>
+                  <li>• Share it in person or over the phone</li>
+                  <li>• Link expires in 7 days</li>
+                  <li>• User will set their password when accepting</li>
+                </ul>
+              </div>
+            </AlertDescription>
+          </Alert>
+        </div>
+
+        <div className="flex justify-end">
+          <Button onClick={onClose} className="min-w-24">
+            Done
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

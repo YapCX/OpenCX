@@ -5,12 +5,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Currency formatting utility
-export function formatCurrency(amount: number = 0, currencyCode: string = "USD") {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currencyCode,
-  }).format(amount);
+// Currency formatting utility - database symbol required
+export function formatCurrencyWithSymbol(amount: number, symbol: string) {
+  return `${symbol}${amount.toFixed(2)}`;
+}
+
+// Currency formatting without symbol (for cases where database symbol not available)
+export function formatCurrencyCodeOnly(amount: number, currencyCode: string) {
+  return `${amount.toFixed(2)} ${currencyCode}`;
 }
 
 // Transaction type display utilities

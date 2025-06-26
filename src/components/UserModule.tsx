@@ -146,11 +146,11 @@ export function UserModule() {
                 <Card key={template._id} className="border-dashed">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium">{template.fullName || template.username}</h3>
+                      <h3 className="font-medium">{template.fullName || template.email}</h3>
                       <Badge variant="default">Template</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mb-3">
-                      {template.username}
+                      {template.email}
                     </p>
                     <div className="flex gap-2">
                       <Button
@@ -196,8 +196,8 @@ export function UserModule() {
                 <TableRow key={user._id}>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{user.fullName || user.username}</div>
-                      <div className="text-sm text-muted-foreground">{user.username}</div>
+                      <div className="font-medium">{user.fullName || user.email}</div>
+                      <div className="text-sm text-muted-foreground">{user.email}</div>
                     </div>
                   </TableCell>
                   <TableCell>

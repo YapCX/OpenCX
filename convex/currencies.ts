@@ -38,6 +38,7 @@ export const create = mutation({
     name: v.string(),
     country: v.string(),
     flag: v.string(),
+    symbol: v.string(),
     marketRate: v.number(),
     discountPercent: v.optional(v.number()),
     markupPercent: v.optional(v.number()),
@@ -60,6 +61,7 @@ export const create = mutation({
       name: args.name,
       country: args.country,
       flag: args.flag,
+      symbol: args.symbol,
       marketRate: args.marketRate,
       discountPercent,
       markupPercent,
@@ -79,6 +81,7 @@ export const update = mutation({
     name: v.string(),
     country: v.string(),
     flag: v.string(),
+    symbol: v.string(),
     marketRate: v.number(),
     discountPercent: v.number(),
     markupPercent: v.number(),
@@ -271,5 +274,37 @@ export const bulkUpdateRates = action({
     }
 
     return results;
+  },
+});
+
+export const getCurrencySymbols = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireAuth(ctx);
+
+    const currencies = await ctx.db.query("currencies").collect();
+
+    // Return a map of currency codes to symbols
+    const symbolMap: Record<string, string> = {};
+    currencies.forEach(currency => {
+      symbolMap[currency.code] = currency.symbol;
+    });
+
+    return symbolMap;
+  },
+});
+
+export const getCurrencySymbol = query({
+  args: { currencyCode: v.string() },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    const currency = await ctx.db
+      .query("currencies")
+      .withIndex("by_code", (q) => q.eq("code", args.currencyCode.toUpperCase()))
+      .first();
+
+    // Database is single source of truth - no fallback
+    return currency?.symbol || null;
   },
 });

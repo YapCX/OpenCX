@@ -28,7 +28,6 @@ interface DuplicateUserDialogProps {
 }
 
 export function DuplicateUserDialog({ sourceId, onClose }: DuplicateUserDialogProps) {
-  const [newUsername, setNewUsername] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newFullName, setNewFullName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,11 +42,6 @@ export function DuplicateUserDialog({ sourceId, onClose }: DuplicateUserDialogPr
     setIsSubmitting(true);
 
     try {
-      if (!newUsername.trim()) {
-        toast.error("Username is required");
-        return;
-      }
-
       if (!newEmail.trim()) {
         toast.error("Email is required");
         return;
@@ -64,7 +58,6 @@ export function DuplicateUserDialog({ sourceId, onClose }: DuplicateUserDialogPr
 
       await duplicateUser({
         sourceId,
-        newUsername: newUsername.trim(),
         newEmail: newEmail.trim(),
         newFullName: newFullName.trim() || undefined,
       });
@@ -120,7 +113,6 @@ export function DuplicateUserDialog({ sourceId, onClose }: DuplicateUserDialogPr
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-blue-700">
-              <div><strong>Username:</strong> {sourceUser.username}</div>
               {sourceUser.fullName && <div><strong>Name:</strong> {sourceUser.fullName}</div>}
               <div><strong>Type:</strong> {getUserTypeLabel(sourceUser)}</div>
               <div>
@@ -137,17 +129,6 @@ export function DuplicateUserDialog({ sourceId, onClose }: DuplicateUserDialogPr
           </Card>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">New Username *</Label>
-              <Input
-                id="username"
-                type="text"
-                value={newUsername}
-                onChange={(e) => setNewUsername(e.target.value)}
-                placeholder="new.username"
-                required
-              />
-            </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">New Email Address *</Label>

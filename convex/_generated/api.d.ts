@@ -24,6 +24,7 @@ import type * as http from "../http.js";
 import type * as idTypes from "../idTypes.js";
 import type * as initialization from "../initialization.js";
 import type * as router from "../router.js";
+import type * as seed from "../seed.js";
 import type * as settings from "../settings.js";
 import type * as tillTransactions from "../tillTransactions.js";
 import type * as tills from "../tills.js";
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   idTypes: typeof idTypes;
   initialization: typeof initialization;
   router: typeof router;
+  seed: typeof seed;
   settings: typeof settings;
   tillTransactions: typeof tillTransactions;
   tills: typeof tills;

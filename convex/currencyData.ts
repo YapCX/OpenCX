@@ -12,6 +12,7 @@ interface CurrencyInfo {
 
 /**
  * Extract currency information from world-countries data
+ * Used only for auto-filling currency creation forms
  */
 function getCurrencyDataFromWorldCountries(): Record<string, CurrencyInfo> {
   const currencyMap: Record<string, CurrencyInfo> = {};
@@ -69,7 +70,8 @@ function shouldReplaceCurrency(existing: CurrencyInfo, newCountry: any): boolean
 }
 
 /**
- * Get currency information by code
+ * Get currency information by code for auto-filling forms
+ * This is only used during currency creation, not rate updates
  */
 export const getCurrencyInfo = action({
   args: {
@@ -104,51 +106,7 @@ export const getCurrencyInfo = action({
 
     return {
       found: false as const,
-      message: `Currency code "${currencyCode}" not found in database. Please enter details manually.`
+      message: `Currency code "${currencyCode}" not found. Please enter details manually.`
     };
-  },
-});
-
-/**
- * Get all available currency codes for autocomplete
- */
-export const getAvailableCurrencies = action({
-  args: {},
-  returns: v.array(v.object({
-    code: v.string(),
-    name: v.string(),
-    country: v.string(),
-    flag: v.string(),
-  })),
-  handler: async (ctx) => {
-    const currencyData = getCurrencyDataFromWorldCountries();
-    return Object.values(currencyData).sort((a, b) => a.code.localeCompare(b.code));
-  },
-});
-
-/**
- * Search currencies by partial code or name
- */
-export const searchCurrencies = action({
-  args: {
-    searchTerm: v.string()
-  },
-  returns: v.array(v.object({
-    code: v.string(),
-    name: v.string(),
-    country: v.string(),
-    flag: v.string(),
-  })),
-  handler: async (ctx, args) => {
-    const term = args.searchTerm.toLowerCase();
-    const currencyData = getCurrencyDataFromWorldCountries();
-
-    return Object.values(currencyData)
-      .filter(currency =>
-        currency.code.toLowerCase().includes(term) ||
-        currency.name.toLowerCase().includes(term) ||
-        currency.country.toLowerCase().includes(term)
-      )
-      .sort((a, b) => a.code.localeCompare(b.code));
   },
 });

@@ -10,23 +10,17 @@ export const VALIDATION_LIMITS = {
   USER_PERMISSION_STEP: 0.1,
 } as const;
 
-// Currency symbol mapping - could eventually come from backend
-export const getCurrencySymbol = (currencyCode: string): string => {
-  const symbols: Record<string, string> = {
-    USD: "$",
-    EUR: "€",
-    GBP: "£",
-    JPY: "¥",
-    CAD: "C$",
-    AUD: "A$",
-    CHF: "Fr",
-    CNY: "¥",
-  };
-  return symbols[currencyCode] || currencyCode + " ";
+// Format currency with symbol from database - no fallbacks
+export const formatCurrencyFromMap = (amount: number, currencyCode: string, symbolMap: Record<string, string>): string => {
+  const symbol = symbolMap[currencyCode];
+  if (!symbol) {
+    console.warn(`No symbol found in database for currency: ${currencyCode}`);
+    return `${amount.toFixed(2)} ${currencyCode}`;
+  }
+  return `${symbol}${amount.toFixed(2)}`;
 };
 
-// Format currency with proper symbol
-export const formatCurrency = (amount: number, currencyCode: string): string => {
-  const symbol = getCurrencySymbol(currencyCode);
-  return `${symbol}${amount.toFixed(2)}`;
+// Format currency amount without symbol (when symbol is not available)
+export const formatAmountOnly = (amount: number, currencyCode: string): string => {
+  return `${amount.toFixed(2)} ${currencyCode}`;
 };

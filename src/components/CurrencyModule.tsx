@@ -104,14 +104,15 @@ export function CurrencyModule() {
       const result = await bulkUpdateRates({});
 
       if (result.updated > 0) {
-        toast.success(
-          `Successfully updated ${result.updated} currency rates` +
-          (result.failed > 0 ? `, ${result.failed} failed` : ''),
-          { id: "bulk-refresh" }
-        );
+        let message = `Successfully updated ${result.updated} currency rates`;
+        if (result.failed > 0) {
+          message += `, ${result.failed} failed`;
+        }
+
+        toast.success(message, { id: "bulk-refresh" });
       } else if (result.failed > 0) {
         toast.error(
-          `Failed to update ${result.failed} currency rates. Check console for details.`,
+          `Failed to update ${result.failed} currencies. Check console for details.`,
           { id: "bulk-refresh" }
         );
       } else {
@@ -149,8 +150,7 @@ export function CurrencyModule() {
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        // TODO: Implement CSV import functionality
-        console.log('CSV file selected:', file.name);
+        // Note: CSV import functionality can be added here in the future
       }
     };
     input.click();
@@ -324,10 +324,10 @@ export function CurrencyModule() {
                 onClick={handleRefreshRates}
                 variant="outline"
                 className="gap-2"
-                title="Refresh Exchange Rates (Cmd+R)"
+                title="Refresh Exchange Rates and Symbols (Cmd+R)"
               >
                 <RefreshCw className="h-4 w-4" />
-                Refresh Rates
+                Refresh Rates & Symbols
               </Button>
 
               <Separator orientation="vertical" className="h-6" />

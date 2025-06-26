@@ -19,9 +19,9 @@ export function UserDropdown() {
   const user = useQuery(api.auth.loggedInUser);
   const { signOut } = useAuthActions();
 
-  // Prefer fullName, username, then email, then fallback.
+  // Prefer fullName, then email, then fallback.
   const displayName =
-    (user as any)?.fullName || (user as any)?.username || (user as any)?.email || "User";
+    (user as any)?.fullName || (user as any)?.email || "User";
 
   return (
     <DropdownMenu>

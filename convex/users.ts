@@ -38,12 +38,9 @@ export const list = query({
 
     let users = await ctx.db.query("users").collect();
 
-    // Filter out users without system roles (basic auth users)
-    users = users.filter(user => 
-      user.isManager !== undefined || 
-      user.isComplianceOfficer !== undefined ||
-      user.isTemplate !== undefined
-    );
+    // Show all authenticated users (those with email addresses)
+    // Filter out any incomplete/invalid user records
+    users = users.filter(user => user.email);
 
     if (!args.includeInactive) {
       users = users.filter(user => user.isActive !== false);
@@ -52,7 +49,6 @@ export const list = query({
     if (args.searchTerm) {
       const searchLower = args.searchTerm.toLowerCase();
       users = users.filter(user =>
-        (user.username && user.username.toLowerCase().includes(searchLower)) ||
         (user.fullName && user.fullName.toLowerCase().includes(searchLower)) ||
         (user.email && user.email.toLowerCase().includes(searchLower))
       );
@@ -84,7 +80,6 @@ export const get = query({
 
 export const create = mutation({
   args: {
-    username: v.string(),
     email: v.string(),
     fullName: v.optional(v.string()),
     isManager: v.boolean(),
@@ -124,16 +119,6 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const { userId: creatorId } = await requireManager(ctx);
 
-    // Check if username already exists
-    const existingByUsername = await ctx.db
-      .query("users")
-      .withIndex("by_username", (q) => q.eq("username", args.username))
-      .first();
-
-    if (existingByUsername) {
-      throw new Error("Username already exists");
-    }
-
     // Check if email already exists
     const existingByEmail = await ctx.db
       .query("users")
@@ -152,10 +137,8 @@ export const create = mutation({
     const userId = await ctx.db.insert("users", {
       // Auth fields
       email: args.email,
-      emailVerified: false,
       
       // System user fields
-      username: args.username,
       fullName: args.fullName,
       isManager: args.isManager,
       isComplianceOfficer: args.isComplianceOfficer,
@@ -185,9 +168,6 @@ export const create = mutation({
       lastUpdated: Date.now(),
     });
 
-    // TODO: Send invitation email here
-    // This would integrate with your email service
-    // Example: await sendInvitationEmail(args.email, invitationToken, args.fullName);
 
     return { userId, invitationToken };
   },
@@ -196,7 +176,6 @@ export const create = mutation({
 export const update = mutation({
   args: {
     id: v.id("users"),
-    username: v.optional(v.string()),
     fullName: v.optional(v.string()),
     isManager: v.boolean(),
     isComplianceOfficer: v.boolean(),
@@ -237,18 +216,6 @@ export const update = mutation({
 
     const { id, ...updateData } = args;
 
-    // Check if username already exists (excluding current user)
-    if (args.username) {
-      const existingUser = await ctx.db
-        .query("users")
-        .withIndex("by_username", (q) => q.eq("username", args.username))
-        .first();
-
-      if (existingUser && existingUser._id !== id) {
-        throw new Error("Username already exists");
-      }
-    }
-
     await ctx.db.patch(id, {
       ...updateData,
       lastUpdated: Date.now(),
@@ -266,21 +233,15 @@ export const resetPassword = mutation({
   handler: async (ctx, args) => {
     await requireManager(ctx);
 
-    // TODO: Integrate with Convex Auth password reset
-    // For now, just update the timestamp
-    await ctx.db.patch(args.id, {
-      lastUpdated: Date.now(),
-    });
-
-    // Note: This needs to be integrated with Convex Auth's password management
-    throw new Error("Password reset needs to be integrated with Convex Auth");
+    // Password reset should be handled through Convex Auth's password reset flow
+    // This mutation is a placeholder for future integration
+    throw new Error("Password reset should be handled through Convex Auth's password reset flow");
   },
 });
 
 export const duplicate = mutation({
   args: {
     sourceId: v.id("users"),
-    newUsername: v.string(),
     newEmail: v.string(),
     newFullName: v.optional(v.string()),
   },
@@ -290,16 +251,6 @@ export const duplicate = mutation({
     const sourceUser = await ctx.db.get(args.sourceId);
     if (!sourceUser) {
       throw new Error("Source user not found");
-    }
-
-    // Check if new username already exists
-    const existingByUsername = await ctx.db
-      .query("users")
-      .withIndex("by_username", (q) => q.eq("username", args.newUsername))
-      .first();
-
-    if (existingByUsername) {
-      throw new Error("Username already exists");
     }
 
     // Check if new email already exists
@@ -319,10 +270,8 @@ export const duplicate = mutation({
     const newUserId = await ctx.db.insert("users", {
       // Auth fields
       email: args.newEmail,
-      emailVerified: false,
       
       // New user fields
-      username: args.newUsername,
       fullName: args.newFullName,
       
       // Copy from source user
@@ -360,8 +309,6 @@ export const duplicate = mutation({
       lastUpdated: Date.now(),
     });
 
-    // TODO: Send invitation email to the duplicated user
-    // await sendInvitationEmail(args.newEmail, invitationToken, args.newFullName);
 
     return { userId: newUserId, invitationToken };
   },
@@ -432,18 +379,12 @@ export const validateInvitation = query({
     }
 
     if (Date.now() > (user.invitationExpiresAt || 0)) {
-      // Mark as expired
-      await ctx.db.patch(user._id, {
-        invitationStatus: "expired",
-        lastUpdated: Date.now(),
-      });
       throw new Error("Invitation has expired");
     }
 
     return {
       email: user.email,
       fullName: user.fullName,
-      username: user.username,
     };
   },
 });
@@ -471,11 +412,13 @@ export const acceptInvitation = mutation({
       throw new Error("Invitation has expired");
     }
 
-    // TODO: Create Convex Auth account with the provided password
-    // This would integrate with Convex Auth's account creation
-    // For now, we'll just mark the invitation as accepted
+    if (!user.email) {
+      throw new Error("User email is required for account creation");
+    }
 
-    // Update user status
+    // Update user status to mark invitation as accepted
+    // The actual auth account creation will be handled by the client
+    // using Convex Auth's signIn with "signUp" flow
     await ctx.db.patch(user._id, {
       invitationStatus: "accepted",
       isActive: true,
@@ -483,7 +426,7 @@ export const acceptInvitation = mutation({
       lastUpdated: Date.now(),
     });
 
-    return { success: true, email: user.email };
+    return { success: true, email: user.email, userId: user._id };
   },
 });
 
@@ -512,8 +455,6 @@ export const resendInvitation = mutation({
       lastUpdated: Date.now(),
     });
 
-    // TODO: Send new invitation email
-    // await sendInvitationEmail(user.email, newToken, user.fullName);
 
     return { success: true, token: newToken };
   },

@@ -14,7 +14,6 @@ import { Switch } from "./ui/switch";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Separator } from "./ui/separator";
 import { Skeleton } from "./ui/skeleton";
-import { SupportedCurrenciesDialog } from "./SupportedCurrenciesDialog";
 import { Info, RefreshCw, Loader2, CheckCircle, TrendingUp, Calculator } from "lucide-react";
 import { VALIDATION_LIMITS } from "../lib/validation";
 
@@ -63,7 +62,6 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
 
   const [isUpdatingRate, setIsUpdatingRate] = useState(false);
   const [isAutoPopulating, setIsAutoPopulating] = useState(false);
-  const [autoPopulateEnabled, setAutoPopulateEnabled] = useState(true);
   const [lastRateUpdate, setLastRateUpdate] = useState<Date | null>(null);
 
   const existingCurrency = useQuery(
@@ -124,10 +122,10 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
     }
   }, [isOpen, editingId, defaultDiscountPercent, defaultMarkupPercent]);
 
-  // Auto-populate currency info when code changes
+  // Auto-populate currency info when code changes (for new currencies only)
   useEffect(() => {
     const autoPopulateCurrencyInfo = async () => {
-      if (!formData.code || formData.code.length !== 3 || !autoPopulateEnabled || editingId) {
+      if (!formData.code || formData.code.length !== 3 || editingId) {
         return;
       }
 
@@ -147,8 +145,6 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
             country: result.data.country,
             flag: result.data.flag,
           }));
-
-          toast.success(`Auto-populated ${result.data.name} details`);
         }
       } catch (error) {
         console.error("Failed to auto-populate currency info:", error);
@@ -159,7 +155,7 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
 
     const timeoutId = setTimeout(autoPopulateCurrencyInfo, 500); // Debounce
     return () => clearTimeout(timeoutId);
-  }, [formData.code, autoPopulateEnabled, editingId, getCurrencyInfo, formData.name, formData.country, formData.flag]);
+  }, [formData.code, editingId, getCurrencyInfo, formData.name, formData.country, formData.flag]);
 
   // Auto-fetch market rate when currency code changes
   useEffect(() => {
@@ -319,15 +315,6 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleClearAutoPopulated = () => {
-    setFormData(prev => ({
-      ...prev,
-      name: "",
-      country: "",
-      flag: "",
-    }));
-    toast.info("Cleared auto-populated fields");
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -343,44 +330,6 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Auto-populate Notice */}
-          {!editingId && (
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Switch
-                        id="auto-populate"
-                        checked={autoPopulateEnabled}
-                        onCheckedChange={setAutoPopulateEnabled}
-                      />
-                      <Label htmlFor="auto-populate" className="text-sm font-medium">
-                        Auto-populate currency details
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <SupportedCurrenciesDialog />
-                      {(formData.name || formData.country || formData.flag) && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handleClearAutoPopulated}
-                        >
-                          Clear Auto-filled
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    When enabled, currency name, country, flag, and <strong>live market rate</strong> will be automatically filled when you enter a 3-letter currency code (e.g., CAD, EUR, JPY).
-                  </p>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
 
           {/* Basic Information */}
           <Card>
@@ -411,7 +360,7 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
                       </div>
                     )}
                   </div>
-                  {autoPopulateEnabled && !editingId && (
+                  {!editingId && (
                     <p className="text-xs text-muted-foreground">
                       Enter 3-letter code to auto-populate details
                     </p>
