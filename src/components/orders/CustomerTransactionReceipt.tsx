@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { useCurrencySymbols } from "../hooks/useCurrency";
+import { api } from "../../../convex/_generated/api";
+import { useCurrencySymbols } from "../../hooks/useCurrency";
 
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Separator } from "./ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Badge } from "../ui/badge";
+import { Separator } from "../ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import {
   Receipt,
   Printer,
@@ -18,20 +18,23 @@ import {
   User,
   CreditCard,
   Banknote,
-  Hash,
-  FileText
+  Hash
 } from "lucide-react";
 
-interface TillTransactionReceiptProps {
+interface CustomerTransactionReceiptProps {
   transactionId: string;
   onClose: () => void;
   isOpen?: boolean;
 }
 
-export function TillTransactionReceipt({ transactionId, onClose, isOpen = true }: TillTransactionReceiptProps) {
-  const transaction = useQuery(api.tillTransactions.getByTransactionId, { transactionId });
-  const [printing, setPrinting] = useState(false);
+export function CustomerTransactionReceipt({ transactionId, onClose, isOpen = true }: CustomerTransactionReceiptProps) {
+  const transaction = useQuery(api.customerTransactions.getByTransactionId, { transactionId });
+  const customer = useQuery(
+    api.customers.get,
+    transaction?.customerId ? { id: transaction.customerId } : "skip"
+  );
   const { formatCurrency } = useCurrencySymbols();
+  const [printing, setPrinting] = useState(false);
 
   if (!transaction) {
     return (
@@ -64,30 +67,31 @@ export function TillTransactionReceipt({ transactionId, onClose, isOpen = true }
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `till-receipt-${transaction.transactionId}.txt`;
+    link.download = `receipt-${transaction._id}.txt`;
     link.click();
     URL.revokeObjectURL(url);
   };
 
   const generateReceiptText = () => {
     return `
-TILL TRANSACTION RECEIPT
+CURRENCY EXCHANGE RECEIPT
 ========================
 
-Transaction ID: ${transaction.transactionId}
+Transaction ID: ${transaction._id}
 Date: ${new Date(transaction._creationTime).toLocaleString()}
-Operator: ${transaction.user?.name || "Unknown"}
-Till: ${transaction.tillId}
-Type: ${transaction.type.replace("_", " ").toUpperCase()}
+Customer: ${customer?.fullName || customer?.legalBusinessName || 'Unknown'}
+Type: ${transaction.type}
 
-Transaction Details:
-Currency: ${transaction.currency}
-Amount: ${formatCurrency(transaction.amount, transaction.currency)}
-Status: ${transaction.status || "COMPLETED"}
+Exchange Details:
+Foreign Currency: ${transaction.foreignCurrency}
+Foreign Amount: ${formatCurrency(transaction.foreignAmount, transaction.foreignCurrency)}
+Local Currency: ${transaction.localCurrency}
+Local Amount: ${formatCurrency(transaction.localAmount, transaction.localCurrency)}
+Exchange Rate: ${transaction.exchangeRate}
+Service Fee: ${formatCurrency(transaction.flatFee, transaction.localCurrency)}
+Payment Method: ${transaction.paymentMethod}
 
-${transaction.notes ? `Notes: ${transaction.notes}` : ""}
-
-Internal Transaction - For Till Management Only
+Thank you for your business!
 `;
   };
 
@@ -97,7 +101,7 @@ Internal Transaction - For Till Management Only
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Receipt className="h-5 w-5" />
-            Till Transaction Receipt
+            Currency Exchange Receipt
           </DialogTitle>
         </DialogHeader>
 
@@ -108,10 +112,7 @@ Internal Transaction - For Till Management Only
               <Building2 className="h-6 w-6 text-primary" />
               <h2 className="text-xl font-bold">OpenCX</h2>
             </div>
-            <p className="text-sm text-muted-foreground">Till Management System</p>
-            <Badge variant="outline" className="text-xs">
-              Internal Transaction
-            </Badge>
+            <p className="text-sm text-muted-foreground">Currency Exchange Services</p>
           </div>
 
           <Separator />
@@ -124,7 +125,7 @@ Internal Transaction - For Till Management Only
                   <Hash className="h-4 w-4" />
                   Transaction ID
                 </div>
-                <p className="font-mono text-sm">{transaction.transactionId}</p>
+                <p className="font-mono text-sm">{transaction._id}</p>
               </div>
 
               <div className="space-y-1">
@@ -136,27 +137,17 @@ Internal Transaction - For Till Management Only
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {customer && (
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <User className="h-4 w-4" />
-                  Operator
+                  Customer
                 </div>
                 <p className="text-sm font-medium">
-                  {transaction.user?.name || "Unknown User"}
+                  {customer.fullName || customer.legalBusinessName || 'Unknown Customer'}
                 </p>
               </div>
-
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Building2 className="h-4 w-4" />
-                  Till ID
-                </div>
-                <p className="text-sm font-medium">
-                  {transaction.tillId}
-                </p>
-              </div>
-            </div>
+            )}
 
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -171,42 +162,49 @@ Internal Transaction - For Till Management Only
 
           <Separator />
 
-          {/* Amount */}
-          <div className="text-center space-y-2">
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Banknote className="h-4 w-4" />
-              Amount
+          {/* Exchange Details */}
+          <div className="space-y-4">
+            <h4 className="font-medium">Exchange Details</h4>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="text-sm text-muted-foreground">Foreign Currency</div>
+                <div className="text-lg font-semibold">
+                  {formatCurrency(transaction.foreignAmount, transaction.foreignCurrency)}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-sm text-muted-foreground">Local Currency</div>
+                <div className="text-lg font-semibold">
+                  {formatCurrency(transaction.localAmount, transaction.localCurrency)}
+                </div>
+              </div>
             </div>
-            <p className="text-3xl font-bold">
-              {formatCurrency(transaction.amount, transaction.currency)}
-            </p>
-            <div className="text-sm text-muted-foreground">
-              Currency: {transaction.currency}
+
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">Exchange Rate:</span>
+                <span className="ml-2 font-medium">{transaction.exchangeRate}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Service Fee:</span>
+                <span className="ml-2 font-medium">
+                  {formatCurrency(transaction.flatFee, transaction.localCurrency)}
+                </span>
+              </div>
+            </div>
+
+            <div className="text-sm">
+              <span className="text-muted-foreground">Payment Method:</span>
+              <span className="ml-2 font-medium">{transaction.paymentMethod}</span>
             </div>
           </div>
-
-          {/* Notes */}
-          {transaction.notes && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <FileText className="h-4 w-4" />
-                  Notes
-                </div>
-                <Card className="bg-muted/50">
-                  <CardContent className="p-3 text-sm">
-                    {transaction.notes}
-                  </CardContent>
-                </Card>
-              </div>
-            </>
-          )}
 
           {/* Status */}
           <div className="flex items-center justify-center">
             <Badge variant={transaction.status === "completed" ? "default" : "secondary"}>
-              {transaction.status?.toUpperCase() || "COMPLETED"}
+              {transaction.status?.toUpperCase() || "PENDING"}
             </Badge>
           </div>
 
@@ -214,8 +212,8 @@ Internal Transaction - For Till Management Only
 
           {/* Footer */}
           <div className="text-center text-xs text-muted-foreground space-y-1">
-            <p>Internal Till Transaction</p>
-            <p>For record keeping and audit purposes</p>
+            <p>Thank you for your business!</p>
+            <p>For questions, please contact support.</p>
           </div>
 
           {/* Actions */}

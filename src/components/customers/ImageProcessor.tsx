@@ -2,12 +2,12 @@ import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 
 // shadcn/ui components
-import { Button } from "./ui/button";
-import { Label } from "./ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
-import { Slider } from "./ui/slider";
-import { Badge } from "./ui/badge";
+import { Button } from "../ui/button";
+import { Label } from "../ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Slider } from "../ui/slider";
+import { Badge } from "../ui/badge";
 
 interface ImageProcessorProps {
   imageUrl: string;
@@ -35,15 +35,15 @@ export function ImageProcessor({ imageUrl, originalFile, onProcessed, onCancel }
     const img = new Image();
     img.onload = () => {
       setImageSize({ width: img.width, height: img.height });
-      
+
       // Set canvas size
       canvas.width = Math.min(img.width, 800);
       canvas.height = Math.min(img.height, 600);
-      
+
       // Draw image
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      
+
       // Draw crop overlay
       drawCropOverlay(ctx, canvas.width, canvas.height);
     };
@@ -54,15 +54,15 @@ export function ImageProcessor({ imageUrl, originalFile, onProcessed, onCancel }
     // Semi-transparent overlay
     ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-    
+
     // Clear crop area
     const cropX = (crop.x / 100) * canvasWidth;
     const cropY = (crop.y / 100) * canvasHeight;
     const cropWidth = (crop.width / 100) * canvasWidth;
     const cropHeight = (crop.height / 100) * canvasHeight;
-    
+
     ctx.clearRect(cropX, cropY, cropWidth, cropHeight);
-    
+
     // Redraw image in crop area
     const img = new Image();
     img.onload = () => {
@@ -71,7 +71,7 @@ export function ImageProcessor({ imageUrl, originalFile, onProcessed, onCancel }
         cropX, cropY, cropWidth, cropHeight,
         cropX, cropY, cropWidth, cropHeight
       );
-      
+
       // Draw crop border
       ctx.strokeStyle = "#3b82f6";
       ctx.lineWidth = 2;
@@ -87,16 +87,16 @@ export function ImageProcessor({ imageUrl, originalFile, onProcessed, onCancel }
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
-    
+
     const deltaX = e.clientX - dragStart.x;
     const deltaY = e.clientY - dragStart.y;
-    
+
     setCrop(prev => ({
       ...prev,
       x: Math.max(0, Math.min(100 - prev.width, prev.x + (deltaX / 8))),
       y: Math.max(0, Math.min(100 - prev.height, prev.y + (deltaY / 8))),
     }));
-    
+
     setDragStart({ x: e.clientX, y: e.clientY });
   };
 
@@ -161,7 +161,7 @@ export function ImageProcessor({ imageUrl, originalFile, onProcessed, onCancel }
     const compressionRatio = quality;
     const cropRatio = (crop.width / 100) * (crop.height / 100);
     const estimatedSize = originalSize * compressionRatio * cropRatio;
-    
+
     return (estimatedSize / 1024).toFixed(1) + " KB";
   };
 
@@ -174,7 +174,7 @@ export function ImageProcessor({ imageUrl, originalFile, onProcessed, onCancel }
             Crop, adjust quality, and process the ID document image
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Image Canvas */}
           <div className="lg:col-span-2">
@@ -188,13 +188,13 @@ export function ImageProcessor({ imageUrl, originalFile, onProcessed, onCancel }
                 onMouseLeave={handleMouseUp}
               />
             </div>
-            
+
             <div className="mt-4 text-sm text-gray-600">
               <p>• Click and drag to move the crop area</p>
               <p>• Use the controls on the right to adjust crop size and quality</p>
             </div>
           </div>
-          
+
           {/* Controls */}
           <div className="space-y-6">
             <Card>
@@ -214,7 +214,7 @@ export function ImageProcessor({ imageUrl, originalFile, onProcessed, onCancel }
                     step={1}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label>
                     Height: <Badge variant="outline">{crop.height}%</Badge>
@@ -227,7 +227,7 @@ export function ImageProcessor({ imageUrl, originalFile, onProcessed, onCancel }
                     step={1}
                   />
                 </div>
-                
+
                 <Button
                   onClick={resetCrop}
                   variant="outline"
@@ -237,7 +237,7 @@ export function ImageProcessor({ imageUrl, originalFile, onProcessed, onCancel }
                 </Button>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Compression</CardTitle>
@@ -260,7 +260,7 @@ export function ImageProcessor({ imageUrl, originalFile, onProcessed, onCancel }
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>File Info</CardTitle>
@@ -271,7 +271,7 @@ export function ImageProcessor({ imageUrl, originalFile, onProcessed, onCancel }
                 <div>Type: {originalFile.type}</div>
               </CardContent>
             </Card>
-            
+
             <div className="space-y-3">
               <Button
                 onClick={processImage}
@@ -279,7 +279,7 @@ export function ImageProcessor({ imageUrl, originalFile, onProcessed, onCancel }
               >
                 Process & Upload
               </Button>
-              
+
               <Button
                 onClick={onCancel}
                 variant="outline"

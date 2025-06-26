@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import { UserForm } from "./UserForm";
 import { DuplicateUserDialog } from "./DuplicateUserDialog";
 import { toast } from "sonner";
 
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Input } from "./ui/input";
-import { Badge } from "./ui/badge";
-import { Checkbox } from "./ui/checkbox";
-import { Label } from "./ui/label";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
+import { Input } from "../ui/input";
+import { Badge } from "../ui/badge";
+import { Checkbox } from "../ui/checkbox";
+import { Label } from "../ui/label";
+import { PageLayout, PageHeader, GridLayout, EmptyState, ActionBar, FlexLayout } from "../layout";
 import {
   Table,
   TableBody,
@@ -19,7 +20,7 @@ import {
   TableHead,
   TableHeader,
   TableRow
-} from "./ui/table";
+} from "../ui/table";
 import {
   Plus,
   Pencil,
@@ -90,26 +91,30 @@ export function UserModule() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <ShieldCheck className="h-6 w-6" />
-            Users
-          </h1>
-          <p className="text-muted-foreground">Manage employee accounts and permissions</p>
-        </div>
-
-        <Button onClick={handleNew} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add New User
-        </Button>
-      </div>
+    <PageLayout>
+      {/* Page Header */}
+      <PageHeader
+        icon={<ShieldCheck className="h-6 w-6" />}
+        title="Users"
+        description="Manage employee accounts and permissions"
+        actions={
+          <Button onClick={handleNew}>
+            <Plus className="h-4 w-4" />
+            Add New User
+          </Button>
+        }
+      />
 
       {/* Search and Filters */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-4">
+        <CardHeader>
+          <CardTitle>Search & Filters</CardTitle>
+          <CardDescription>
+            Find and filter users by name, email, or status
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FlexLayout gap={4}>
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -119,15 +124,15 @@ export function UserModule() {
                 className="pl-10"
               />
             </div>
-            <div className="flex items-center space-x-2">
+            <FlexLayout gap={2}>
               <Checkbox
                 id="includeInactive"
                 checked={includeInactive}
                 onCheckedChange={(checked) => setIncludeInactive(checked as boolean)}
               />
               <Label htmlFor="includeInactive">Include Inactive Users</Label>
-            </div>
-          </div>
+            </FlexLayout>
+          </FlexLayout>
         </CardContent>
       </Card>
 
@@ -137,26 +142,29 @@ export function UserModule() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UserCheck className="h-5 w-5" />
-              User Templates
+              User Templates ({templates.length})
             </CardTitle>
+            <CardDescription>
+              Pre-configured user templates to quickly create new accounts
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <GridLayout cols={1} mdCols={2} lgCols={3}>
               {templates.map((template) => (
                 <Card key={template._id} className="border-dashed">
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
+                    <FlexLayout align="between" className="mb-2">
                       <h3 className="font-medium">{template.fullName || template.email}</h3>
                       <Badge variant="default">Template</Badge>
-                    </div>
+                    </FlexLayout>
                     <p className="text-sm text-muted-foreground mb-3">
                       {template.email}
                     </p>
-                    <div className="flex gap-2">
+                    <ActionBar>
                       <Button
                         size="sm"
                         onClick={() => handleDuplicate(template._id)}
-                        className="flex-1 gap-1"
+                        className="flex-1"
                       >
                         <Copy className="h-3 w-3" />
                         Use Template
@@ -168,17 +176,25 @@ export function UserModule() {
                       >
                         <Pencil className="h-3 w-3" />
                       </Button>
-                    </div>
+                    </ActionBar>
                   </CardContent>
                 </Card>
               ))}
-            </div>
+            </GridLayout>
           </CardContent>
         </Card>
       )}
 
       {/* Users Table */}
       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>User Accounts ({regularUsers.length})</span>
+          </CardTitle>
+          <CardDescription>
+            Manage all user accounts, permissions, and access controls
+          </CardDescription>
+        </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -201,86 +217,83 @@ export function UserModule() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="space-y-1">
-                      {user.isManager && (
-                        <Badge variant="secondary" className="text-xs">Manager</Badge>
-                      )}
-                      {user.isComplianceOfficer && (
-                        <Badge variant="secondary" className="text-xs">Compliance</Badge>
-                      )}
-                      {user.isTemplate && (
-                        <Badge variant="outline" className="text-xs">Template</Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusVariant(user.isActive)}>
-                      {getStatusLabel(user.isActive)}
+                    <Badge variant={(user.isManager ?? false) ? "destructive" : "secondary"}>
+                      {(user.isManager ?? false) ? "Manager" : "User"}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="space-y-1">
-                      {user.canModifyExchangeRates && (
-                        <Badge variant="secondary" className="text-xs">Exchange Rates</Badge>
+                    <Badge variant={getStatusVariant(user.isActive ?? true)}>
+                      {getStatusLabel(user.isActive ?? true)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      {(user.maxModificationIndividual || user.maxModificationCorporate) && (
+                        <Badge variant="outline" className="text-xs">
+                          Modification Limits
+                        </Badge>
                       )}
-                      {user.canEditFeesCommissions && (
-                        <Badge variant="secondary" className="text-xs">Fees/Commissions</Badge>
-                      )}
-                      {user.canTransferBetweenAccounts && (
-                        <Badge variant="secondary" className="text-xs">Account Transfers</Badge>
-                      )}
-                      {user.canReconcileAccounts && (
-                        <Badge variant="secondary" className="text-xs">Reconciliation</Badge>
-                      )}
-                      {user.maxModificationIndividual && (
-                        <div className="text-xs text-muted-foreground">
-                          Max Individual: ${user.maxModificationIndividual}
-                        </div>
-                      )}
-                      {user.maxModificationCorporate && (
-                        <div className="text-xs text-muted-foreground">
-                          Max Corporate: ${user.maxModificationCorporate}
-                        </div>
+                      {user.isComplianceOfficer && (
+                        <Badge variant="outline" className="text-xs">
+                          Compliance Officer
+                        </Badge>
                       )}
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {formatDate(user.createdAt)}
+                    {formatDate(user._creationTime)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
+                    <ActionBar className="justify-end gap-1">
                       <Button
+                        variant="ghost"
                         size="sm"
-                        variant="outline"
                         onClick={() => handleEdit(user._id)}
+                        title="Edit User"
                       >
-                        <Pencil className="h-3 w-3" />
+                        <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
+                        variant="ghost"
                         size="sm"
-                        variant="outline"
                         onClick={() => handleDuplicate(user._id)}
+                        title="Duplicate User"
                       >
-                        <Copy className="h-3 w-3" />
+                        <Copy className="h-4 w-4" />
                       </Button>
                       <Button
+                        variant="ghost"
                         size="sm"
-                        variant="destructive"
                         onClick={() => handleDelete(user._id)}
+                        title="Delete User"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                    </div>
+                    </ActionBar>
                   </TableCell>
                 </TableRow>
               ))}
 
               {regularUsers.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    {searchTerm
-                      ? "No users found matching your search."
-                      : "No users added yet."}
+                  <TableCell colSpan={6}>
+                    <EmptyState
+                      icon={<Users />}
+                      title={searchTerm || !includeInactive ? "No users found" : "No users yet"}
+                      description={
+                        searchTerm || !includeInactive
+                          ? "Try adjusting your search or filter settings"
+                          : "Get started by adding your first employee account"
+                      }
+                      action={
+                        !searchTerm && includeInactive ? (
+                          <Button onClick={handleNew} variant="outline">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add First User
+                          </Button>
+                        ) : undefined
+                      }
+                    />
                   </TableCell>
                 </TableRow>
               )}
@@ -310,6 +323,6 @@ export function UserModule() {
           }}
         />
       )}
-    </div>
+    </PageLayout>
   );
 }

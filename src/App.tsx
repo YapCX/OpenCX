@@ -5,14 +5,16 @@ import { AcceptInvitationForm } from "./AcceptInvitationForm";
 import { InitialSetupForm } from "./InitialSetupForm";
 import { api } from "../convex/_generated/api";
 import { UserDropdown } from "./UserDropdown";
-import { CurrencyModule } from "./components/CurrencyModule";
-import { DenominationsModule } from "./components/DenominationsModule";
-import { CustomersModule } from "./components/CustomersModule";
-import { UserModule } from "./components/UserModule";
-import { TillModule } from "./components/TillModule";
-import { TillTransactionsModule } from "./components/TillTransactionsModule";
-import { OrderModule } from "./components/OrderModule";
-import { SettingsModule } from "./components/SettingsModule";
+import {
+  CurrencyModule,
+  DenominationsModule,
+  CustomersModule,
+  UserModule,
+  TillModule,
+  TillTransactionsModule,
+  OrderModule,
+  SettingsModule
+} from "./components/modules";
 
 // shadcn/ui components
 import { ThemeProvider } from "./components/theme-provider";
@@ -81,7 +83,7 @@ const navigationItems = [
 function App() {
   const [activeModule, setActiveModule] = useState<ActiveModule>("orders");
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
-  
+
   // Check if initial setup is needed (no users exist)
   const needsSetup = useQuery(api.seed.needsInitialSetup);
 

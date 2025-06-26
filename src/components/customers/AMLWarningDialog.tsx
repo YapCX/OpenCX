@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Id } from "../../convex/_generated/dataModel";
+import { Id } from "../../../convex/_generated/dataModel";
 
 // shadcn/ui components
 import {
@@ -8,13 +8,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter
-} from "./ui/dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
-import { Alert, AlertDescription } from "./ui/alert";
-import { Label } from "./ui/label";
-import { Separator } from "./ui/separator";
+} from "../ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
+import { Alert, AlertDescription } from "../ui/alert";
+import { Label } from "../ui/label";
+import { Separator } from "../ui/separator";
 
 // Icons
 import { AlertTriangle, Shield, User, FileText } from "lucide-react";

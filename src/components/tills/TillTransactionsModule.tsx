@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { TillStatusIndicator } from "./TillStatusIndicator";
 import { toast } from "sonner";
-import { useCurrencySymbols } from "../hooks/useCurrency";
+import { useCurrencySymbols } from "../../hooks/useCurrency";
 
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Badge } from "./ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Alert, AlertDescription } from "./ui/alert";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Badge } from "../ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Alert, AlertDescription } from "../ui/alert";
+import { PageLayout, PageHeader, GridLayout, EmptyState, FlexLayout, ActionBar } from "../layout";
 import {
   Table,
   TableBody,
@@ -19,7 +20,7 @@ import {
   TableHead,
   TableHeader,
   TableRow
-} from "./ui/table";
+} from "../ui/table";
 import {
   Receipt,
   AlertTriangle,
@@ -125,36 +126,45 @@ export function TillTransactionsModule() {
 
   if (!currentUserTill) {
     return (
-      <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Receipt className="h-6 w-6" />
-            Till Transactions
-          </h1>
-          <p className="text-muted-foreground">Record till transactions and view balances</p>
-        </div>
+      <PageLayout>
+        <PageHeader
+          icon={<Receipt className="h-6 w-6" />}
+          title="Till Transactions"
+          description="Record till transactions and view balances"
+        />
 
         <TillStatusIndicator />
 
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            You must be signed into a till to record transactions.
-          </AlertDescription>
-        </Alert>
-      </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Access Required
+            </CardTitle>
+            <CardDescription>
+              You need to be signed into a till to record transactions
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                You must be signed into a till to record transactions. Please visit the Tills module to sign in.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Receipt className="h-6 w-6" />
-          Till Transactions
-        </h1>
-        <p className="text-muted-foreground">Record till transactions and view balances</p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        icon={<Receipt className="h-6 w-6" />}
+        title="Till Transactions"
+        description="Record till transactions and view balances"
+      />
 
       <TillStatusIndicator />
 
@@ -162,10 +172,13 @@ export function TillTransactionsModule() {
       <Card>
         <CardHeader>
           <CardTitle>Record Transaction</CardTitle>
+          <CardDescription>
+            Add cash in, cash out, or adjustment transactions to your till
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <GridLayout cols={1} mdCols={3}>
               <div className="space-y-2">
                 <Label htmlFor="transactionType">Transaction Type</Label>
                 <Select value={transactionType} onValueChange={(value) => setTransactionType(value as TransactionType)}>
@@ -174,22 +187,22 @@ export function TillTransactionsModule() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="cash_in">
-                      <div className="flex items-center gap-2">
+                      <FlexLayout gap={2}>
                         <Plus className="h-3 w-3" />
                         Cash In
-                      </div>
+                      </FlexLayout>
                     </SelectItem>
                     <SelectItem value="cash_out">
-                      <div className="flex items-center gap-2">
+                      <FlexLayout gap={2}>
                         <Minus className="h-3 w-3" />
                         Cash Out
-                      </div>
+                      </FlexLayout>
                     </SelectItem>
                     <SelectItem value="adjustment">
-                      <div className="flex items-center gap-2">
+                      <FlexLayout gap={2}>
                         <DollarSign className="h-3 w-3" />
                         Adjustment
-                      </div>
+                      </FlexLayout>
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -223,20 +236,19 @@ export function TillTransactionsModule() {
                   required
                 />
               </div>
-            </div>
+            </GridLayout>
 
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes (optional)</Label>
+              <Label htmlFor="notes">Notes (Optional)</Label>
               <Input
                 id="notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Transaction notes..."
+                placeholder="Enter transaction notes..."
               />
             </div>
 
-            <Button type="submit" className="gap-2">
-              <Receipt className="h-4 w-4" />
+            <Button type="submit" className="w-full">
               Record Transaction
             </Button>
           </form>
@@ -244,108 +256,128 @@ export function TillTransactionsModule() {
       </Card>
 
       {/* Till Balances */}
-      {tillBalances.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {tillBalances.map((balance: any) => (
-            <Card key={balance.currencyCode} className="border-dashed">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">{balance.currencyCode}</h3>
-                    <p className="text-2xl font-bold">
-                      {formatCurrency(balance.balance, balance.currencyCode)}
-                    </p>
-                  </div>
-                  <Badge variant={balance.currencyCode === baseCurrency ? "default" : "secondary"}>
-                    {balance.currencyCode === baseCurrency ? "Base" : "Foreign"}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-8 text-muted-foreground">
-          No till balances found. Record your first transaction to see balances.
-        </div>
-      )}
-
-      {/* Recent Transactions */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Recent Transactions</CardTitle>
-            <Select value={tillFilter} onValueChange={setTillFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="All Tills" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Tills</SelectItem>
-                {tills.map((till) => (
-                  <SelectItem key={till._id} value={till.tillId}>
-                    {till.tillName} ({till.tillId})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <CardTitle>Current Till Balances</CardTitle>
+          <CardDescription>
+            Real-time balances for all currencies in your till
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {tillBalances.length > 0 ? (
+            <GridLayout cols={1} mdCols={2} lgCols={3}>
+              {tillBalances.map((balance) => (
+                <Card key={balance.currencyCode}>
+                  <CardContent className="p-4">
+                    <FlexLayout align="between">
+                      <div>
+                        <h3 className="font-medium">{balance.currencyCode}</h3>
+                        <p className="text-sm text-muted-foreground">Current Balance</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold">
+                          {formatCurrency(balance.balance, balance.currencyCode)}
+                        </div>
+                        <Badge variant={balance.balance >= 0 ? "secondary" : "destructive"}>
+                          {balance.balance >= 0 ? "Positive" : "Negative"}
+                        </Badge>
+                      </div>
+                    </FlexLayout>
+                  </CardContent>
+                </Card>
+              ))}
+            </GridLayout>
+          ) : (
+            <EmptyState
+              icon={<DollarSign />}
+              title="No balances yet"
+              description="Record your first transaction to see till balances appear here"
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Transaction History */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Transaction History ({recentTransactions.length})</span>
+            <FlexLayout gap={2}>
+              <Label htmlFor="tillFilter">Filter by Till:</Label>
+              <Select value={tillFilter} onValueChange={setTillFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Tills</SelectItem>
+                  {tills.map((till) => (
+                    <SelectItem key={till._id} value={till.tillId}>
+                      {till.tillName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FlexLayout>
+          </CardTitle>
+          <CardDescription>
+            View all recent transactions for your till
+          </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Currency</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Till</TableHead>
-                <TableHead>User</TableHead>
+                <TableHead>Amount</TableHead>
                 <TableHead>Notes</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recentTransactions.map((transaction: any) => (
+              {recentTransactions.map((transaction) => (
                 <TableRow key={transaction._id}>
-                  <TableCell className="text-sm">
-                    {formatDate(transaction._creationTime)}
-                  </TableCell>
                   <TableCell>
-                    <Badge variant={getTransactionTypeVariant(transaction.type)} className="gap-1">
-                      {getTransactionIcon(transaction.type)}
-                      {transaction.type}
+                    <Badge variant={getTransactionTypeVariant(transaction.type)}>
+                      <FlexLayout gap={1}>
+                        {getTransactionIcon(transaction.type)}
+                        {transaction.type.replace('_', ' ').toUpperCase()}
+                      </FlexLayout>
                     </Badge>
                   </TableCell>
+                  <TableCell className="font-medium">
+                    {transaction.currency}
+                  </TableCell>
                   <TableCell className="font-mono">
-                    {transaction.foreignCurrency || transaction.localCurrency || transaction.currency}
+                    {formatCurrency(transaction.amount, transaction.currency)}
                   </TableCell>
-                  <TableCell className="text-right font-mono">
-                    {transaction.foreignAmount && transaction.foreignCurrency
-                      ? formatCurrency(transaction.foreignAmount, transaction.foreignCurrency)
-                      : transaction.localAmount && transaction.localCurrency
-                        ? formatCurrency(transaction.localAmount, transaction.localCurrency)
-                        : transaction.amount && transaction.currency
-                          ? formatCurrency(transaction.amount, transaction.currency)
-                          : "—"
-                    }
+                  <TableCell>
+                    {transaction.notes && (
+                      <span className="text-sm text-muted-foreground">
+                        {transaction.notes}
+                      </span>
+                    )}
                   </TableCell>
-                  <TableCell className="text-sm">
-                    {transaction.tillId || "—"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {transaction.user?.name || "—"}
+                  <TableCell>
+                    {transaction.user?.name && (
+                      <span className="text-sm">{transaction.user.name}</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {transaction.notes || "—"}
+                    {formatDate(transaction._creationTime)}
                   </TableCell>
                 </TableRow>
               ))}
 
               {recentTransactions.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    {tillFilter && tillFilter !== "all"
-                      ? "No transactions found for the selected till."
-                      : "No recent transactions found."}
+                  <TableCell colSpan={6}>
+                    <EmptyState
+                      icon={<Receipt />}
+                      title="No transactions yet"
+                      description="Record your first transaction using the form above to start tracking till activity"
+                    />
                   </TableCell>
                 </TableRow>
               )}
@@ -353,6 +385,6 @@ export function TillTransactionsModule() {
           </Table>
         </CardContent>
       </Card>
-    </div>
+    </PageLayout>
   );
 }

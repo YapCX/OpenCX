@@ -492,3 +492,4 @@ export const getCurrentUserPermissions = query({
     };
   },
 });
+

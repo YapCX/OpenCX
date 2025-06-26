@@ -1,22 +1,22 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
-import { VALIDATION_LIMITS } from "../lib/validation";
+import { VALIDATION_LIMITS } from "../../lib/validation";
 
 // shadcn/ui components
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
-import { Checkbox } from "./ui/checkbox";
-import { Switch } from "./ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Separator } from "./ui/separator";
-import { Badge } from "./ui/badge";
-import { Alert, AlertDescription } from "./ui/alert";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Checkbox } from "../ui/checkbox";
+import { Switch } from "../ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { Separator } from "../ui/separator";
+import { Badge } from "../ui/badge";
+import { Alert, AlertDescription } from "../ui/alert";
 import { Copy, Check } from "lucide-react";
 
 interface UserFormProps {
@@ -201,9 +201,9 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
 
   const handleCopyInvitationLink = async () => {
     if (!invitationResult) return;
-    
+
     const invitationUrl = `${window.location.origin}/accept-invitation?token=${invitationResult.token}`;
-    
+
     try {
       await navigator.clipboard.writeText(invitationUrl);
       setLinkCopied(true);
@@ -223,7 +223,7 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
   // Show invitation success dialog if we have invitation result
   if (invitationResult) {
     return (
-      <InvitationSuccessDialog 
+      <InvitationSuccessDialog
         invitationResult={invitationResult}
         onClose={handleCloseInvitation}
         onCopyLink={handleCopyInvitationLink}
@@ -606,19 +606,19 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
 }
 
 // Invitation Success Dialog Component
-function InvitationSuccessDialog({ 
-  invitationResult, 
-  onClose, 
+function InvitationSuccessDialog({
+  invitationResult,
+  onClose,
   onCopyLink,
-  linkCopied 
-}: { 
+  linkCopied
+}: {
   invitationResult: { email: string; token: string; };
   onClose: () => void;
   onCopyLink: () => void;
   linkCopied: boolean;
 }) {
   const invitationUrl = `${window.location.origin}/accept-invitation?token=${invitationResult.token}`;
-  
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
@@ -640,7 +640,7 @@ function InvitationSuccessDialog({
                   {invitationUrl}
                 </div>
                 <div className="flex gap-2">
-                  <Button 
+                  <Button
                     onClick={onCopyLink}
                     className="gap-2"
                     variant={linkCopied ? "secondary" : "default"}

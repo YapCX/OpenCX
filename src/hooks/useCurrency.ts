@@ -12,7 +12,15 @@ export const useCurrencySymbols = () => {
     getCurrencySymbol: (currencyCode: string) => {
       return symbolMap?.[currencyCode] || null;
     },
-    formatCurrency: (amount: number, currencyCode: string) => {
+    formatCurrency: (amount?: number, currencyCode?: string) => {
+      // Handle undefined values
+      if (amount === undefined || amount === null) {
+        return "N/A";
+      }
+      if (!currencyCode) {
+        return amount.toFixed(2);
+      }
+
       if (!symbolMap) {
         return formatAmountOnly(amount, currencyCode);
       }

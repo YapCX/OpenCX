@@ -1,0 +1,9 @@
+// Module Components - Feature-based components
+export { CurrencyModule } from './currencies/CurrencyModule';
+export { CustomersModule } from './customers/CustomersModule';
+export { DenominationsModule } from './denominations/DenominationsModule';
+export { OrderModule } from './orders/OrderModule';
+export { SettingsModule } from './settings/SettingsModule';
+export { TillModule } from './tills/TillModule';
+export { TillTransactionsModule } from './tills/TillTransactionsModule';
+export { UserModule } from './users/UserModule';

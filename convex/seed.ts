@@ -175,7 +175,17 @@ export const needsInitialSetup = query({
   args: {},
   handler: async (ctx) => {
     const users = await ctx.db.query("users").collect();
-    return users.length === 0;
+    
+    // No users exist
+    if (users.length === 0) {
+      return true;
+    }
+    
+    // Check if any user has manager privileges (indicating setup was completed)
+    const hasManagerUser = users.some(user => user.isManager === true);
+    
+    // If no manager exists, initial setup is still needed
+    return !hasManagerUser;
   },
 });
 
@@ -183,10 +193,11 @@ export const needsInitialSetup = query({
 export const completeInitialSetup = mutation({
   args: {},
   handler: async (ctx) => {
-    // Check if any users already exist
+    // Check if initial setup was already completed (any manager exists)
     const existingUsers = await ctx.db.query("users").collect();
+    const hasManagerUser = existingUsers.some(user => user.isManager === true);
     
-    if (existingUsers.length > 0) {
+    if (hasManagerUser) {
       throw new Error("Initial setup already completed");
     }
 

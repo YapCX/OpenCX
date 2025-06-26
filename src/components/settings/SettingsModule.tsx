@@ -1,19 +1,19 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
-import { VALIDATION_LIMITS } from "../lib/validation";
-import { useCurrencySymbols } from "../hooks/useCurrency";
+import { VALIDATION_LIMITS } from "../../lib/validation";
+import { useCurrencySymbols } from "../../hooks/useCurrency";
 
-import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Alert, AlertDescription } from "./ui/alert";
-import { Badge } from "./ui/badge";
-import { Separator } from "./ui/separator";
-import { Checkbox } from "./ui/checkbox";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Alert, AlertDescription } from "../ui/alert";
+import { Badge } from "../ui/badge";
+import { Separator } from "../ui/separator";
+import { Checkbox } from "../ui/checkbox";
 import { Settings, AlertTriangle, Globe, Clock, Percent, TrendingDown, TrendingUp, DollarSign, Shield } from "lucide-react";
 
 export function SettingsModule() {
@@ -26,7 +26,7 @@ export function SettingsModule() {
   const defaultDiscountPercent = useQuery(api.settings.getDefaultDiscountPercent);
   const defaultMarkupPercent = useQuery(api.settings.getDefaultMarkupPercent);
   const defaultServiceFee = useQuery(api.settings.getDefaultServiceFee);
-  
+
   const { getCurrencySymbol } = useCurrencySymbols();
 
   const setBaseCurrency = useMutation(api.settings.setBaseCurrency);
@@ -179,12 +179,12 @@ export function SettingsModule() {
   };
 
   // Handle loading and error states
-  const isLoading = baseCurrency === undefined || currencies === undefined || 
-    defaultDiscountPercent === undefined || defaultMarkupPercent === undefined || 
+  const isLoading = baseCurrency === undefined || currencies === undefined ||
+    defaultDiscountPercent === undefined || defaultMarkupPercent === undefined ||
     defaultServiceFee === undefined || amlSettings === undefined;
 
-  const hasError = baseCurrency === null || currencies === null || 
-    defaultDiscountPercent === null || defaultMarkupPercent === null || 
+  const hasError = baseCurrency === null || currencies === null ||
+    defaultDiscountPercent === null || defaultMarkupPercent === null ||
     defaultServiceFee === null || amlSettings === null;
 
   if (hasError) {
@@ -463,7 +463,7 @@ export function SettingsModule() {
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <Label className="text-sm font-medium">Default Service Fee</Label>
-              
+
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">

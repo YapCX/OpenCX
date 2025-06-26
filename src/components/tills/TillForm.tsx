@@ -1,17 +1,17 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 
 // shadcn/ui components
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
-import { Checkbox } from "./ui/checkbox";
-import { Alert, AlertDescription } from "./ui/alert";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Checkbox } from "../ui/checkbox";
+import { Alert, AlertDescription } from "../ui/alert";
 
 // Icons
 import { Info } from "lucide-react";
@@ -47,7 +47,7 @@ export function TillForm({ editingId, onClose }: TillFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (isSubmitting) return;
     setIsSubmitting(true);
 
@@ -182,7 +182,7 @@ export function TillForm({ editingId, onClose }: TillFormProps) {
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                <strong>Automatic Setup:</strong> When you create this till, cash ledger accounts will be automatically generated 
+                <strong>Automatic Setup:</strong> When you create this till, cash ledger accounts will be automatically generated
                 for each active currency (e.g., "Cash-USD-{tillId}", "Cash-EUR-{tillId}").
               </AlertDescription>
             </Alert>
@@ -194,10 +194,10 @@ export function TillForm({ editingId, onClose }: TillFormProps) {
               disabled={isSubmitting}
               className="flex-1"
             >
-              {isSubmitting 
-                ? "Saving..." 
-                : editingId 
-                  ? "Update Till" 
+              {isSubmitting
+                ? "Saving..."
+                : editingId
+                  ? "Update Till"
                   : "Create Till"
               }
             </Button>
