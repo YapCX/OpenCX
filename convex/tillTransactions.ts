@@ -38,6 +38,7 @@ export const create = mutation({
     currency: v.string(),
     notes: v.optional(v.string()),
   },
+  returns: v.string(),
   handler: async (ctx, args) => {
     const { userId, tillId } = await requireTillAccess(ctx);
 
@@ -89,6 +90,7 @@ export const list = query({
     tillId: v.optional(v.string()),
     limit: v.optional(v.number()),
   },
+  returns: v.array(v.any()),
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
@@ -131,6 +133,7 @@ export const list = query({
 
 export const getCurrentTillTransactions = query({
   args: {},
+  returns: v.array(v.any()),
   handler: async (ctx) => {
     const { tillId } = await requireTillAccess(ctx);
 
@@ -147,6 +150,7 @@ export const getCurrentTillTransactions = query({
 
 export const getTillBalance = query({
   args: { tillId: v.string() },
+  returns: v.array(v.any()),
   handler: async (ctx, args) => {
     // Removed strict authentication requirement to allow client-side access without user auth.
     // Optionally, you can reintroduce permission checks here if needed.
@@ -163,6 +167,7 @@ export const getTillBalance = query({
 
 export const getByTransactionId = query({
   args: { transactionId: v.string() },
+  returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 

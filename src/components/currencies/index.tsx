@@ -436,13 +436,6 @@ export function CurrencyModule() {
         icon={<Coins className="h-6 w-6" />}
         title="Currencies"
         description="Manage exchange rates and currency settings"
-        actions={
-          filteredCurrencies.length > 0 && (
-            <Badge variant="secondary">
-              {filteredCurrencies.length} currencies
-            </Badge>
-          )
-        }
       />
 
       {/* Toolbar */}

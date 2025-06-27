@@ -4,17 +4,9 @@ import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Card, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "../ui/select";
 import {
   Command,
   CommandEmpty,
@@ -29,7 +21,6 @@ import {
   PopoverTrigger,
 } from "../ui/popover";
 import {
-  Search,
   User,
   UserPlus,
   Check,
@@ -54,9 +45,10 @@ export function CustomerSelector({
   const [searchTerm, setSearchTerm] = useState("");
 
   const customers = useQuery(api.customers.list, {}) || [];
+  const shouldQuerySelectedCustomer = !!value;
   const selectedCustomer = useQuery(
     api.customers.get,
-    value ? { id: value } : "skip"
+    shouldQuerySelectedCustomer ? { id: value } : "skip"
   );
 
   // Helper function to get customer display name

@@ -11,7 +11,6 @@ import {
   CustomersModule,
   UserModule,
   TillModule,
-  TillTransactionsModule,
   OrderModule,
   SettingsModule
 } from "./components/modules";
@@ -35,7 +34,7 @@ import {
   Building2
 } from "lucide-react";
 
-type ActiveModule = "currencies" | "denominations" | "customers" | "users" | "tills" | "transactions" | "orders" | "settings";
+type ActiveModule = "currencies" | "denominations" | "customers" | "users" | "tills" | "orders" | "settings";
 
 const navigationItems = [
   {
@@ -62,11 +61,6 @@ const navigationItems = [
     id: "tills" as const,
     label: "Tills",
     icon: Store,
-  },
-  {
-    id: "transactions" as const,
-    label: "Till Transactions",
-    icon: Receipt,
   },
   {
     id: "users" as const,
@@ -108,8 +102,6 @@ function App() {
         return <UserModule />;
       case "tills":
         return <TillModule />;
-      case "transactions":
-        return <TillTransactionsModule />;
       case "orders":
         return <OrderModule />;
       case "settings":

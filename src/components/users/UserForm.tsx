@@ -73,7 +73,7 @@ export function UserForm({ editingId, onClose }: UserFormProps) {
 
   const existingUser = useQuery(
     api.users.get,
-    editingId ? { id: editingId } : "skip"
+    editingId ? { id: editingId } : undefined
   );
 
   const modules = useQuery(api.users.getModules) || [];

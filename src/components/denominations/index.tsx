@@ -4,9 +4,9 @@ import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
-import { Banknote, Plus, Pencil, Trash2 } from "lucide-react";
+import { Banknote, Plus, Pencil, Trash2, Download, Loader2 } from "lucide-react";
+import { DenominationForm } from "./DenominationForm";
 
-// Testing Select component issue
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Button } from "../ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
@@ -26,16 +26,36 @@ export function DenominationsModule() {
   const [editingId, setEditingId] = useState<Id<"denominations"> | null>(null);
   const [sortField, setSortField] = useState<SortField>("currencyCode");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [filterCurrency, setFilterCurrency] = useState("all");
+  const [filterCurrency, setFilterCurrency] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
 
   // Queries with proper null handling
   const denominations = useQuery(api.denominations.list, {}) || [];
   const currencies = useQuery(api.currencies.list, {}) || [];
+  const standardDenominations = (
+    useQuery(
+      api.denominations.checkStandardDenominations,
+      filterCurrency ? { currencyCode: filterCurrency } : "skip"
+    ) || {
+      availableToImport: 0,
+      existing: 0,
+      total: 0,
+      hasStandard: false,
+    }
+  ) as {
+    availableToImport: number;
+    existing: number;
+    total: number;
+    hasStandard: boolean;
+  };
+
+
   const deleteDenomination = useMutation(api.denominations.remove);
+  const loadStandardDenominations = useMutation(api.denominations.loadStandardDenominations);
 
   // Data processing with safe array operations
   const filteredDenominations = denominations.filter(d =>
-    filterCurrency === "all" || d.currencyCode === filterCurrency
+    !filterCurrency || d.currencyCode === filterCurrency
   );
 
   const sortedDenominations = [...filteredDenominations].sort((a, b) => {
@@ -86,6 +106,44 @@ export function DenominationsModule() {
     }
   };
 
+  const handleLoadStandard = async () => {
+    if (!filterCurrency) {
+      toast.error("Please select a currency to load standard denominations");
+      return;
+    }
+
+    if (!standardDenominations?.hasStandard) {
+      toast.error(`No standard denominations available for ${filterCurrency}`);
+      return;
+    }
+
+    if (standardDenominations.availableToImport === 0) {
+      toast.info("All standard denominations are already loaded for this currency");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Load ${standardDenominations.availableToImport} standard denominations for ${filterCurrency}?\n\n` +
+      `This will add ${standardDenominations.availableToImport} new denominations to your database (${standardDenominations.existing} already exist).`
+    );
+
+    if (confirmed) {
+      setIsImporting(true);
+      try {
+        const result = await loadStandardDenominations({ currencyCode: filterCurrency });
+        toast.success(
+          `Successfully loaded ${result.imported} denominations to database for ${filterCurrency}` +
+          (result.skipped > 0 ? ` (${result.skipped} already existed)` : "")
+        );
+      } catch (error) {
+        toast.error("Failed to load standard denominations");
+      } finally {
+        setIsImporting(false);
+      }
+    }
+  };
+
+
   // Keyboard shortcuts
   useKeyboardShortcuts({
     n: handleNew,
@@ -101,24 +159,24 @@ export function DenominationsModule() {
         description="Manage currency denominations and values"
       />
 
-      {/* Filter Controls */}
+      {/* Filter and Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Filter Options</CardTitle>
+          <CardTitle>Manage Denominations</CardTitle>
           <CardDescription>
-            Filter denominations by currency and other criteria
+            Filter by currency and manage your denomination records
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <GridLayout cols={1} mdCols={2} lgCols={3}>
+          <div className="space-y-4">
+            {/* Currency Filter */}
             <div className="space-y-2">
-              <Label htmlFor="currency-filter">Currency</Label>
+              <Label htmlFor="currency-filter">Filter by Currency</Label>
               <Select value={filterCurrency} onValueChange={setFilterCurrency}>
-                <SelectTrigger id="currency-filter">
-                  <SelectValue placeholder="All currencies" />
+                <SelectTrigger id="currency-filter" className="max-w-xs">
+                  <SelectValue placeholder="Choose a currency" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All currencies</SelectItem>
                   {currencies.map((currency) => (
                     <SelectItem key={currency._id} value={currency.code}>
                       {currency.code} - {currency.name}
@@ -126,25 +184,75 @@ export function DenominationsModule() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          </GridLayout>
-        </CardContent>
-      </Card>
 
-      {/* Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Actions</CardTitle>
-          <CardDescription>
-            Create and manage denomination records
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ActionBar>
+              {filterCurrency && (
+                <div className="text-sm text-muted-foreground mt-2">
+                  {standardDenominations === null ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Checking for standard denominations...</span>
+                    </div>
+                  ) : standardDenominations?.hasStandard ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Banknote className="h-4 w-4" />
+                        <span>
+                          {standardDenominations.total} standard values available for {filterCurrency}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-blue-600">
+                        <span className="w-4 h-4 flex items-center justify-center text-xs">💰</span>
+                        <span>
+                          {standardDenominations.existing} already in your system
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-orange-600">
+                      <Banknote className="h-4 w-4" />
+                      <span>No standard values available for {filterCurrency}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            {/* Actions */}
+            <ActionBar>
             <Button onClick={handleNew} title="New Denomination (Cmd+N)">
               <Plus className="h-4 w-4" />
               New Denomination
             </Button>
+
+            {filterCurrency && (
+              <>
+                {standardDenominations === null ? (
+                  <Button variant="outline" disabled>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading standard denominations...
+                  </Button>
+                ) : standardDenominations?.hasStandard ? (
+                  <Button
+                    onClick={handleLoadStandard}
+                    disabled={isImporting || standardDenominations.availableToImport === 0}
+                    variant="outline"
+                    title={`Load ${standardDenominations.availableToImport} standard denominations to database`}
+                  >
+                    {isImporting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    {isImporting ? "Loading..." : `Load Standard (${standardDenominations.availableToImport})`}
+                  </Button>
+                ) : (
+                  <Button variant="outline" disabled>
+                    No standard denominations available for {filterCurrency}
+                  </Button>
+                )}
+              </>
+            )}
+
             {selectedIds.size > 0 && (
               <>
                 <Button
@@ -159,22 +267,27 @@ export function DenominationsModule() {
                 <Button
                   onClick={handleDelete}
                   variant="destructive"
-                  title="Delete Selected Denominations"
+                  title="Delete Selected Denominations from Database"
                 >
                   <Trash2 className="h-4 w-4" />
                   Delete ({selectedIds.size})
                 </Button>
               </>
             )}
-          </ActionBar>
+            </ActionBar>
+          </div>
         </CardContent>
       </Card>
+
 
       {/* Denominations Data */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>Denomination Records ({sortedDenominations.length})</span>
+            <span className="flex items-center gap-2">
+              <Banknote className="h-5 w-5" />
+              Your Denominations ({sortedDenominations.length})
+            </span>
             {selectedIds.size > 0 && (
               <Badge variant="secondary">
                 {selectedIds.size} selected
@@ -182,7 +295,7 @@ export function DenominationsModule() {
             )}
           </CardTitle>
           <CardDescription>
-            View and manage currency denominations and their values
+            All denomination values currently available in your system
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -242,19 +355,17 @@ export function DenominationsModule() {
                   <TableCell colSpan={4}>
                     <EmptyState
                       icon={<Banknote />}
-                      title={filterCurrency !== "all" ? "No denominations found" : "No denominations yet"}
+                      title={filterCurrency ? "No denominations found" : "No denominations yet"}
                       description={
-                        filterCurrency !== "all"
-                          ? "Try adjusting your filter settings to find what you're looking for"
-                          : "Get started by adding your first denomination to define currency values"
+                        filterCurrency
+                          ? `No denominations found for ${filterCurrency}. Try selecting a different currency or add a new denomination.`
+                          : "Choose a currency above to view and manage denominations, or add your first denomination."
                       }
                       action={
-                        filterCurrency === "all" ? (
-                          <Button onClick={handleNew} variant="outline">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add First Denomination
-                          </Button>
-                        ) : undefined
+                        <Button onClick={handleNew} variant="outline">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Denomination
+                        </Button>
                       }
                     />
                   </TableCell>
@@ -272,24 +383,14 @@ export function DenominationsModule() {
           setEditingId(null);
         }
       }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {editingId ? "Edit Denomination" : "New Denomination"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p>Form temporarily disabled for debugging</p>
-            <Button
-              onClick={() => {
-                setShowForm(false);
-                setEditingId(null);
-              }}
-              className="w-full"
-            >
-              Close
-            </Button>
-          </div>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DenominationForm
+            editingId={editingId}
+            onClose={() => {
+              setShowForm(false);
+              setEditingId(null);
+            }}
+          />
         </DialogContent>
       </Dialog>
     </PageLayout>

@@ -154,19 +154,43 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);
     
-    // Optimize customer ID generation
-    const nextId = await ctx.db
-      .query("customers")
-      .withIndex("by_creation_time")
-      .order("desc")
-      .first()
-      .then(lastCustomer => {
-        if (!lastCustomer) return "CUST-000001";
+    // Generate customer ID with retry logic to prevent race conditions
+    let nextId: string;
+    let attempts = 0;
+    const maxAttempts = 5;
+    
+    do {
+      const lastCustomer = await ctx.db
+        .query("customers")
+        .withIndex("by_creation_time")
+        .order("desc")
+        .first();
+        
+      if (!lastCustomer) {
+        nextId = "CUST-000001";
+      } else {
         const lastId = lastCustomer.customerId;
         const numericPart = parseInt(lastId.split("-")[1]);
         const nextNumber = numericPart + 1;
-        return `CUST-${nextNumber.toString().padStart(6, "0")}`;
-      });
+        nextId = `CUST-${nextNumber.toString().padStart(6, "0")}`;
+      }
+      
+      // Check if this ID already exists
+      const existingCustomer = await ctx.db
+        .query("customers")
+        .withIndex("by_customer_id", (q) => q.eq("customerId", nextId))
+        .first();
+        
+      if (!existingCustomer) {
+        break; // ID is unique, we can use it
+      }
+      
+      attempts++;
+    } while (attempts < maxAttempts);
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique customer ID after multiple attempts");
+    }
     
     const customerId = await ctx.db.insert("customers", {
       customerId: nextId,

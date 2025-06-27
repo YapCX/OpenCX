@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { api } from "./_generated/api";
 import { DEFAULT_BASE_CURRENCY, DEFAULT_DISCOUNT_PERCENT, DEFAULT_MARKUP_PERCENT } from "./settings";
+import { getDenominationsForCurrency, hasDenominations } from "./currencyDenominations";
 
 async function requireAuth(ctx: any) {
   const userId = await getAuthUserId(ctx);
@@ -14,6 +15,7 @@ async function requireAuth(ctx: any) {
 
 export const list = query({
   args: { searchTerm: v.optional(v.string()) },
+  returns: v.array(v.any()),
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
@@ -47,8 +49,21 @@ export const create = mutation({
     manualBuyRate: v.boolean(),
     manualSellRate: v.boolean(),
   },
+  returns: v.id("currencies"),
   handler: async (ctx, args) => {
     await requireAuth(ctx);
+
+    const upperCode = args.code.toUpperCase();
+
+    // Check if currency code already exists
+    const existingCurrency = await ctx.db
+      .query("currencies")
+      .withIndex("by_code", (q) => q.eq("code", upperCode))
+      .first();
+
+    if (existingCurrency) {
+      throw new Error(`Currency with code ${upperCode} already exists`);
+    }
 
     // Get default values if not provided
     const discountPercent: number = args.discountPercent ??
@@ -56,8 +71,8 @@ export const create = mutation({
     const markupPercent: number = args.markupPercent ??
       (await ctx.runQuery(api.settings.getDefaultMarkupPercent));
 
-    return await ctx.db.insert("currencies", {
-      code: args.code.toUpperCase(),
+    const currencyId = await ctx.db.insert("currencies", {
+      code: upperCode,
       name: args.name,
       country: args.country,
       flag: args.flag,
@@ -71,6 +86,31 @@ export const create = mutation({
       manualSellRate: args.manualSellRate,
       lastUpdated: Date.now(),
     });
+
+    // Auto-populate denominations if available for this currency
+    const currencyCode = upperCode;
+    if (hasDenominations(currencyCode)) {
+      const denominations = getDenominationsForCurrency(currencyCode);
+
+      // Create denominations in parallel for better performance
+      const denominationPromises = denominations.map(denom =>
+        ctx.db.insert("denominations", {
+          currencyCode,
+          value: denom.value,
+          isCoin: denom.isCoin,
+        })
+      );
+
+      try {
+        await Promise.all(denominationPromises);
+        console.log(`Auto-populated ${denominations.length} denominations for ${currencyCode}`);
+      } catch (error) {
+        console.warn(`Failed to auto-populate denominations for ${currencyCode}:`, error);
+        // Don't fail the currency creation if denomination creation fails
+      }
+    }
+
+    return currencyId;
   },
 });
 
@@ -90,13 +130,26 @@ export const update = mutation({
     manualBuyRate: v.boolean(),
     manualSellRate: v.boolean(),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     await requireAuth(ctx);
+
+    const upperCode = args.code.toUpperCase();
+
+    // Check if another currency with this code already exists (excluding current currency)
+    const existingCurrency = await ctx.db
+      .query("currencies")
+      .withIndex("by_code", (q) => q.eq("code", upperCode))
+      .first();
+
+    if (existingCurrency && existingCurrency._id !== args.id) {
+      throw new Error(`Currency with code ${upperCode} already exists`);
+    }
 
     const { id, ...updates } = args;
     return await ctx.db.patch(id, {
       ...updates,
-      code: updates.code.toUpperCase(),
+      code: upperCode,
       lastUpdated: Date.now(),
     });
   },
@@ -104,6 +157,7 @@ export const update = mutation({
 
 export const remove = mutation({
   args: { id: v.id("currencies") },
+  returns: v.null(),
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
@@ -113,6 +167,7 @@ export const remove = mutation({
 
 export const get = query({
   args: { id: v.id("currencies") },
+  returns: v.union(v.any(), v.null()),
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
@@ -138,6 +193,12 @@ export const fetchMarketRate = action({
     currencyCode: v.string(),
     baseCurrency: v.optional(v.string())
   },
+  returns: v.object({
+    rate: v.number(),
+    base: v.string(),
+    target: v.string(),
+    timestamp: v.number(),
+  }),
   handler: async (ctx, args): Promise<MarketRateResult> => {
     // Get base currency from settings if not provided
     let base: string = args.baseCurrency || DEFAULT_BASE_CURRENCY;
@@ -181,6 +242,7 @@ export const updateMarketRate = mutation({
     id: v.id("currencies"),
     marketRate: v.number(),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
@@ -211,6 +273,11 @@ export const bulkUpdateRates = action({
   args: {
     baseCurrency: v.optional(v.string())
   },
+  returns: v.object({
+    updated: v.number(),
+    failed: v.number(),
+    errors: v.array(v.string()),
+  }),
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 
@@ -268,6 +335,7 @@ export const bulkUpdateRates = action({
         }
       }
     } catch (error) {
+      // If the entire API fetch fails, no currencies were updated, so all failed
       results.failed = currencies.length;
       results.errors.push(`Failed to fetch exchange rates: ${error instanceof Error ? error.message : 'Unknown error'}`);
       console.error("Failed to fetch exchange rates:", error);
@@ -279,6 +347,7 @@ export const bulkUpdateRates = action({
 
 export const getCurrencySymbols = query({
   args: {},
+  returns: v.record(v.string(), v.string()),
   handler: async (ctx) => {
     await requireAuth(ctx);
 
@@ -296,6 +365,7 @@ export const getCurrencySymbols = query({
 
 export const getCurrencySymbol = query({
   args: { currencyCode: v.string() },
+  returns: v.union(v.string(), v.null()),
   handler: async (ctx, args) => {
     await requireAuth(ctx);
 

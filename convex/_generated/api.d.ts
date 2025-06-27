@@ -17,6 +17,7 @@ import type * as aml from "../aml.js";
 import type * as auth from "../auth.js";
 import type * as currencies from "../currencies.js";
 import type * as currencyData from "../currencyData.js";
+import type * as currencyDenominations from "../currencyDenominations.js";
 import type * as customerTransactions from "../customerTransactions.js";
 import type * as customers from "../customers.js";
 import type * as denominations from "../denominations.js";
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   currencies: typeof currencies;
   currencyData: typeof currencyData;
+  currencyDenominations: typeof currencyDenominations;
   customerTransactions: typeof customerTransactions;
   customers: typeof customers;
   denominations: typeof denominations;

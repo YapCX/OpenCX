@@ -108,9 +108,10 @@ export function CustomerForm({ editingId, onClose }: CustomerFormProps) {
   const [sanctionMatches, setSanctionMatches] = useState<SanctionMatch[]>([]);
   const [pendingCustomerData, setPendingCustomerData] = useState<any>(null);
 
+  const shouldQueryExistingCustomer = !!editingId;
   const existingCustomer = useQuery(
     api.customers.get,
-    editingId ? { id: editingId } : "skip"
+    shouldQueryExistingCustomer ? { id: editingId } : "skip"
   );
 
   const idTypes = useQuery(api.idTypes.list) || [];
@@ -119,7 +120,7 @@ export function CustomerForm({ editingId, onClose }: CustomerFormProps) {
   // Only load AML settings if needed
   const amlSettings = useQuery(
     api.aml.getAMLSettings,
-    !editingId ? {} : "skip"
+    !editingId ? {} : undefined
   ) || {};
 
   const createCustomer = useMutation(api.customers.create);

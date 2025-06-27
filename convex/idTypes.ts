@@ -39,6 +39,16 @@ export const create = mutation({
   handler: async (ctx, args) => {
     await requireAuth(ctx);
     
+    // Check if ID type name already exists
+    const existingIdType = await ctx.db
+      .query("idTypes")
+      .withIndex("by_name", (q) => q.eq("name", args.name))
+      .first();
+
+    if (existingIdType) {
+      throw new Error(`ID type "${args.name}" already exists`);
+    }
+    
     return await ctx.db.insert("idTypes", {
       name: args.name,
       isActive: true,
@@ -55,6 +65,16 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
+    
+    // Check if another ID type with this name already exists (excluding current record)
+    const existingIdType = await ctx.db
+      .query("idTypes")
+      .withIndex("by_name", (q) => q.eq("name", args.name))
+      .first();
+
+    if (existingIdType && existingIdType._id !== args.id) {
+      throw new Error(`ID type "${args.name}" already exists`);
+    }
     
     const { id, ...updates } = args;
     

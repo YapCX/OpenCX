@@ -354,16 +354,19 @@ const extendedAuthTables = {
     emailVerificationTime: v.optional(v.number()),
     phoneVerificationTime: v.optional(v.number()),
     isAnonymous: v.optional(v.boolean()),
-    
+
+    // Link to auth user
+    authUserId: v.optional(v.id("users")),
+
     // System user fields
     fullName: v.optional(v.string()),
-    
+
     // Roles & Status
     isManager: v.optional(v.boolean()),
     isComplianceOfficer: v.optional(v.boolean()),
     isTemplate: v.optional(v.boolean()),
     isActive: v.optional(v.boolean()),
-    
+
     // Financial Controls
     canModifyExchangeRates: v.optional(v.boolean()),
     maxModificationIndividual: v.optional(v.number()),
@@ -371,7 +374,7 @@ const extendedAuthTables = {
     canEditFeesCommissions: v.optional(v.boolean()),
     canTransferBetweenAccounts: v.optional(v.boolean()),
     canReconcileAccounts: v.optional(v.boolean()),
-    
+
     // Default Privileges
     defaultPrivileges: v.optional(v.object({
       view: v.boolean(),
@@ -380,7 +383,7 @@ const extendedAuthTables = {
       delete: v.boolean(),
       print: v.boolean(),
     })),
-    
+
     // Module-specific exceptions
     moduleExceptions: v.optional(v.array(v.object({
       moduleName: v.string(),
@@ -392,17 +395,17 @@ const extendedAuthTables = {
         print: v.boolean(),
       }),
     }))),
-    
+
     // Invitation tracking
     invitationStatus: v.optional(v.union(
       v.literal("pending"),
-      v.literal("accepted"), 
+      v.literal("accepted"),
       v.literal("expired")
     )),
     invitationToken: v.optional(v.string()),
     invitationSentAt: v.optional(v.number()),
     invitationExpiresAt: v.optional(v.number()),
-    
+
     // Audit fields
     createdBy: v.optional(v.id("users")),
     lastUpdated: v.optional(v.number()),
@@ -413,7 +416,8 @@ const extendedAuthTables = {
     .index("by_manager", ["isManager"])
     .index("by_compliance", ["isComplianceOfficer"])
     .index("by_invitation_token", ["invitationToken"])
-    .index("by_invitation_status", ["invitationStatus"]),
+    .index("by_invitation_status", ["invitationStatus"])
+    .index("by_auth_user", ["authUserId"]),
 };
 
 export default defineSchema({

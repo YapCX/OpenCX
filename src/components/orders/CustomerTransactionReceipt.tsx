@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useCurrencySymbols } from "../../hooks/useCurrency";
+import { toast } from "sonner";
 
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -18,7 +19,10 @@ import {
   User,
   CreditCard,
   Banknote,
-  Hash
+  Hash,
+  Share2,
+  Copy,
+  Link
 } from "lucide-react";
 
 interface CustomerTransactionReceiptProps {
@@ -70,6 +74,16 @@ export function CustomerTransactionReceipt({ transactionId, onClose, isOpen = tr
     link.download = `receipt-${transaction._id}.txt`;
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleCopyToClipboard = async () => {
+    try {
+      const receiptText = generateReceiptText();
+      await navigator.clipboard.writeText(receiptText);
+      toast.success("Receipt copied to clipboard!");
+    } catch (error) {
+      toast.error("Failed to copy receipt");
+    }
   };
 
   const generateReceiptText = () => {
@@ -217,33 +231,46 @@ Thank you for your business!
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 pt-4">
-            <Button
-              variant="outline"
-              onClick={handlePrint}
-              disabled={printing}
-              className="flex-1 gap-2"
-            >
-              <Printer className="h-4 w-4" />
-              {printing ? "Printing..." : "Print"}
-            </Button>
+          <div className="space-y-2 pt-4">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handlePrint}
+                disabled={printing}
+                className="flex-1 gap-2"
+              >
+                <Printer className="h-4 w-4" />
+                {printing ? "Printing..." : "Print"}
+              </Button>
 
-            <Button
-              variant="outline"
-              onClick={handleDownload}
-              className="flex-1 gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Download
-            </Button>
+              <Button
+                variant="outline"
+                onClick={handleDownload}
+                className="flex-1 gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download
+              </Button>
+            </div>
 
-            <Button
-              variant="secondary"
-              onClick={onClose}
-              className="flex-1"
-            >
-              Close
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleCopyToClipboard}
+                className="flex-1 gap-2"
+              >
+                <Copy className="h-4 w-4" />
+                Copy Receipt
+              </Button>
+
+              <Button
+                variant="secondary"
+                onClick={onClose}
+                className="flex-1"
+              >
+                Close
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
