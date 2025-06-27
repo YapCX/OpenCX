@@ -11,6 +11,8 @@ import { Label } from "./components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card";
 import { Alert, AlertDescription } from "./components/ui/alert";
 import { Separator } from "./components/ui/separator";
+import { Spinner } from "./components/ui/spinner";
+import { FlexLayout, Stack } from "./components/layout";
 
 // Lucide icons
 import { Eye, EyeOff, CheckCircle, XCircle, UserPlus } from "lucide-react";
@@ -37,7 +39,7 @@ export function AcceptInvitationForm({ token }: AcceptInvitationFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (isSubmitting) return;
     setIsSubmitting(true);
 
@@ -83,7 +85,7 @@ export function AcceptInvitationForm({ token }: AcceptInvitationFormProps) {
 
   if (isAccepted) {
     return (
-      <div className="space-y-4">
+      <Stack space={4}>
         <div className="flex items-center justify-center mb-4">
           <CheckCircle className="h-16 w-16 text-green-500" />
         </div>
@@ -103,13 +105,13 @@ export function AcceptInvitationForm({ token }: AcceptInvitationFormProps) {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </Stack>
     );
   }
 
   if (isExpiredOrInvalid) {
     return (
-      <div className="space-y-4">
+      <Stack space={4}>
         <div className="flex items-center justify-center mb-4">
           <XCircle className="h-16 w-16 text-red-500" />
         </div>
@@ -118,37 +120,39 @@ export function AcceptInvitationForm({ token }: AcceptInvitationFormProps) {
             <div className="space-y-2">
               <div className="font-medium">Invalid or Expired Invitation</div>
               <p className="text-sm">
-                This invitation link is either invalid or has expired. 
+                This invitation link is either invalid or has expired.
                 Please contact your administrator for a new invitation.
               </p>
             </div>
           </AlertDescription>
         </Alert>
         <div className="text-center">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => window.location.href = '/'}
           >
             Go to Sign In
           </Button>
         </div>
-      </div>
+      </Stack>
     );
   }
 
   if (!isValidToken) {
     return (
-      <div className="space-y-4">
+      <Stack space={4}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <FlexLayout align="center" className="justify-center">
+            <Spinner size="lg" className="text-primary" />
+          </FlexLayout>
           <p className="mt-2 text-sm text-muted-foreground">Validating invitation...</p>
         </div>
-      </div>
+      </Stack>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <Stack space={4}>
       <div className="flex items-center justify-center mb-4">
         <UserPlus className="h-12 w-12 text-primary" />
       </div>
@@ -243,7 +247,7 @@ export function AcceptInvitationForm({ token }: AcceptInvitationFormProps) {
               >
                 {isSubmitting ? "Activating Account..." : "Activate Account"}
               </Button>
-              
+
               <div className="text-center">
                 <Button
                   type="button"
@@ -258,6 +262,6 @@ export function AcceptInvitationForm({ token }: AcceptInvitationFormProps) {
           </form>
         </CardContent>
       </Card>
-    </div>
+    </Stack>
   );
 }

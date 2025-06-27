@@ -8,6 +8,8 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Separator } from "../ui/separator";
+import { Spinner } from "../ui/spinner";
+import { FlexLayout, Stack, GridLayout } from "../layout";
 
 // Icons
 import { AlertCircle, CheckCircle, DollarSign } from "lucide-react";
@@ -73,10 +75,10 @@ export function TillStatusIndicator() {
       return (
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+            <FlexLayout gap={2}>
+              <Spinner size="sm" />
               <span>Loading till status...</span>
-            </div>
+            </FlexLayout>
           </CardContent>
         </Card>
       );
@@ -86,15 +88,15 @@ export function TillStatusIndicator() {
       return (
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-start gap-4">
+            <FlexLayout align="start" gap={4}>
               <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div className="space-y-2">
+              <Stack space={2}>
                 <h3 className="font-semibold">Not signed into any till</h3>
                 <p className="text-sm text-muted-foreground">
                   You must sign into a till to process transactions. Please contact your administrator or sign into an available till to continue.
                 </p>
-              </div>
-            </div>
+              </Stack>
+            </FlexLayout>
           </CardContent>
         </Card>
       );
@@ -104,8 +106,8 @@ export function TillStatusIndicator() {
       <Alert variant="default">
         <CheckCircle className="h-4 w-4" />
         <AlertDescription>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <FlexLayout align="between" className="items-center">
+            <FlexLayout gap={2}>
               <div>
                 <span className="font-medium">
                   Signed into: {currentUserTill.tillName || "Unknown"} ({currentUserTill.tillId || "Unknown"})
@@ -114,7 +116,7 @@ export function TillStatusIndicator() {
                   Since: {formatSignInTime(currentUserTill.signInTime)}
                 </div>
               </div>
-            </div>
+            </FlexLayout>
             <Button
               onClick={handleSignOut}
               variant="destructive"
@@ -122,18 +124,18 @@ export function TillStatusIndicator() {
             >
               Sign Out
             </Button>
-          </div>
+          </FlexLayout>
 
           {/* Balance display */}
           {tillBalance.length > 0 && (
             <>
               <Separator className="my-3" />
-              <div className="space-y-2">
-                <div className="text-sm font-medium flex items-center gap-2">
+              <Stack space={2}>
+                <FlexLayout gap={2} className="text-sm font-medium">
                   <DollarSign className="h-4 w-4" />
                   Current Balances:
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                </FlexLayout>
+                <GridLayout cols={2} mdCols={4} lgCols={6} gap={2}>
                   {tillBalance.map((account, index) => (
                     <Card key={account._id || `account-${index}`}>
                       <CardContent className="p-3 text-center">
@@ -146,8 +148,8 @@ export function TillStatusIndicator() {
                       </CardContent>
                     </Card>
                   ))}
-                </div>
-              </div>
+                </GridLayout>
+              </Stack>
             </>
           )}
         </AlertDescription>
@@ -158,9 +160,9 @@ export function TillStatusIndicator() {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-start gap-4">
+          <FlexLayout align="start" gap={4}>
             <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
-            <div className="space-y-2">
+            <Stack space={2}>
               <h3 className="font-semibold text-red-600">Till Status Error</h3>
               <p className="text-sm text-muted-foreground">
                 Unable to load till status. Please refresh the page or contact support.
@@ -170,8 +172,8 @@ export function TillStatusIndicator() {
                   Error: {error.message}
                 </p>
               )}
-            </div>
-          </div>
+            </Stack>
+          </FlexLayout>
         </CardContent>
       </Card>
     );

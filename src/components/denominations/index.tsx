@@ -4,7 +4,8 @@ import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
-import { Banknote, Plus, Pencil, Trash2, Download, Loader2 } from "lucide-react";
+import { Banknote, Plus, Pencil, Trash2, Download } from "lucide-react";
+import { Spinner } from "../ui/spinner";
 import { DenominationForm } from "./DenominationForm";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
@@ -189,7 +190,7 @@ export function DenominationsModule() {
                 <div className="text-sm text-muted-foreground mt-2">
                   {standardDenominations === null ? (
                     <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Spinner size="sm" />
                       <span>Checking for standard denominations...</span>
                     </div>
                   ) : standardDenominations?.hasStandard ? (
@@ -216,7 +217,7 @@ export function DenominationsModule() {
                 </div>
               )}
             </div>
-            
+
             {/* Actions */}
             <ActionBar>
             <Button onClick={handleNew} title="New Denomination (Cmd+N)">
@@ -228,7 +229,7 @@ export function DenominationsModule() {
               <>
                 {standardDenominations === null ? (
                   <Button variant="outline" disabled>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Spinner size="sm" />
                     Loading standard denominations...
                   </Button>
                 ) : standardDenominations?.hasStandard ? (
@@ -239,7 +240,7 @@ export function DenominationsModule() {
                     title={`Load ${standardDenominations.availableToImport} standard denominations to database`}
                   >
                     {isImporting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Spinner size="sm" />
                     ) : (
                       <Download className="h-4 w-4" />
                     )}

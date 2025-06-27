@@ -39,6 +39,7 @@ import {
   RefreshCw,
   AlertCircle
 } from "lucide-react";
+import { Spinner } from "../ui/spinner";
 
 type SortField = "code" | "name" | "marketRate" | "lastUpdated";
 type SortDirection = "asc" | "desc";
@@ -379,7 +380,7 @@ export function CurrencyModule() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <Spinner size="lg" />
             </div>
           </CardContent>
         </Card>

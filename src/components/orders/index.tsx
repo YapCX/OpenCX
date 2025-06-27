@@ -23,6 +23,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { PageLayout, PageHeader, GridLayout, EmptyState, FlexLayout, ActionBar } from "../layout";
 import { CreditCard, AlertTriangle, ArrowDownUp, TrendingUp, TrendingDown, Users, Calculator, Receipt, ChevronRight, RotateCcw } from "lucide-react";
+import { Spinner } from "../ui/spinner";
 
 interface TransactionLineItem {
   id: string;
@@ -198,9 +199,9 @@ export function OrderModule() {
         />
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
+            <FlexLayout align="center" className="justify-center">
+              <Spinner size="lg" />
+            </FlexLayout>
           </CardContent>
         </Card>
       </PageLayout>
@@ -365,24 +366,15 @@ export function OrderModule() {
             {/* Order Type */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Order Type</Label>
-              <div className="flex space-x-1 p-1 bg-muted rounded-lg">
-                <Button
-                  variant={orderType === "buy" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setOrderType("buy")}
-                  className="flex-1"
-                >
-                  Buy
-                </Button>
-                <Button
-                  variant={orderType === "sell" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setOrderType("sell")}
-                  className="flex-1"
-                >
-                  Sell
-                </Button>
-              </div>
+              <Tabs
+                value={orderType}
+                onValueChange={(value) => setOrderType(value as OrderType)}
+              >
+                <TabsList>
+                  <TabsTrigger value="buy">Buy</TabsTrigger>
+                  <TabsTrigger value="sell">Sell</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
 
             {/* Currency Exchange Section */}

@@ -11,6 +11,7 @@ import { Label } from "./components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card";
 import { Alert, AlertDescription } from "./components/ui/alert";
 import { Separator } from "./components/ui/separator";
+import { Stack, FlexLayout } from "./components/layout";
 
 // Lucide icons
 import { Eye, EyeOff, Shield, Building2 } from "lucide-react";
@@ -29,7 +30,7 @@ export function InitialSetupForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (isSubmitting) return;
     setIsSubmitting(true);
 
@@ -78,133 +79,135 @@ export function InitialSetupForm() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <FlexLayout align="center" className="min-h-screen bg-background justify-center p-4">
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
-          <div className="flex items-center justify-center mb-4">
+          <FlexLayout align="center" className="mb-4 justify-center">
             <Building2 className="h-12 w-12 text-primary" />
-          </div>
+          </FlexLayout>
           <CardTitle className="text-2xl">Welcome to OpenCX</CardTitle>
           <CardDescription>
             Set up your initial administrator account
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent>
           <Alert className="mb-6">
             <Shield className="h-4 w-4" />
             <AlertDescription>
-              <div className="space-y-2">
+              <Stack space={2}>
                 <div className="font-medium">Initial Setup Required</div>
                 <p className="text-sm">
-                  This appears to be your first time using OpenCX. Create an administrator 
+                  This appears to be your first time using OpenCX. Create an administrator
                   account to get started. This will also set up:
                 </p>
-                <ul className="text-sm mt-2 ml-4 space-y-1">
+                <Stack as="ul" space={1} className="text-sm mt-2 ml-4">
                   <li>• 8 common currencies (USD, CAD, EUR, GBP, JPY, AUD, CHF, MXN)</li>
                   <li>• Basic system settings and compliance limits</li>
                   <li>• Common ID document types</li>
                   <li>• Full administrator privileges for your account</li>
-                </ul>
-              </div>
+                </Stack>
+              </Stack>
             </AlertDescription>
           </Alert>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@company.com"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name *</Label>
-              <Input
-                id="fullName"
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Administrator Name"
-                required
-              />
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password *</Label>
-              <div className="relative">
+          <form onSubmit={handleSubmit}>
+            <Stack space={4}>
+              <Stack space={2}>
+                <Label htmlFor="email">Email Address *</Label>
                 <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@company.com"
                   required
-                  className="pr-10"
                 />
+              </Stack>
+
+              <Stack space={2}>
+                <Label htmlFor="fullName">Full Name *</Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Administrator Name"
+                  required
+                />
+              </Stack>
+
+              <Separator />
+
+              <Stack space={2}>
+                <Label htmlFor="password">Password *</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    required
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Password must be at least 8 characters long
+                </p>
+              </Stack>
+
+              <Stack space={2}>
+                <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    required
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </Stack>
+
+              <div className="pt-4">
                 <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
+                  type="submit"
+                  className="w-full"
+                  disabled={isSubmitting}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                  {isSubmitting ? "Creating Admin Account..." : "Create Admin Account"}
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Password must be at least 8 characters long
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password *</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm your password"
-                  required
-                  className="pr-10"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            <div className="pt-4">
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Creating Admin Account..." : "Create Admin Account"}
-              </Button>
-            </div>
+            </Stack>
           </form>
 
           <div className="mt-6 text-center">
@@ -214,6 +217,6 @@ export function InitialSetupForm() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </FlexLayout>
   );
 }

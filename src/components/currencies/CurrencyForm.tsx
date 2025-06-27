@@ -14,8 +14,9 @@ import { Switch } from "../ui/switch";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Separator } from "../ui/separator";
 import { Skeleton } from "../ui/skeleton";
-import { Info, RefreshCw, Loader2, CheckCircle, TrendingUp, Calculator } from "lucide-react";
+import { Info, RefreshCw, CheckCircle, TrendingUp, Calculator } from "lucide-react";
 import { VALIDATION_LIMITS } from "../../lib/validation";
+import { Spinner } from "../ui/spinner";
 
 interface CurrencyFormProps {
   editingId: Id<"currencies"> | null;
@@ -356,7 +357,7 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
                     />
                     {isAutoPopulating && (
                       <div className="absolute right-2 top-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Spinner size="sm" />
                       </div>
                     )}
                   </div>
@@ -450,7 +451,7 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
                     />
                     {isUpdatingRate && (
                       <div className="absolute right-2 top-2.5">
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Spinner size="sm" />
                       </div>
                     )}
                   </div>
@@ -461,7 +462,11 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
                     variant="outline"
                     size="default"
                   >
-                    <RefreshCw className={`h-4 w-4 mr-2 ${isUpdatingRate ? 'animate-spin' : ''}`} />
+                    {isUpdatingRate ? (
+                      <Spinner size="sm" className="mr-2" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                    )}
                     {isUpdatingRate ? "Fetching..." : "Refresh"}
                   </Button>
                 </div>
@@ -469,7 +474,7 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
                 <div className="text-sm text-muted-foreground">
                   {baseCurrencyQuery === undefined ? (
                     <div className="flex items-center gap-2">
-                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <Spinner size="sm" className="h-3 w-3" />
                       <span>Loading base currency settings...</span>
                     </div>
                   ) : (
