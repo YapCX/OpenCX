@@ -85,7 +85,7 @@ export default function CurrenciesPage() {
         }
         setSelectedIds(new Set());
         toast.success(`Deleted ${selectedIds.size} currency(ies)`);
-      } catch (error) {
+      } catch {
         toast.error("Failed to delete currencies");
       }
     }
@@ -378,7 +378,7 @@ export default function CurrenciesPage() {
                               try {
                                 await deleteCurrency({ id: currency._id });
                                 toast.success('Currency deleted');
-                              } catch (error) {
+                              } catch {
                                 toast.error('Failed to delete currency');
                               }
                             }

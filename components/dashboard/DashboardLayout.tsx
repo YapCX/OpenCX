@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
-import { cn } from "@/lib/utils";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Authenticated, Unauthenticated } from "convex/react";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
 

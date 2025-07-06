@@ -35,6 +35,12 @@ export const initializeSystem = mutation({
         description: "Default markup percentage for selling currency",
         category: "currency",
       },
+      {
+        key: "default_service_fee",
+        value: 1.5,
+        description: "Default service fee percentage for transactions",
+        category: "currency",
+      },
     ];
 
     for (const setting of defaultSettings) {

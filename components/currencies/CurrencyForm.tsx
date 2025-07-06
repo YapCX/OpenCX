@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { RefreshCw, Loader2, TrendingUp, Calculator } from "lucide-react";
+import { RefreshCw, TrendingUp, Calculator } from "lucide-react";
 
 interface CurrencyFormProps {
   editingId: Id<"currencies"> | null;
@@ -125,6 +125,21 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
             flag: result.data.flag,
             symbol: result.data.code, // Default symbol to code, user can change
           }));
+
+          // Auto-fetch market rate as well
+          try {
+            const rateResult = await fetchMarketRate({
+              currencyCode: formData.code,
+              baseCurrency: baseCurrencyQuery
+            });
+
+            setFormData(prev => ({
+              ...prev,
+              marketRate: rateResult.rate.toString()
+            }));
+          } catch (error) {
+            console.error("Failed to auto-fetch market rate:", error);
+          }
         }
       } catch (error) {
         console.error("Failed to auto-populate currency info:", error);
@@ -133,7 +148,7 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
 
     const timeoutId = setTimeout(autoPopulateCurrencyInfo, 500);
     return () => clearTimeout(timeoutId);
-  }, [formData.code, editingId, getCurrencyInfo, formData.name, formData.country, formData.flag]);
+  }, [formData.code, editingId, getCurrencyInfo, fetchMarketRate, baseCurrencyQuery, formData.name, formData.country, formData.flag]);
 
   // Calculate rates when market rate or percentages change
   useEffect(() => {
@@ -177,7 +192,7 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
       }));
 
       toast.success(`Updated rate: ${baseCurrencyQuery} → ${result.target} = ${result.rate.toFixed(4)}`);
-    } catch (error) {
+    } catch {
       toast.error("Failed to fetch market rate");
     } finally {
       setIsUpdatingRate(false);
@@ -239,7 +254,7 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
         toast.success("Currency created successfully");
       }
       onClose();
-    } catch (error) {
+    } catch {
       toast.error("Failed to save currency");
     }
   };

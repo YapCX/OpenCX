@@ -17,6 +17,7 @@ import type * as currencies from "../currencies.js";
 import type * as currencyData from "../currencyData.js";
 import type * as initialization from "../initialization.js";
 import type * as settings from "../settings.js";
+import type * as transactions from "../transactions.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   currencyData: typeof currencyData;
   initialization: typeof initialization;
   settings: typeof settings;
+  transactions: typeof transactions;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
