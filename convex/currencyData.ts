@@ -28,14 +28,14 @@ function getCurrencyDataMap(): Record<string, CurrencyInfo> {
     BRL: { code: "BRL", name: "Brazilian Real", country: "Brazil", flag: "🇧🇷" },
     RUB: { code: "RUB", name: "Russian Ruble", country: "Russia", flag: "🇷🇺" },
     KRW: { code: "KRW", name: "South Korean Won", country: "South Korea", flag: "🇰🇷" },
-    
+
     // Middle East & Africa
     AED: { code: "AED", name: "UAE Dirham", country: "United Arab Emirates", flag: "🇦🇪" },
     SAR: { code: "SAR", name: "Saudi Riyal", country: "Saudi Arabia", flag: "🇸🇦" },
     ZAR: { code: "ZAR", name: "South African Rand", country: "South Africa", flag: "🇿🇦" },
     EGP: { code: "EGP", name: "Egyptian Pound", country: "Egypt", flag: "🇪🇬" },
     NGN: { code: "NGN", name: "Nigerian Naira", country: "Nigeria", flag: "🇳🇬" },
-    
+
     // Asia Pacific
     SGD: { code: "SGD", name: "Singapore Dollar", country: "Singapore", flag: "🇸🇬" },
     HKD: { code: "HKD", name: "Hong Kong Dollar", country: "Hong Kong", flag: "🇭🇰" },
@@ -44,14 +44,14 @@ function getCurrencyDataMap(): Record<string, CurrencyInfo> {
     IDR: { code: "IDR", name: "Indonesian Rupiah", country: "Indonesia", flag: "🇮🇩" },
     PHP: { code: "PHP", name: "Philippine Peso", country: "Philippines", flag: "🇵🇭" },
     VND: { code: "VND", name: "Vietnamese Dong", country: "Vietnam", flag: "🇻🇳" },
-    
+
     // Americas
     MXN: { code: "MXN", name: "Mexican Peso", country: "Mexico", flag: "🇲🇽" },
     ARS: { code: "ARS", name: "Argentine Peso", country: "Argentina", flag: "🇦🇷" },
     CLP: { code: "CLP", name: "Chilean Peso", country: "Chile", flag: "🇨🇱" },
     COP: { code: "COP", name: "Colombian Peso", country: "Colombia", flag: "🇨🇴" },
     PEN: { code: "PEN", name: "Peruvian Sol", country: "Peru", flag: "🇵🇪" },
-    
+
     // Europe
     NOK: { code: "NOK", name: "Norwegian Krone", country: "Norway", flag: "🇳🇴" },
     SEK: { code: "SEK", name: "Swedish Krona", country: "Sweden", flag: "🇸🇪" },
@@ -63,11 +63,11 @@ function getCurrencyDataMap(): Record<string, CurrencyInfo> {
     BGN: { code: "BGN", name: "Bulgarian Lev", country: "Bulgaria", flag: "🇧🇬" },
     HRK: { code: "HRK", name: "Croatian Kuna", country: "Croatia", flag: "🇭🇷" },
     TRY: { code: "TRY", name: "Turkish Lira", country: "Turkey", flag: "🇹🇷" },
-    
+
     // Cryptocurrencies (if needed)
     BTC: { code: "BTC", name: "Bitcoin", country: "Digital", flag: "₿" },
     ETH: { code: "ETH", name: "Ethereum", country: "Digital", flag: "⟠" },
-    
+
     // Other important currencies
     NZD: { code: "NZD", name: "New Zealand Dollar", country: "New Zealand", flag: "🇳🇿" },
     ILS: { code: "ILS", name: "Israeli Shekel", country: "Israel", flag: "🇮🇱" },
@@ -80,10 +80,7 @@ function getCurrencyDataMap(): Record<string, CurrencyInfo> {
   };
 }
 
-/**
- * Get currency information by code for auto-filling forms
- * This is only used during currency creation, not rate updates
- */
+/* Get currency information by code for auto-filling forms */
 export const getCurrencyInfo = action({
   args: {
     code: v.string()

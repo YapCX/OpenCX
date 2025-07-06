@@ -6,7 +6,8 @@ import {
   CreditCard,
   Users,
   DollarSign,
-  BarChart3
+  BarChart3,
+  Coins
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -30,6 +31,11 @@ const navigation = [
     name: "Currencies",
     href: "/currencies",
     icon: DollarSign,
+  },
+  {
+    name: "Denominations",
+    href: "/denominations",
+    icon: Coins,
   },
   {
     name: "Customers",

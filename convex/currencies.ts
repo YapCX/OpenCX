@@ -2,6 +2,7 @@ import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 import { DEFAULT_BASE_CURRENCY, DEFAULT_DISCOUNT_PERCENT, DEFAULT_MARKUP_PERCENT } from "./settings";
+import { getDenominationsForCurrency } from "./currencyDenominations";
 
 async function requireAuth(ctx: any) {
   const identity = await ctx.auth.getUserIdentity();
@@ -84,6 +85,25 @@ export const create = mutation({
       manualSellRate: args.manualSellRate,
       lastUpdated: Date.now(),
     });
+
+    // Try to auto-populate standard denominations
+    try {
+      const standardDenominations = getDenominationsForCurrency(upperCode);
+      if (standardDenominations.length > 0) {
+        // Insert denominations in parallel for better performance
+        const denominationPromises = standardDenominations.map(denom =>
+          ctx.db.insert("denominations", {
+            currencyCode: upperCode,
+            value: denom.value,
+            isCoin: denom.isCoin,
+          })
+        );
+        await Promise.all(denominationPromises);
+      }
+    } catch (error) {
+      // Don't fail currency creation if denomination population fails
+      console.warn(`Failed to auto-populate denominations for ${upperCode}:`, error);
+    }
 
     return currencyId;
   },
