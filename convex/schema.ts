@@ -89,6 +89,190 @@ const applicationTables = {
     .index("by_created_at", ["createdAt"])
     .index("by_customer", ["customerId"]),
 
+  // Customer management system
+  customers: defineTable({
+    customerId: v.string(), // Auto-generated format: CUST-000001
+    userId: v.string(), // Clerk user ID who created this customer
+    
+    // Customer type
+    type: v.union(
+      v.literal("individual"),
+      v.literal("corporate")
+    ),
+    
+    // Individual customer fields
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    fullName: v.optional(v.string()),
+    dateOfBirth: v.optional(v.string()),
+    occupation: v.optional(v.string()),
+    
+    // Corporate customer fields
+    businessName: v.optional(v.string()),
+    incorporationNumber: v.optional(v.string()),
+    businessType: v.optional(v.string()),
+    isMSB: v.optional(v.boolean()), // Money Service Business
+    
+    // Contact person for corporate customers
+    contactPersonName: v.optional(v.string()),
+    contactPersonTitle: v.optional(v.string()),
+    contactPersonEmail: v.optional(v.string()),
+    contactPersonPhone: v.optional(v.string()),
+    
+    // Common contact information
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    
+    // Address information
+    address: v.optional(v.string()),
+    city: v.optional(v.string()),
+    province: v.optional(v.string()),
+    postalCode: v.optional(v.string()),
+    country: v.optional(v.string()),
+    
+    // Status and compliance
+    status: v.union(
+      v.literal("active"),
+      v.literal("inactive"),
+      v.literal("pending"),
+      v.literal("suspended"),
+      v.literal("flagged")
+    ),
+    
+    // Risk and AML
+    riskLevel: v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high")
+    ),
+    
+    amlStatus: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected"),
+      v.literal("requires_review")
+    ),
+    
+    sanctionsScreeningStatus: v.union(
+      v.literal("pending"),
+      v.literal("clear"),
+      v.literal("match"),
+      v.literal("needs_review")
+    ),
+    
+    lastScreeningDate: v.optional(v.number()),
+    
+    // Metadata
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    createdBy: v.string(), // Clerk user ID
+    lastUpdatedBy: v.string(), // Clerk user ID
+  })
+    .index("by_customer_id", ["customerId"])
+    .index("by_type", ["type"])
+    .index("by_status", ["status"])
+    .index("by_risk_level", ["riskLevel"])
+    .index("by_aml_status", ["amlStatus"])
+    .index("by_user", ["userId"])
+    .index("by_full_name", ["fullName"])
+    .index("by_business_name", ["businessName"])
+    .index("by_phone", ["phone"])
+    .index("by_email", ["email"]),
+
+  // Customer ID documents
+  customerDocuments: defineTable({
+    customerId: v.string(),
+    documentType: v.string(), // Passport, Driver's License, etc.
+    documentNumber: v.string(),
+    issuingAuthority: v.optional(v.string()),
+    issueDate: v.optional(v.string()),
+    expiryDate: v.optional(v.string()),
+    imageId: v.optional(v.id("_storage")), // File storage reference
+    imageUrl: v.optional(v.string()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("verified"),
+      v.literal("rejected"),
+      v.literal("expired")
+    ),
+    notes: v.optional(v.string()),
+    uploadedAt: v.number(),
+    verifiedAt: v.optional(v.number()),
+    verifiedBy: v.optional(v.string()), // Clerk user ID
+  })
+    .index("by_customer", ["customerId"])
+    .index("by_document_type", ["documentType"])
+    .index("by_status", ["status"]),
+
+  // AML screening history
+  amlScreenings: defineTable({
+    customerId: v.string(),
+    screeningType: v.union(
+      v.literal("sanctions"),
+      v.literal("pep"), // Politically Exposed Person
+      v.literal("adverse_media")
+    ),
+    screeningProvider: v.string(), // OFAC, UN, EU, etc.
+    status: v.union(
+      v.literal("clear"),
+      v.literal("match"),
+      v.literal("potential_match"),
+      v.literal("error")
+    ),
+    confidence: v.optional(v.number()), // Match confidence 0-100
+    matches: v.optional(v.array(v.any())), // Detailed match information
+    screenshotUrl: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    screenedAt: v.number(),
+    screenedBy: v.string(), // Clerk user ID
+    reviewedAt: v.optional(v.number()),
+    reviewedBy: v.optional(v.string()), // Clerk user ID
+    reviewNotes: v.optional(v.string()),
+  })
+    .index("by_customer", ["customerId"])
+    .index("by_screening_type", ["screeningType"])
+    .index("by_status", ["status"])
+    .index("by_screened_at", ["screenedAt"]),
+
+  // Risk assessments
+  riskAssessments: defineTable({
+    customerId: v.string(),
+    riskLevel: v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high")
+    ),
+    riskScore: v.number(), // Calculated risk score
+    factors: v.array(v.object({
+      factor: v.string(),
+      score: v.number(),
+      weight: v.number(),
+      description: v.string(),
+    })),
+    assessmentDate: v.number(),
+    assessedBy: v.string(), // Clerk user ID
+    validUntil: v.optional(v.number()),
+    notes: v.optional(v.string()),
+  })
+    .index("by_customer", ["customerId"])
+    .index("by_risk_level", ["riskLevel"])
+    .index("by_assessment_date", ["assessmentDate"]),
+
+  // ID document types
+  idTypes: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    isActive: v.boolean(),
+    requiresExpiry: v.boolean(),
+    country: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_name", ["name"])
+    .index("by_active", ["isActive"])
+    .index("by_country", ["country"]),
+
   // Settings for global configuration
   settings: defineTable({
     key: v.string(),

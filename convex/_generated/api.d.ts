@@ -15,6 +15,8 @@ import type {
 } from "convex/server";
 import type * as currencies from "../currencies.js";
 import type * as currencyData from "../currencyData.js";
+import type * as customers from "../customers.js";
+import type * as idTypes from "../idTypes.js";
 import type * as initialization from "../initialization.js";
 import type * as settings from "../settings.js";
 import type * as transactions from "../transactions.js";
@@ -30,6 +32,8 @@ import type * as transactions from "../transactions.js";
 declare const fullApi: ApiFromModules<{
   currencies: typeof currencies;
   currencyData: typeof currencyData;
+  customers: typeof customers;
+  idTypes: typeof idTypes;
   initialization: typeof initialization;
   settings: typeof settings;
   transactions: typeof transactions;

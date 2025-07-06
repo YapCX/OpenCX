@@ -31,6 +31,7 @@ import {
   TrendingDown,
   X,
 } from "lucide-react";
+import { CustomerSelector } from "@/components/customers/CustomerSelector";
 
 interface TransactionFormProps {
   editingId?: Id<"transactions"> | null;
@@ -47,6 +48,15 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
   const [exchangeRate, setExchangeRate] = useState("");
   const [serviceFee, setServiceFee] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<{
+    _id: Id<"customers">;
+    customerId: string;
+    type: "individual" | "corporate";
+    fullName?: string;
+    businessName?: string;
+    email?: string;
+    phone?: string;
+  } | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -99,6 +109,7 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
         serviceFee: parseFloat(serviceFee) || 0,
         serviceFeeType: "percentage",
         paymentMethod: paymentMethod || undefined,
+        customerId: selectedCustomer?.customerId || undefined,
         customerName: customerName || undefined,
         customerEmail: customerEmail || undefined,
         customerPhone: customerPhone || undefined,
@@ -123,6 +134,7 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
     setExchangeRate("");
     setServiceFee("");
     setPaymentMethod("");
+    setSelectedCustomer(null);
     setCustomerName("");
     setCustomerEmail("");
     setCustomerPhone("");
@@ -341,38 +353,67 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="customer-name">Full Name</Label>
-                <Input
-                  id="customer-name"
-                  placeholder="Customer full name"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  required={isAMLRequired}
-                />
-              </div>
+              <CustomerSelector
+                selectedCustomerId={selectedCustomer?.customerId}
+                onSelectCustomer={(customer) => {
+                  setSelectedCustomer(customer);
+                  if (customer) {
+                    // Auto-fill customer information if customer is selected
+                    if (customer.type === "individual") {
+                      setCustomerName(customer.fullName || "");
+                    } else {
+                      setCustomerName(customer.businessName || "");
+                    }
+                    setCustomerEmail(customer.email || "");
+                    setCustomerPhone(customer.phone || "");
+                  } else {
+                    // Clear fields for walk-in customers
+                    setCustomerName("");
+                    setCustomerEmail("");
+                    setCustomerPhone("");
+                  }
+                }}
+                allowWalkIn={true}
+                required={isAMLRequired}
+              />
 
-              <div className="space-y-2">
-                <Label htmlFor="customer-email">Email</Label>
-                <Input
-                  id="customer-email"
-                  type="email"
-                  placeholder="customer@example.com"
-                  value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
-                />
-              </div>
+              {/* Manual customer info fields (for walk-in customers or when editing existing customer info) */}
+              {!selectedCustomer && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="customer-name">Full Name</Label>
+                    <Input
+                      id="customer-name"
+                      placeholder="Customer full name"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      required={isAMLRequired}
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="customer-phone">Phone</Label>
-                <Input
-                  id="customer-phone"
-                  type="tel"
-                  placeholder="+1 (555) 123-4567"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="customer-email">Email</Label>
+                    <Input
+                      id="customer-email"
+                      type="email"
+                      placeholder="customer@example.com"
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="customer-phone">Phone</Label>
+                    <Input
+                      id="customer-phone"
+                      type="tel"
+                      placeholder="+1 (555) 123-4567"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="payment-method">Payment Method</Label>

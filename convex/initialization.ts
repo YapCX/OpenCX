@@ -58,6 +58,62 @@ export const initializeSystem = mutation({
       }
     }
 
-    console.log("System initialized with default settings");
+    // Initialize default ID types
+    const defaultIdTypes = [
+      {
+        name: "Driver's License",
+        description: "Provincial driver's license",
+        requiresExpiry: true,
+        country: "CA",
+      },
+      {
+        name: "Passport",
+        description: "Government issued passport",
+        requiresExpiry: true,
+        country: undefined,
+      },
+      {
+        name: "Provincial ID",
+        description: "Provincial identification card",
+        requiresExpiry: true,
+        country: "CA",
+      },
+      {
+        name: "Health Card",
+        description: "Provincial health insurance card",
+        requiresExpiry: false,
+        country: "CA",
+      },
+      {
+        name: "Birth Certificate",
+        description: "Certificate of birth",
+        requiresExpiry: false,
+        country: "CA",
+      },
+      {
+        name: "Social Insurance Number",
+        description: "SIN card or document",
+        requiresExpiry: false,
+        country: "CA",
+      },
+    ];
+
+    for (const idType of defaultIdTypes) {
+      const existing = await ctx.db
+        .query("idTypes")
+        .withIndex("by_name", (q) => q.eq("name", idType.name))
+        .first();
+
+      if (!existing) {
+        await ctx.db.insert("idTypes", {
+          ...idType,
+          isActive: true,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+      }
+    }
+
+    console.log("System initialized with default settings and ID types");
   },
 });
