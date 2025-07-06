@@ -34,8 +34,9 @@ const applicationTables = {
   // Currency exchange transactions/orders
   transactions: defineTable({
     transactionId: v.string(),
-    userId: v.string(), // Clerk user ID
-    customerId: v.optional(v.string()), // Customer ID for walk-in customers
+    tillId: v.optional(v.string()),      // Till where transaction occurred
+    userId: v.string(),                  // Clerk user ID
+    customerId: v.optional(v.string()),  // Customer ID for walk-in customers
     
     // Transaction types
     type: v.union(
@@ -47,6 +48,13 @@ const applicationTables = {
       v.literal("adjustment")
     ),
     
+    // Transaction category
+    category: v.optional(v.union(
+      v.literal("cash_movement"),
+      v.literal("currency_exchange"),
+      v.literal("internal")
+    )),
+    
     // Currency exchange specific fields
     fromCurrency: v.string(),
     fromAmount: v.number(),
@@ -54,9 +62,14 @@ const applicationTables = {
     toAmount: v.number(),
     exchangeRate: v.number(),
     
+    // For non-exchange transactions (cash movements)
+    amount: v.optional(v.number()),
+    currency: v.optional(v.string()),
+    
     // Fee structure
     serviceFee: v.optional(v.number()),
     serviceFeeType: v.optional(v.union(v.literal("flat"), v.literal("percentage"))),
+    flatFee: v.optional(v.number()),
     
     // Payment and processing
     paymentMethod: v.optional(v.string()),
@@ -83,9 +96,11 @@ const applicationTables = {
     completedAt: v.optional(v.number()),
   })
     .index("by_transaction_id", ["transactionId"])
+    .index("by_till_id", ["tillId"])
     .index("by_user", ["userId"])
     .index("by_status", ["status"])
     .index("by_type", ["type"])
+    .index("by_category", ["category"])
     .index("by_created_at", ["createdAt"])
     .index("by_customer", ["customerId"]),
 
@@ -272,6 +287,120 @@ const applicationTables = {
     .index("by_name", ["name"])
     .index("by_active", ["isActive"])
     .index("by_country", ["country"]),
+
+  // Till management
+  tills: defineTable({
+    tillId: v.string(),               // Unique identifier (e.g., "01", "02", "FRONT")
+    tillName: v.string(),             // Descriptive name (e.g., "Front Desk Till")
+    reserveForAdmin: v.boolean(),     // Admin-only access flag
+    shareTill: v.boolean(),           // Allow multiple users flag
+    isActive: v.boolean(),            // Active status
+    currentUserId: v.optional(v.string()), // Currently signed-in user (Clerk ID)
+    signInTime: v.optional(v.number()),     // Sign-in timestamp
+    createdAt: v.number(),
+    lastUpdated: v.number(),
+    createdBy: v.string(),            // Clerk user ID
+  })
+    .index("by_till_id", ["tillId"])
+    .index("by_current_user", ["currentUserId"])
+    .index("by_active", ["isActive"]),
+
+  // Cash ledger accounts - tracks cash balances per till per currency
+  cashLedgerAccounts: defineTable({
+    accountName: v.string(),          // e.g., "Cash-USD-01"
+    tillId: v.string(),               // Foreign key to tills
+    currencyCode: v.string(),         // Currency code (USD, EUR, etc.)
+    balance: v.number(),              // Current balance
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    lastUpdated: v.number(),
+  })
+    .index("by_till_id", ["tillId"])
+    .index("by_currency", ["currencyCode"])
+    .index("by_till_and_currency", ["tillId", "currencyCode"]),
+
+  // Till sessions - tracks user sign-ins and sign-outs
+  tillSessions: defineTable({
+    tillId: v.string(),
+    userId: v.string(),               // Clerk user ID
+    signInTime: v.number(),
+    signOutTime: v.optional(v.number()),
+    sessionDuration: v.optional(v.number()),
+    isActive: v.boolean(),
+  })
+    .index("by_till_id", ["tillId"])
+    .index("by_user_id", ["userId"])
+    .index("by_active", ["isActive"])
+    .index("by_sign_in_time", ["signInTime"]),
+
+  // User management system - links Clerk auth to business user records
+  users: defineTable({
+    // Link to Clerk authentication
+    clerkUserId: v.string(), // Clerk user ID (identity.subject)
+    email: v.string(),
+    
+    // Basic information
+    fullName: v.optional(v.string()),
+    
+    // Roles and permissions
+    isManager: v.boolean(),
+    isComplianceOfficer: v.boolean(),
+    isTemplate: v.boolean(), // Template users for quick account creation
+    isActive: v.boolean(),
+    
+    // Financial controls
+    canModifyExchangeRates: v.boolean(),
+    maxModificationIndividual: v.optional(v.number()),
+    maxModificationCorporate: v.optional(v.number()),
+    canEditFeesCommissions: v.boolean(),
+    canTransferBetweenAccounts: v.boolean(),
+    canReconcileAccounts: v.boolean(),
+    
+    // Granular permission system
+    defaultPrivileges: v.object({
+      view: v.boolean(),
+      create: v.boolean(),
+      modify: v.boolean(),
+      delete: v.boolean(),
+      print: v.boolean(),
+    }),
+    
+    // Module-specific permission exceptions
+    moduleExceptions: v.optional(v.array(v.object({
+      moduleName: v.string(),
+      privileges: v.object({
+        view: v.boolean(),
+        create: v.boolean(),
+        modify: v.boolean(),
+        delete: v.boolean(),
+        print: v.boolean(),
+      }),
+    }))),
+    
+    // Invitation system
+    invitationStatus: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("expired")
+    ),
+    invitationToken: v.optional(v.string()),
+    invitationSentAt: v.optional(v.number()),
+    invitationExpiresAt: v.optional(v.number()),
+    
+    // Metadata
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    createdBy: v.string(), // Clerk user ID
+    lastUpdatedBy: v.string(), // Clerk user ID
+  })
+    .index("by_clerk_user_id", ["clerkUserId"])
+    .index("by_email", ["email"])
+    .index("by_is_manager", ["isManager"])
+    .index("by_is_compliance_officer", ["isComplianceOfficer"])
+    .index("by_is_template", ["isTemplate"])
+    .index("by_is_active", ["isActive"])
+    .index("by_invitation_status", ["invitationStatus"])
+    .index("by_invitation_token", ["invitationToken"]),
 
   // Settings for global configuration
   settings: defineTable({
