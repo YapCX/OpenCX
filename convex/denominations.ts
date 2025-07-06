@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getDenominationsForCurrency } from "./currencyDenominations";
+import { getDenominationsForCurrency } from "../lib/currency-denominations";
 
 async function requireAuth(ctx: any) {
   const identity = await ctx.auth.getUserIdentity();

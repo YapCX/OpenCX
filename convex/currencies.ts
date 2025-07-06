@@ -2,7 +2,7 @@ import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 import { DEFAULT_BASE_CURRENCY, DEFAULT_DISCOUNT_PERCENT, DEFAULT_MARKUP_PERCENT } from "./settings";
-import { getDenominationsForCurrency } from "./currencyDenominations";
+import { getDenominationsForCurrency } from "../lib/currency-denominations";
 
 async function requireAuth(ctx: any) {
   const identity = await ctx.auth.getUserIdentity();

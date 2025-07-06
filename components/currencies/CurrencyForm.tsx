@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { RefreshCw, TrendingUp, Calculator } from "lucide-react";
+import { getCurrencyInfo } from "@/lib/currency-data";
 
 interface CurrencyFormProps {
   editingId: Id<"currencies"> | null;
@@ -51,7 +52,6 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
   const createCurrency = useMutation(api.currencies.create);
   const updateCurrency = useMutation(api.currencies.update);
   const fetchMarketRate = useAction(api.currencies.fetchMarketRate);
-  const getCurrencyInfo = useAction(api.currencyData.getCurrencyInfo);
 
   useEffect(() => {
     if (existingCurrency) {
@@ -115,15 +115,16 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
       }
 
       try {
-        const result = await getCurrencyInfo({ code: formData.code });
+        // Use the regular function instead of Convex action
+        const currencyInfo = getCurrencyInfo(formData.code);
 
-        if (result.found) {
+        if (currencyInfo) {
           setFormData(prev => ({
             ...prev,
-            name: result.data.name,
-            country: result.data.country,
-            flag: result.data.flag,
-            symbol: result.data.code, // Default symbol to code, user can change
+            name: currencyInfo.name,
+            country: currencyInfo.country || "",
+            flag: currencyInfo.flag || "",
+            symbol: currencyInfo.symbol,
           }));
 
           // Auto-fetch market rate as well
@@ -148,7 +149,7 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
 
     const timeoutId = setTimeout(autoPopulateCurrencyInfo, 500);
     return () => clearTimeout(timeoutId);
-  }, [formData.code, editingId, getCurrencyInfo, fetchMarketRate, baseCurrencyQuery, formData.name, formData.country, formData.flag]);
+  }, [formData.code, editingId, fetchMarketRate, baseCurrencyQuery, formData.name, formData.country, formData.flag]);
 
   // Calculate rates when market rate or percentages change
   useEffect(() => {
