@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Authenticated, Unauthenticated } from "convex/react";
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { Header } from "@/components/dashboard/Header";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -50,6 +50,14 @@ export default function DashboardLayout({
       <Unauthenticated>
         <LandingPage />
       </Unauthenticated>
+      <AuthLoading>
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="mt-2 text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </AuthLoading>
     </>
   );
 }

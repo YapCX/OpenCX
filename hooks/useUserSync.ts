@@ -28,6 +28,9 @@ export function useUserSync() {
         } finally {
           setIsLoading(false);
         }
+      } else {
+        setIsLoading(false);
+        setSyncError(null);
       }
     };
 

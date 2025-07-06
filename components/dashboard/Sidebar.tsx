@@ -9,7 +9,8 @@ import {
   BarChart3,
   Coins,
   Calculator,
-  UserCog
+  UserCog,
+  Settings
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -21,7 +22,7 @@ interface SidebarProps {
 const navigation = [
   {
     name: "Dashboard",
-    href: "/",
+    href: "/dashboard",
     icon: BarChart3,
   },
   {
@@ -53,6 +54,11 @@ const navigation = [
     name: "Users",
     href: "/users",
     icon: UserCog,
+  },
+  {
+    name: "Settings",
+    href: "/settings",
+    icon: Settings,
   },
 ];
 

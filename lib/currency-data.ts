@@ -78,3 +78,12 @@ export function getCurrencyInfo(currencyCode: string): CurrencyInfo | null {
     flag: countryData?.flag,
   };
 }
+
+/**
+ * Get all available currencies as an array
+ * Sorted alphabetically by currency code
+ */
+export const currencyData: CurrencyInfo[] = Object.keys(worldCurrencies)
+  .map(code => getCurrencyInfo(code))
+  .filter((currency): currency is CurrencyInfo => currency !== null)
+  .sort((a, b) => a.code.localeCompare(b.code));

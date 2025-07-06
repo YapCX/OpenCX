@@ -35,7 +35,7 @@ function AcceptInvitationContent() {
 
       // Redirect to dashboard after a short delay
       setTimeout(() => {
-        window.location.href = "/";
+        window.location.href = "/dashboard";
       }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to accept invitation");

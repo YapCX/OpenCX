@@ -1,51 +1,165 @@
-# Welcome to your Convex + Next.js + Clerk app
+# OpenCX
 
-This is a [Convex](https://convex.dev/) project created with [`npm create convex`](https://www.npmjs.com/package/create-convex).
+A comprehensive currency exchange management system built with modern web technologies.
 
-After the initial setup (<2 minutes) you'll have a working full-stack app using:
+## Features
 
-- Convex as your backend (database, server logic)
-- [React](https://react.dev/) as your frontend (web page interactivity)
-- [Next.js](https://nextjs.org/) for optimized web hosting and page routing
-- [Tailwind](https://tailwindcss.com/) for building great looking accessible UI
-- [Clerk](https://clerk.com/) for authentication
+### Core System
+- **Customer Management**: Complete customer database with KYC/AML compliance
+- **Currency Exchange**: Real-time exchange rates and transaction processing
+- **Till Management**: Cash drawer tracking and reconciliation
+- **Transaction History**: Detailed audit trails and reporting
 
-## Get started
+### Settings Module
+- **Currency Settings**: Base currency configuration, exchange rate defaults, and service fee management
+- **Company Settings**: Business information, contact details, regulatory compliance, and branding
+- **Compliance & AML**: Anti-money laundering controls, risk thresholds, sanctions screening, and automated reporting
 
-If you just cloned this codebase and didn't use `npm create convex`, run:
+### Technology Stack
+- **Frontend**: Next.js 15 with App Router, TypeScript, and Tailwind CSS
+- **Backend**: Convex serverless platform with real-time database
+- **Authentication**: Clerk for secure user management
+- **UI Components**: shadcn/ui with modern design system
+- **Data**: World currencies and countries integration
+
+## Quick Start
+
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+- Convex account
+- Clerk account
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd nextjs-clerk-shadcn
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up Convex**
+   ```bash
+   npx convex dev
+   ```
+
+4. **Configure Clerk Authentication**
+   - Create a Clerk application
+   - Set up JWT templates in Clerk dashboard
+   - Configure environment variables:
+     ```bash
+     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+     CLERK_SECRET_KEY=your_clerk_secret_key
+     CLERK_JWT_ISSUER_DOMAIN=your_clerk_jwt_issuer_domain
+     ```
+
+5. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+### Initial Setup
+1. Access the application at `http://localhost:3000`
+2. Sign up/sign in using Clerk authentication
+3. Configure your settings in the Settings module
+4. Start managing currency exchanges
+
+## Project Structure
 
 ```
-npm install
-npm run dev
+├── app/                    # Next.js App Router pages
+│   ├── settings/          # Settings module pages
+│   │   ├── currency/      # Currency configuration
+│   │   ├── company/       # Company information
+│   │   └── compliance/    # AML/Compliance settings
+│   ├── customers/         # Customer management
+│   ├── orders/           # Transaction processing
+│   └── tills/            # Cash drawer management
+├── components/           # Reusable UI components
+├── convex/              # Convex backend functions
+├── lib/                 # Utility functions
+└── types/               # TypeScript type definitions
 ```
 
-If you're reading this README on GitHub and want to use this template, run:
+## Settings Module
 
+### Currency Settings
+- **Base Currency**: Configure the primary currency for your exchange
+- **Exchange Rate Defaults**: Set default discount/markup percentages
+- **Service Fees**: Configure transaction fees
+- **Rate Calculation Preview**: Real-time preview of buy/sell rates
+
+### Company Settings
+- **Business Information**: Company name, registration numbers, business type
+- **Contact Details**: Address, phone, email, website
+- **Regulatory Information**: Compliance officer, regulatory body
+- **Branding**: Logo, color scheme customization
+
+### Compliance & AML
+- **Screening Configuration**: Automated sanctions list checking
+- **Risk Thresholds**: Low/medium/high risk score ranges
+- **Transaction Limits**: Daily and per-transaction limits
+- **Automated Actions**: Auto-hold, reporting, approval workflows
+- **Data Retention**: Compliance data retention periods
+
+## Role-Based Access Control
+
+- **Manager**: Full access to all settings and system configuration
+- **Compliance Officer**: Access to AML/compliance settings
+- **User**: Limited access based on assigned permissions
+
+## Security Features
+
+- **Clerk Authentication**: Secure user management and session handling
+- **Role-Based Permissions**: Granular access control
+- **Audit Trails**: All setting changes are logged
+- **Data Validation**: Comprehensive input validation and sanitization
+
+## Development
+
+### Available Scripts
+
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+npm run type-check   # Run TypeScript checks
 ```
-npm create convex@latest -- -t nextjs-clerk
+
+### Environment Variables
+
+```bash
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+CLERK_JWT_ISSUER_DOMAIN=
+
+# Convex
+CONVEX_DEPLOYMENT=
+NEXT_PUBLIC_CONVEX_URL=
 ```
 
-Then:
+## Contributing
 
-1. Open your app. There should be a "Claim your application" button from Clerk in the bottom right of your app.
-2. Follow the steps to claim your application and link it to this app.
-3. Follow step 3 in the [Convex Clerk onboarding guide](https://docs.convex.dev/auth/clerk#get-started) to create a Convex JWT template.
-4. Uncomment the Clerk provider in `convex/auth.config.ts`
-5. Paste the Issuer URL as `CLERK_JWT_ISSUER_DOMAIN` to your dev deployment environment variable settings on the Convex dashboard (see [docs](https://docs.convex.dev/auth/clerk#configuring-dev-and-prod-instances))
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-If you want to sync Clerk user data via webhooks, check out this [example repo](https://github.com/thomasballinger/convex-clerk-users-table/).
+## License
 
-## Learn more
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-To learn more about developing your project with Convex, check out:
+## Support
 
-- The [Tour of Convex](https://docs.convex.dev/get-started) for a thorough introduction to Convex principles.
-- The rest of [Convex docs](https://docs.convex.dev/) to learn about all Convex features.
-- [Stack](https://stack.convex.dev/) for in-depth articles on advanced topics.
-
-## Join the community
-
-Join thousands of developers building full-stack apps with Convex:
-
-- Join the [Convex Discord community](https://convex.dev/community) to get help in real-time.
-- Follow [Convex on GitHub](https://github.com/get-convex/), star and contribute to the open-source implementation of Convex.
+For support and questions:
+- Create an issue in the GitHub repository
+- Check the [Convex documentation](https://docs.convex.dev/)
+- Review [Clerk documentation](https://clerk.com/docs)

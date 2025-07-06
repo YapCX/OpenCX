@@ -1,3 +1,9 @@
+declare const process: {
+  env: {
+    NEXT_PUBLIC_CLERK_FRONTEND_API_URL: string;
+  };
+};
+
 const authConfig = {
   providers: [
     {

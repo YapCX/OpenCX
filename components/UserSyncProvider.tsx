@@ -2,15 +2,22 @@
 
 import { useUserSync } from "@/hooks/useUserSync";
 import { ReactNode } from "react";
+import { useConvexAuth } from "convex/react";
 
 interface UserSyncProviderProps {
   children: ReactNode;
 }
 
 export function UserSyncProvider({ children }: UserSyncProviderProps) {
+  const { isAuthenticated } = useConvexAuth();
   const { syncError, isLoading } = useUserSync();
 
-  // Show simple loading state while syncing
+  // Only run sync logic for authenticated users
+  if (!isAuthenticated) {
+    return <>{children}</>;
+  }
+
+  // Show simple loading state while syncing authenticated users
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -22,7 +29,7 @@ export function UserSyncProvider({ children }: UserSyncProviderProps) {
     );
   }
 
-  // Show error if sync failed
+  // Show error if sync failed and it's about invitations
   if (syncError && syncError.includes("No invitation found")) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -34,6 +41,24 @@ export function UserSyncProvider({ children }: UserSyncProviderProps) {
             <h2 className="text-xl font-bold text-gray-900 mb-2">Invitation Required</h2>
             <p className="text-gray-600 mb-4">This system requires an invitation to access.</p>
             <p className="text-sm text-gray-500">Please contact your administrator for an invitation.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show any other sync errors
+  if (syncError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full">
+          <div className="bg-white shadow rounded-lg p-6 text-center">
+            <div className="mx-auto h-12 w-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <span className="text-red-600">❌</span>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Setup Error</h2>
+            <p className="text-gray-600 mb-4">There was an error setting up your account.</p>
+            <p className="text-sm text-gray-500">{syncError}</p>
           </div>
         </div>
       </div>

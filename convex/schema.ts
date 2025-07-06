@@ -413,6 +413,84 @@ const applicationTables = {
   })
     .index("by_key", ["key"])
     .index("by_category", ["category"]),
+
+  // AML and Compliance Settings
+  amlSettings: defineTable({
+    // Screening configuration
+    autoScreeningEnabled: v.boolean(),
+    enabledSanctionLists: v.array(v.string()), // ["OFAC", "UN", "EU", "UK", "CANADA"]
+    
+    // Risk thresholds
+    riskThresholds: v.object({
+      low: v.number(),    // 0-30
+      medium: v.number(), // 31-70
+      high: v.number(),   // 71-100
+    }),
+    
+    // Transaction limits and controls
+    transactionLimits: v.object({
+      individualDaily: v.number(),
+      individualTransaction: v.number(),
+      corporateDaily: v.number(),
+      corporateTransaction: v.number(),
+    }),
+    
+    // Automated actions
+    autoHoldOnMatch: v.boolean(),
+    requireOverrideReason: v.boolean(),
+    autoReportSuspicious: v.boolean(),
+    
+    // Service fees
+    defaultServiceFee: v.number(),
+    serviceFeeType: v.union(v.literal("flat"), v.literal("percentage")),
+    
+    // PEP (Politically Exposed Person) settings
+    pepScreeningEnabled: v.boolean(),
+    adverseMediaScreeningEnabled: v.boolean(),
+    
+    // Audit and compliance
+    retentionPeriodDays: v.number(), // Data retention period
+    requireTwoPersonApproval: v.boolean(),
+    
+    // Metadata
+    lastUpdated: v.number(),
+    updatedBy: v.string(), // Clerk user ID
+  }),
+
+  // Company/Business Settings
+  companySettings: defineTable({
+    // Business information
+    companyName: v.string(),
+    businessNumber: v.optional(v.string()),
+    licenseNumber: v.optional(v.string()),
+    
+    // Contact information
+    address: v.optional(v.string()),
+    city: v.optional(v.string()),
+    province: v.optional(v.string()),
+    postalCode: v.optional(v.string()),
+    country: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    email: v.optional(v.string()),
+    website: v.optional(v.string()),
+    
+    // Business details
+    businessType: v.optional(v.string()),
+    establishedDate: v.optional(v.string()),
+    
+    // Regulatory information
+    regulatoryBody: v.optional(v.string()),
+    complianceOfficer: v.optional(v.string()),
+    
+    // System branding
+    logoUrl: v.optional(v.string()),
+    primaryColor: v.optional(v.string()),
+    secondaryColor: v.optional(v.string()),
+    
+    // Metadata
+    lastUpdated: v.number(),
+    updatedBy: v.string(), // Clerk user ID
+  }),
 };
 
 export default defineSchema({
