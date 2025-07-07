@@ -11,17 +11,27 @@ import {
   Building2, 
   Shield, 
   ChevronRight,
-  Lock
+  Lock,
+  Wand2
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { InitializationWizard } from "@/components/setup/InitializationWizard";
 
 export default function SettingsPage() {
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  
   // Check current user permissions
   const currentUserPermissions = useQuery(api.users.getCurrentUserPermissions);
   
   // Get basic settings info for overview
   const baseCurrency = useQuery(api.settings.getBaseCurrency);
   const companySettings = useQuery(api.settings.getCompanySettings);
+  
+  const handleWizardComplete = () => {
+    // Refresh the page data or show success message
+    window.location.reload();
+  };
 
   // Permission check - only managers can access most settings
   if (currentUserPermissions === null) {
@@ -71,7 +81,7 @@ export default function SettingsPage() {
 
   const accessibleSettings = settingsCategories.filter(category => category.accessible);
 
-  if (accessibleSettings.length === 0) {
+  if (currentUserPermissions !== undefined && accessibleSettings.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -157,6 +167,43 @@ export default function SettingsPage() {
         })}
       </div>
 
+      {/* System Setup Wizard - Re-run Option */}
+      {currentUserPermissions?.isManager && (
+        <Card className="border-purple-200 bg-purple-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wand2 className="h-5 w-5 text-purple-600" />
+              Re-run Setup Wizard
+            </CardTitle>
+            <CardDescription>
+              Re-configure your exchange system settings using the guided wizard
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-purple-700">
+                Re-run the setup wizard to update your company information, currencies, 
+                AML settings, and accepted ID types. Note: This will not overwrite existing data.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Badge variant="secondary">Company Info</Badge>
+                <Badge variant="secondary">Currencies</Badge>
+                <Badge variant="secondary">AML Settings</Badge>
+                <Badge variant="secondary">ID Types</Badge>
+              </div>
+              <Button 
+                onClick={() => setIsWizardOpen(true)}
+                variant="outline"
+                className="w-full border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white"
+              >
+                <Wand2 className="h-4 w-4 mr-2" />
+                Re-run Setup Wizard
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Quick Actions */}
       {currentUserPermissions?.isManager && (
         <Card>
@@ -203,6 +250,13 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Initialization Wizard */}
+      <InitializationWizard
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        onComplete={handleWizardComplete}
+      />
     </div>
   );
 }

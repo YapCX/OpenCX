@@ -24,8 +24,8 @@ interface CurrencyFormProps {
 
 export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) {
   const baseCurrencyQuery = useQuery(api.settings.getBaseCurrency);
-  const defaultDiscountQuery = useQuery(api.settings.getDefaultDiscountPercent);
-  const defaultMarkupQuery = useQuery(api.settings.getDefaultMarkupPercent);
+  const defaultDiscountQuery = useQuery(api.settings.getSetting, { key: "default_discount_percent" });
+  const defaultMarkupQuery = useQuery(api.settings.getSetting, { key: "default_markup_percent" });
 
   const [formData, setFormData] = useState({
     code: "",
@@ -72,18 +72,7 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
     }
   }, [existingCurrency]);
 
-  // Set default discount and markup percentages for new currencies
-  useEffect(() => {
-    if (!editingId && defaultDiscountQuery !== undefined && defaultMarkupQuery !== undefined) {
-      setFormData(prev => ({
-        ...prev,
-        discountPercent: prev.discountPercent === "" ? defaultDiscountQuery.toString() : prev.discountPercent,
-        markupPercent: prev.markupPercent === "" ? defaultMarkupQuery.toString() : prev.markupPercent,
-      }));
-    }
-  }, [editingId, defaultDiscountQuery, defaultMarkupQuery]);
-
-  // Reset form when dialog opens for new currency
+  // Reset form when dialog opens for new currency or set defaults
   useEffect(() => {
     if (isOpen && !editingId) {
       setFormData({
@@ -100,6 +89,13 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
         manualBuyRate: false,
         manualSellRate: false,
       });
+    } else if (!editingId && defaultDiscountQuery !== undefined && defaultMarkupQuery !== undefined) {
+      // Set default values for new currencies (only if not already set)
+      setFormData(prev => ({
+        ...prev,
+        discountPercent: prev.discountPercent === "" ? defaultDiscountQuery.toString() : prev.discountPercent,
+        markupPercent: prev.markupPercent === "" ? defaultMarkupQuery.toString() : prev.markupPercent,
+      }));
     }
   }, [isOpen, editingId, defaultDiscountQuery, defaultMarkupQuery]);
 
@@ -152,27 +148,37 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
   }, [formData.code, editingId, fetchMarketRate, baseCurrencyQuery, formData.name, formData.country, formData.flag]);
 
   // Calculate rates when market rate or percentages change
-  useEffect(() => {
+  const { calculatedBuyRate, calculatedSellRate } = React.useMemo(() => {
     const marketRate = parseFloat(formData.marketRate);
     const discountPercent = parseFloat(formData.discountPercent);
     const markupPercent = parseFloat(formData.markupPercent);
 
+    let buyRate = formData.buyRate;
+    let sellRate = formData.sellRate;
+
     if (!isNaN(marketRate) && marketRate > 0) {
       if (!formData.manualBuyRate && !isNaN(discountPercent)) {
-        const newBuyRate = (marketRate * (1 - discountPercent / 100)).toFixed(4);
-        if (newBuyRate !== formData.buyRate) {
-          setFormData(prev => ({ ...prev, buyRate: newBuyRate }));
-        }
+        buyRate = (marketRate * (1 - discountPercent / 100)).toFixed(4);
       }
 
       if (!formData.manualSellRate && !isNaN(markupPercent)) {
-        const newSellRate = (marketRate * (1 + markupPercent / 100)).toFixed(4);
-        if (newSellRate !== formData.sellRate) {
-          setFormData(prev => ({ ...prev, sellRate: newSellRate }));
-        }
+        sellRate = (marketRate * (1 + markupPercent / 100)).toFixed(4);
       }
     }
-  }, [formData.marketRate, formData.discountPercent, formData.markupPercent, formData.manualBuyRate, formData.manualSellRate]);
+
+    return { calculatedBuyRate: buyRate, calculatedSellRate: sellRate };
+  }, [formData.marketRate, formData.discountPercent, formData.markupPercent, formData.manualBuyRate, formData.manualSellRate, formData.buyRate, formData.sellRate]);
+
+  // Update form data when calculated rates change
+  React.useEffect(() => {
+    if (calculatedBuyRate !== formData.buyRate || calculatedSellRate !== formData.sellRate) {
+      setFormData(prev => ({ 
+        ...prev, 
+        buyRate: calculatedBuyRate, 
+        sellRate: calculatedSellRate 
+      }));
+    }
+  }, [calculatedBuyRate, calculatedSellRate]);
 
   const handleUpdateMarketRate = async () => {
     if (!formData.code) {

@@ -66,9 +66,9 @@ export const create = mutation({
 
     // Get default values if not provided
     const discountPercent: number = args.discountPercent ??
-      (await ctx.runQuery(api.settings.getDefaultDiscountPercent));
+      Number(await ctx.runQuery(api.settings.getSetting, { key: "default_discount_percent" })) ?? DEFAULT_DISCOUNT_PERCENT;
     const markupPercent: number = args.markupPercent ??
-      (await ctx.runQuery(api.settings.getDefaultMarkupPercent));
+      Number(await ctx.runQuery(api.settings.getSetting, { key: "default_markup_percent" })) ?? DEFAULT_MARKUP_PERCENT;
 
     const currencyId = await ctx.db.insert("currencies", {
       code: upperCode,

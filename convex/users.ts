@@ -1,6 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
+import { api } from "./_generated/api";
+import defaults from "../config/defaults.json";
 
 // Authentication helpers
 async function requireAuth(ctx: any) {
@@ -542,29 +544,23 @@ export const syncFromClerk = mutation({
           email: args.email,
           fullName: args.fullName || "",
 
-          // First user becomes admin
-          isManager: true,
-          isComplianceOfficer: false,
-          isTemplate: false,
-          isActive: true,
+          // First user becomes admin - use defaults from config
+          isManager: defaults.adminUser.isManager,
+          isComplianceOfficer: defaults.adminUser.isComplianceOfficer,
+          isTemplate: defaults.adminUser.isTemplate,
+          isActive: defaults.adminUser.isActive,
 
-          // Default financial controls
-          canModifyExchangeRates: true,
-          maxModificationIndividual: 10000,
-          maxModificationCorporate: 50000,
-          canEditFeesCommissions: true,
-          canTransferBetweenAccounts: true,
-          canReconcileAccounts: true,
+          // Default financial controls from config
+          canModifyExchangeRates: defaults.adminUser.canModifyExchangeRates,
+          maxModificationIndividual: defaults.adminUser.maxModificationIndividual,
+          maxModificationCorporate: defaults.adminUser.maxModificationCorporate,
+          canEditFeesCommissions: defaults.adminUser.canEditFeesCommissions,
+          canTransferBetweenAccounts: defaults.adminUser.canTransferBetweenAccounts,
+          canReconcileAccounts: defaults.adminUser.canReconcileAccounts,
 
-          // Default permissions
-          defaultPrivileges: {
-            view: true,
-            create: true,
-            modify: true,
-            delete: true,
-            print: true,
-          },
-          moduleExceptions: [],
+          // Default permissions from config
+          defaultPrivileges: defaults.adminUser.defaultPrivileges,
+          moduleExceptions: defaults.adminUser.moduleExceptions,
 
           // Invitation status (first user doesn't need invitation)
           invitationStatus: "accepted" as "pending" | "accepted" | "expired",
@@ -580,6 +576,10 @@ export const syncFromClerk = mutation({
         };
 
         const userId = await ctx.db.insert("users", userData);
+        
+        // System defaults are initialized via individual CRUD functions as needed
+        console.log("First user created - system defaults available via CRUD functions");
+        
         return await ctx.db.get(userId);
       } else {
         // For subsequent users, check if they have a pending invitation

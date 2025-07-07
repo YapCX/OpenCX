@@ -6,6 +6,7 @@ import { Header } from "@/components/dashboard/Header";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { LandingPage } from "@/components/landing/LandingPage";
+import { InitializationChecker } from "@/components/setup/InitializationChecker";
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -45,7 +46,9 @@ export default function DashboardLayout({
   return (
     <>
       <Authenticated>
-        <DashboardLayoutContent>{children}</DashboardLayoutContent>
+        <InitializationChecker>
+          <DashboardLayoutContent>{children}</DashboardLayoutContent>
+        </InitializationChecker>
       </Authenticated>
       <Unauthenticated>
         <LandingPage />

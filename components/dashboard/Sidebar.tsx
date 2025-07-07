@@ -6,7 +6,6 @@ import {
   CreditCard,
   Users,
   DollarSign,
-  BarChart3,
   Coins,
   Calculator,
   UserCog,
@@ -20,11 +19,6 @@ interface SidebarProps {
 }
 
 const navigation = [
-  {
-    name: "Dashboard",
-    href: "/dashboard",
-    icon: BarChart3,
-  },
   {
     name: "Orders",
     href: "/orders",

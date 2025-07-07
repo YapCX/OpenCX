@@ -1,0 +1,320 @@
+{
+  "settings": {
+    "base_currency": "CAD",
+    "default_discount_percent": 2.5,
+    "default_markup_percent": 3.5,
+    "default_service_fee": 2.0
+  },
+  "idTypes": [
+    {
+      "name": "Driver's License",
+      "description": "Quebec driver's license",
+      "requiresExpiry": true,
+      "country": "CA"
+    },
+    {
+      "name": "Passport",
+      "description": "Government issued passport",
+      "requiresExpiry": true,
+      "country": null
+    },
+    {
+      "name": "Quebec ID Card",
+      "description": "Quebec identification card",
+      "requiresExpiry": true,
+      "country": "CA"
+    },
+    {
+      "name": "Health Card",
+      "description": "Quebec health insurance card (RAMQ)",
+      "requiresExpiry": false,
+      "country": "CA"
+    },
+    {
+      "name": "Birth Certificate",
+      "description": "Quebec birth certificate",
+      "requiresExpiry": false,
+      "country": "CA"
+    },
+    {
+      "name": "Social Insurance Number",
+      "description": "SIN card or document",
+      "requiresExpiry": false,
+      "country": "CA"
+    },
+    {
+      "name": "Permanent Resident Card",
+      "description": "Canadian permanent resident card",
+      "requiresExpiry": true,
+      "country": "CA"
+    },
+    {
+      "name": "Work Permit",
+      "description": "Work permit or visa",
+      "requiresExpiry": true,
+      "country": "CA"
+    },
+    {
+      "name": "Study Permit",
+      "description": "Study permit or student visa",
+      "requiresExpiry": true,
+      "country": "CA"
+    },
+    {
+      "name": "Certificate of Indian Status",
+      "description": "Status card for First Nations",
+      "requiresExpiry": true,
+      "country": "CA"
+    }
+  ],
+  "currencies": [
+    {
+      "code": "CAD",
+      "name": "Canadian Dollar",
+      "symbol": "C$",
+      "country": "Canada",
+      "flag": "🇨🇦",
+      "priority": 1
+    },
+    {
+      "code": "USD",
+      "name": "US Dollar",
+      "symbol": "$",
+      "country": "United States",
+      "flag": "🇺🇸",
+      "priority": 2
+    },
+    {
+      "code": "EUR",
+      "name": "Euro",
+      "symbol": "€",
+      "country": "European Union",
+      "flag": "🇪🇺",
+      "priority": 3
+    },
+    {
+      "code": "GBP",
+      "name": "British Pound",
+      "symbol": "£",
+      "country": "United Kingdom",
+      "flag": "🇬🇧",
+      "priority": 4
+    },
+    {
+      "code": "CHF",
+      "name": "Swiss Franc",
+      "symbol": "Fr",
+      "country": "Switzerland",
+      "flag": "🇨🇭",
+      "priority": 5
+    },
+    {
+      "code": "JPY",
+      "name": "Japanese Yen",
+      "symbol": "¥",
+      "country": "Japan",
+      "flag": "🇯🇵",
+      "priority": 6
+    },
+    {
+      "code": "AUD",
+      "name": "Australian Dollar",
+      "symbol": "A$",
+      "country": "Australia",
+      "flag": "🇦🇺",
+      "priority": 7
+    },
+    {
+      "code": "CNY",
+      "name": "Chinese Yuan",
+      "symbol": "¥",
+      "country": "China",
+      "flag": "🇨🇳",
+      "priority": 8
+    },
+    {
+      "code": "MXN",
+      "name": "Mexican Peso",
+      "symbol": "$",
+      "country": "Mexico",
+      "flag": "🇲🇽",
+      "priority": 9
+    },
+    {
+      "code": "INR",
+      "name": "Indian Rupee",
+      "symbol": "₹",
+      "country": "India",
+      "flag": "🇮🇳",
+      "priority": 10
+    },
+    {
+      "code": "KRW",
+      "name": "South Korean Won",
+      "symbol": "₩",
+      "country": "South Korea",
+      "flag": "🇰🇷",
+      "priority": 11
+    },
+    {
+      "code": "SGD",
+      "name": "Singapore Dollar",
+      "symbol": "S$",
+      "country": "Singapore",
+      "flag": "🇸🇬",
+      "priority": 12
+    },
+    {
+      "code": "NOK",
+      "name": "Norwegian Krone",
+      "symbol": "kr",
+      "country": "Norway",
+      "flag": "🇳🇴",
+      "priority": 13
+    },
+    {
+      "code": "SEK",
+      "name": "Swedish Krona",
+      "symbol": "kr",
+      "country": "Sweden",
+      "flag": "🇸🇪",
+      "priority": 14
+    },
+    {
+      "code": "DKK",
+      "name": "Danish Krone",
+      "symbol": "kr",
+      "country": "Denmark",
+      "flag": "🇩🇰",
+      "priority": 15
+    },
+    {
+      "code": "NZD",
+      "name": "New Zealand Dollar",
+      "symbol": "NZ$",
+      "country": "New Zealand",
+      "flag": "🇳🇿",
+      "priority": 16
+    },
+    {
+      "code": "HKD",
+      "name": "Hong Kong Dollar",
+      "symbol": "HK$",
+      "country": "Hong Kong",
+      "flag": "🇭🇰",
+      "priority": 17
+    },
+    {
+      "code": "TWD",
+      "name": "Taiwan Dollar",
+      "symbol": "NT$",
+      "country": "Taiwan",
+      "flag": "🇹🇼",
+      "priority": 18
+    },
+    {
+      "code": "THB",
+      "name": "Thai Baht",
+      "symbol": "฿",
+      "country": "Thailand",
+      "flag": "🇹🇭",
+      "priority": 19
+    },
+    {
+      "code": "PHP",
+      "name": "Philippine Peso",
+      "symbol": "₱",
+      "country": "Philippines",
+      "flag": "🇵🇭",
+      "priority": 20
+    }
+  ],
+  "amlSettings": {
+    "autoScreeningEnabled": true,
+    "enabledSanctionLists": ["OFAC", "UN", "EU", "OSFI"],
+    "riskThresholds": {
+      "low": 30,
+      "medium": 70,
+      "high": 100
+    },
+    "transactionLimits": {
+      "individualDaily": 10000,
+      "individualTransaction": 3000,
+      "corporateDaily": 50000,
+      "corporateTransaction": 15000
+    },
+    "autoHoldOnMatch": true,
+    "requireOverrideReason": true,
+    "autoReportSuspicious": false,
+    "pepScreeningEnabled": true,
+    "adverseMediaScreeningEnabled": false,
+    "retentionPeriodDays": 2555,
+    "requireTwoPersonApproval": true
+  },
+  "companySettings": {
+    "companyName": "OpenCX Exchange",
+    "businessNumber": "",
+    "licenseNumber": "",
+    "address": "",
+    "city": "Montreal",
+    "province": "Quebec",
+    "postalCode": "",
+    "country": "Canada",
+    "phone": "",
+    "email": "",
+    "website": "",
+    "businessType": "Money Services Business",
+    "establishedDate": "",
+    "regulatoryBody": "FINTRAC",
+    "complianceOfficer": "",
+    "logoUrl": "",
+    "primaryColor": "#2563eb",
+    "secondaryColor": "#64748b"
+  },
+  "adminUser": {
+    "defaultPrivileges": {
+      "view": true,
+      "create": true,
+      "modify": true,
+      "delete": true,
+      "print": true
+    },
+    "isManager": true,
+    "isComplianceOfficer": false,
+    "isTemplate": false,
+    "isActive": true,
+    "canModifyExchangeRates": true,
+    "maxModificationIndividual": 10000,
+    "maxModificationCorporate": 50000,
+    "canEditFeesCommissions": true,
+    "canTransferBetweenAccounts": true,
+    "canReconcileAccounts": true,
+    "moduleExceptions": []
+  },
+  "exchangeRates": {
+    "autoUpdateEnabled": true,
+    "updateIntervalMinutes": 15,
+    "rateProvider": "exchangerate-api.com",
+    "fallbackRateProvider": "fixer.io",
+    "maxRateAge": 60,
+    "rateChangeThreshold": 5.0
+  },
+  "systemPreferences": {
+    "timezone": "America/Montreal",
+    "dateFormat": "YYYY-MM-DD",
+    "timeFormat": "24h",
+    "language": "en",
+    "supportedLanguages": ["en", "fr"],
+    "theme": "light",
+    "enableNotifications": true,
+    "enableEmailAlerts": true,
+    "sessionTimeout": 30,
+    "passwordRequirements": {
+      "minLength": 8,
+      "requireUppercase": true,
+      "requireLowercase": true,
+      "requireNumbers": true,
+      "requireSpecialChars": true
+    }
+  }
+}

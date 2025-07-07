@@ -1,11 +1,12 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import defaults from "../config/defaults.json";
 
-// Default constants
-export const DEFAULT_BASE_CURRENCY = "USD";
-export const DEFAULT_DISCOUNT_PERCENT = 2.5;
-export const DEFAULT_MARKUP_PERCENT = 3.5;
-export const DEFAULT_SERVICE_FEE = 2.0;
+// Default constants from config
+export const DEFAULT_BASE_CURRENCY = defaults.settings.base_currency;
+export const DEFAULT_DISCOUNT_PERCENT = defaults.settings.default_discount_percent;
+export const DEFAULT_MARKUP_PERCENT = defaults.settings.default_markup_percent;
+export const DEFAULT_SERVICE_FEE = defaults.settings.default_service_fee;
 
 // Authentication helpers
 async function requireAuth(ctx: any) {
@@ -42,6 +43,46 @@ async function requireManagerOrCompliance(ctx: any) {
   return user;
 }
 
+// System initialization status check
+export const getSystemInitializationStatus = query({
+  args: {},
+  handler: async (ctx) => {
+    // Check if system has been fully initialized
+    const [
+      companySettings,
+      amlSettings,
+      currencies,
+      users
+    ] = await Promise.all([
+      ctx.db.query("companySettings").first(),
+      ctx.db.query("amlSettings").first(),
+      ctx.db.query("currencies").first(),
+      ctx.db.query("users").first()
+    ]);
+
+    // System is considered initialized if:
+    // 1. At least one user exists
+    // 2. Company settings have been configured (not just defaults)
+    // 3. AML settings exist
+    // 4. At least one currency is configured
+    const hasUsers = !!users;
+    const hasCompanySettings = companySettings && companySettings.companyName !== defaults.companySettings.companyName;
+    const hasAMLSettings = !!amlSettings;
+    const hasCurrencies = !!currencies;
+
+    const isFullyInitialized = hasUsers && hasCompanySettings && hasAMLSettings && hasCurrencies;
+
+    return {
+      isFullyInitialized,
+      hasUsers,
+      hasCompanySettings,
+      hasAMLSettings,
+      hasCurrencies,
+      needsInitialization: hasUsers && !isFullyInitialized // Has users but incomplete setup
+    };
+  },
+});
+
 export const getBaseCurrency = query({
   args: {},
   returns: v.string(),
@@ -56,33 +97,6 @@ export const getBaseCurrency = query({
   },
 });
 
-export const getDefaultDiscountPercent = query({
-  args: {},
-  returns: v.number(),
-  handler: async (ctx) => {
-    // Auth not required for reading default settings
-    const setting = await ctx.db
-      .query("settings")
-      .withIndex("by_key", (q) => q.eq("key", "default_discount_percent"))
-      .first();
-
-    return setting?.value as number || DEFAULT_DISCOUNT_PERCENT;
-  },
-});
-
-export const getDefaultMarkupPercent = query({
-  args: {},
-  returns: v.number(),
-  handler: async (ctx) => {
-    // Auth not required for reading default settings
-    const setting = await ctx.db
-      .query("settings")
-      .withIndex("by_key", (q) => q.eq("key", "default_markup_percent"))
-      .first();
-
-    return setting?.value as number || DEFAULT_MARKUP_PERCENT;
-  },
-});
 
 export const setSetting = mutation({
   args: {
@@ -158,124 +172,6 @@ export const getSetting = query({
 // CURRENCY SETTINGS API
 // ===================
 
-export const getDefaultServiceFee = query({
-  args: {},
-  returns: v.number(),
-  handler: async (ctx) => {
-    const setting = await ctx.db
-      .query("settings")
-      .withIndex("by_key", (q: any) => q.eq("key", "default_service_fee"))
-      .first();
-
-    return setting?.value as number || DEFAULT_SERVICE_FEE;
-  },
-});
-
-export const setBaseCurrency = mutation({
-  args: { currencyCode: v.string() },
-  handler: async (ctx, args) => {
-    const user = await requireManager(ctx);
-
-    return await ctx.db.insert("settings", {
-      key: "base_currency",
-      value: args.currencyCode,
-      description: "Base currency for exchange rate calculations",
-      category: "currency",
-      lastUpdated: Date.now(),
-      updatedBy: user.clerkUserId,
-    });
-  },
-});
-
-export const setDefaultDiscountPercent = mutation({
-  args: { percent: v.number() },
-  handler: async (ctx, args) => {
-    const user = await requireManager(ctx);
-
-    const existingSetting = await ctx.db
-      .query("settings")
-      .withIndex("by_key", (q: any) => q.eq("key", "default_discount_percent"))
-      .first();
-
-    if (existingSetting) {
-      await ctx.db.patch(existingSetting._id, {
-        value: args.percent,
-        lastUpdated: Date.now(),
-        updatedBy: user.clerkUserId,
-      });
-      return existingSetting._id;
-    } else {
-      return await ctx.db.insert("settings", {
-        key: "default_discount_percent",
-        value: args.percent,
-        description: "Default discount percentage for buying currency",
-        category: "currency",
-        lastUpdated: Date.now(),
-        updatedBy: user.clerkUserId,
-      });
-    }
-  },
-});
-
-export const setDefaultMarkupPercent = mutation({
-  args: { percent: v.number() },
-  handler: async (ctx, args) => {
-    const user = await requireManager(ctx);
-
-    const existingSetting = await ctx.db
-      .query("settings")
-      .withIndex("by_key", (q: any) => q.eq("key", "default_markup_percent"))
-      .first();
-
-    if (existingSetting) {
-      await ctx.db.patch(existingSetting._id, {
-        value: args.percent,
-        lastUpdated: Date.now(),
-        updatedBy: user.clerkUserId,
-      });
-      return existingSetting._id;
-    } else {
-      return await ctx.db.insert("settings", {
-        key: "default_markup_percent",
-        value: args.percent,
-        description: "Default markup percentage for selling currency",
-        category: "currency",
-        lastUpdated: Date.now(),
-        updatedBy: user.clerkUserId,
-      });
-    }
-  },
-});
-
-export const setDefaultServiceFee = mutation({
-  args: { fee: v.number() },
-  handler: async (ctx, args) => {
-    const user = await requireManager(ctx);
-
-    const existingSetting = await ctx.db
-      .query("settings")
-      .withIndex("by_key", (q: any) => q.eq("key", "default_service_fee"))
-      .first();
-
-    if (existingSetting) {
-      await ctx.db.patch(existingSetting._id, {
-        value: args.fee,
-        lastUpdated: Date.now(),
-        updatedBy: user.clerkUserId,
-      });
-      return existingSetting._id;
-    } else {
-      return await ctx.db.insert("settings", {
-        key: "default_service_fee",
-        value: args.fee,
-        description: "Default service fee for transactions",
-        category: "currency",
-        lastUpdated: Date.now(),
-        updatedBy: user.clerkUserId,
-      });
-    }
-  },
-});
 
 // ===================
 // AML SETTINGS API
@@ -288,30 +184,11 @@ export const getAMLSettings = query({
     const amlSettings = await ctx.db.query("amlSettings").first();
 
     if (!amlSettings) {
-      // Return default AML settings
+      // Return default AML settings from config
       return {
-        autoScreeningEnabled: true,
-        enabledSanctionLists: ["OFAC", "UN", "EU"],
-        riskThresholds: {
-          low: 30,
-          medium: 70,
-          high: 100,
-        },
-        transactionLimits: {
-          individualDaily: 10000,
-          individualTransaction: 3000,
-          corporateDaily: 50000,
-          corporateTransaction: 15000,
-        },
-        autoHoldOnMatch: true,
-        requireOverrideReason: true,
-        autoReportSuspicious: false,
+        ...defaults.amlSettings,
         defaultServiceFee: DEFAULT_SERVICE_FEE,
         serviceFeeType: "flat" as const,
-        pepScreeningEnabled: true,
-        adverseMediaScreeningEnabled: false,
-        retentionPeriodDays: 2555, // 7 years
-        requireTwoPersonApproval: true,
       };
     }
 
@@ -362,30 +239,11 @@ export const updateAMLSettings = mutation({
       await ctx.db.patch(existingSettings._id, updateData);
       return await ctx.db.get(existingSettings._id);
     } else {
-      // Create new AML settings with defaults
+      // Create new AML settings with defaults from config
       const defaultSettings = {
-        autoScreeningEnabled: true,
-        enabledSanctionLists: ["OFAC", "UN", "EU"],
-        riskThresholds: {
-          low: 30,
-          medium: 70,
-          high: 100,
-        },
-        transactionLimits: {
-          individualDaily: 10000,
-          individualTransaction: 3000,
-          corporateDaily: 50000,
-          corporateTransaction: 15000,
-        },
-        autoHoldOnMatch: true,
-        requireOverrideReason: true,
-        autoReportSuspicious: false,
+        ...defaults.amlSettings,
         defaultServiceFee: DEFAULT_SERVICE_FEE,
         serviceFeeType: "flat" as const,
-        pepScreeningEnabled: true,
-        adverseMediaScreeningEnabled: false,
-        retentionPeriodDays: 2555, // 7 years
-        requireTwoPersonApproval: true,
         ...updateData,
       };
 
@@ -406,27 +264,8 @@ export const getCompanySettings = query({
     const companySettings = await ctx.db.query("companySettings").first();
 
     if (!companySettings) {
-      // Return default company settings
-      return {
-        companyName: "Your Exchange Company",
-        businessNumber: "",
-        licenseNumber: "",
-        address: "",
-        city: "",
-        province: "",
-        postalCode: "",
-        country: "",
-        phone: "",
-        email: "",
-        website: "",
-        businessType: "",
-        establishedDate: "",
-        regulatoryBody: "",
-        complianceOfficer: "",
-        logoUrl: "",
-        primaryColor: "#000000",
-        secondaryColor: "#666666",
-      };
+      // Return default company settings from config
+      return defaults.companySettings;
     }
 
     return companySettings;
@@ -472,26 +311,9 @@ export const updateCompanySettings = mutation({
       await ctx.db.patch(existingSettings._id, updateData);
       return await ctx.db.get(existingSettings._id);
     } else {
-      // Create new company settings with defaults
+      // Create new company settings with defaults from config
       const defaultSettings = {
-        companyName: "Your Exchange Company",
-        businessNumber: "",
-        licenseNumber: "",
-        address: "",
-        city: "",
-        province: "",
-        postalCode: "",
-        country: "",
-        phone: "",
-        email: "",
-        website: "",
-        businessType: "",
-        establishedDate: "",
-        regulatoryBody: "",
-        complianceOfficer: "",
-        logoUrl: "",
-        primaryColor: "#000000",
-        secondaryColor: "#666666",
+        ...defaults.companySettings,
         ...updateData,
       };
 
@@ -501,56 +323,18 @@ export const updateCompanySettings = mutation({
   },
 });
 
-// ===================
-// INITIALIZATION
-// ===================
-
-export const initializeDefaultSettings = mutation({
+// Mark system as fully initialized (called after wizard completion)
+export const markSystemInitialized = mutation({
   args: {},
-  returns: v.null(),
   handler: async (ctx) => {
-    const userId = await requireAuth(ctx);
-
-    const defaultSettings = [
-      {
-        key: "base_currency",
-        value: DEFAULT_BASE_CURRENCY,
-        description: "Base currency for exchange rate calculations",
-        category: "currency",
-      },
-      {
-        key: "default_discount_percent",
-        value: DEFAULT_DISCOUNT_PERCENT,
-        description: "Default discount percentage for buying currency",
-        category: "currency",
-      },
-      {
-        key: "default_markup_percent",
-        value: DEFAULT_MARKUP_PERCENT,
-        description: "Default markup percentage for selling currency",
-        category: "currency",
-      },
-      {
-        key: "default_service_fee",
-        value: DEFAULT_SERVICE_FEE,
-        description: "Default service fee for transactions",
-        category: "currency",
-      },
-    ];
-
-    for (const setting of defaultSettings) {
-      const existing = await ctx.db
-        .query("settings")
-        .withIndex("by_key", (q: any) => q.eq("key", setting.key))
-        .first();
-
-      if (!existing) {
-        await ctx.db.insert("settings", {
-          ...setting,
-          lastUpdated: Date.now(),
-          updatedBy: userId,
-        });
-      }
-    }
+    const user = await requireManager(ctx);
+    
+    // This mutation doesn't need to store anything specific
+    // The getSystemInitializationStatus query will detect completion
+    // based on the presence of company settings, AML settings, currencies, etc.
+    
+    console.log("System marked as fully initialized by:", user.clerkUserId);
+    return { success: true, initializedAt: Date.now() };
   },
 });
+

@@ -35,11 +35,11 @@ export default function CurrencySettingsPage() {
   
   // Get current settings
   const baseCurrency = useQuery(api.settings.getBaseCurrency);
-  const defaultDiscountPercent = useQuery(api.settings.getDefaultDiscountPercent);
-  const defaultMarkupPercent = useQuery(api.settings.getDefaultMarkupPercent);
-  const defaultServiceFee = useQuery(api.settings.getDefaultServiceFee);
+  const defaultDiscountPercent = useQuery(api.settings.getSetting, { key: "default_discount_percent" });
+  const defaultMarkupPercent = useQuery(api.settings.getSetting, { key: "default_markup_percent" });
+  const defaultServiceFee = useQuery(api.settings.getSetting, { key: "default_service_fee" });
   
-  // Form state
+  // Form state - will be updated when settings load
   const [formData, setFormData] = useState({
     baseCurrency: "",
     discountPercent: "",
@@ -47,16 +47,14 @@ export default function CurrencySettingsPage() {
     serviceFee: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Mutations
-  const setBaseCurrency = useMutation(api.settings.setBaseCurrency);
-  const setDefaultDiscountPercent = useMutation(api.settings.setDefaultDiscountPercent);
-  const setDefaultMarkupPercent = useMutation(api.settings.setDefaultMarkupPercent);
-  const setDefaultServiceFee = useMutation(api.settings.setDefaultServiceFee);
+  const setSetting = useMutation(api.settings.setSetting);
 
-  // Initialize form data when settings load
+  // Initialize form data when settings load (only once)
   React.useEffect(() => {
-    if (baseCurrency && defaultDiscountPercent !== undefined && 
+    if (!isInitialized && baseCurrency && defaultDiscountPercent !== undefined && 
         defaultMarkupPercent !== undefined && defaultServiceFee !== undefined) {
       setFormData({
         baseCurrency,
@@ -64,8 +62,9 @@ export default function CurrencySettingsPage() {
         markupPercent: defaultMarkupPercent.toString(),
         serviceFee: defaultServiceFee.toString(),
       });
+      setIsInitialized(true);
     }
-  }, [baseCurrency, defaultDiscountPercent, defaultMarkupPercent, defaultServiceFee]);
+  }, [baseCurrency, defaultDiscountPercent, defaultMarkupPercent, defaultServiceFee, isInitialized]);
 
   // Permission check
   if (currentUserPermissions === null) {
@@ -131,19 +130,39 @@ export default function CurrencySettingsPage() {
       const promises = [];
       
       if (formData.baseCurrency !== baseCurrency) {
-        promises.push(setBaseCurrency({ currencyCode: formData.baseCurrency }));
+        promises.push(setSetting({ 
+          key: "base_currency", 
+          value: formData.baseCurrency,
+          description: "Base currency for exchange rate calculations",
+          category: "currency"
+        }));
       }
       
       if (discountPercent !== defaultDiscountPercent) {
-        promises.push(setDefaultDiscountPercent({ percent: discountPercent }));
+        promises.push(setSetting({ 
+          key: "default_discount_percent", 
+          value: discountPercent,
+          description: "Default discount percentage for buying currency",
+          category: "currency"
+        }));
       }
       
       if (markupPercent !== defaultMarkupPercent) {
-        promises.push(setDefaultMarkupPercent({ percent: markupPercent }));
+        promises.push(setSetting({ 
+          key: "default_markup_percent", 
+          value: markupPercent,
+          description: "Default markup percentage for selling currency",
+          category: "currency"
+        }));
       }
       
       if (serviceFee !== defaultServiceFee) {
-        promises.push(setDefaultServiceFee({ fee: serviceFee }));
+        promises.push(setSetting({ 
+          key: "default_service_fee", 
+          value: serviceFee,
+          description: "Default service fee for transactions",
+          category: "currency"
+        }));
       }
 
       await Promise.all(promises);

@@ -30,7 +30,7 @@ function RedirectToDashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/dashboard");
+    router.replace("/orders");
   }, [router]);
 
   // Return null to prevent rendering the spinner

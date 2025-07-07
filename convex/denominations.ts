@@ -234,7 +234,7 @@ export const checkStandardDenominations = query({
     return {
       hasStandard: true,
       total: standardDenominations.length,
-      existing: existingDenominations.length,
+      existing: standardDenominations.length - availableToImport.length,
       availableToImport: availableToImport.length,
     };
   },

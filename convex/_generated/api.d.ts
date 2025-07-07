@@ -17,7 +17,6 @@ import type * as currencies from "../currencies.js";
 import type * as customers from "../customers.js";
 import type * as denominations from "../denominations.js";
 import type * as idTypes from "../idTypes.js";
-import type * as initialization from "../initialization.js";
 import type * as settings from "../settings.js";
 import type * as tillTransactions from "../tillTransactions.js";
 import type * as tills from "../tills.js";
@@ -37,7 +36,6 @@ declare const fullApi: ApiFromModules<{
   customers: typeof customers;
   denominations: typeof denominations;
   idTypes: typeof idTypes;
-  initialization: typeof initialization;
   settings: typeof settings;
   tillTransactions: typeof tillTransactions;
   tills: typeof tills;

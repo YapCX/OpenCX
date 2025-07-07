@@ -152,9 +152,10 @@ export function UserForm({ isOpen, onClose, editingId }: UserFormProps) {
       };
 
       if (editingId) {
+        const { email, ...updateData } = userData;
         await updateUser({
           id: editingId,
-          ...userData,
+          ...updateData,
         });
         toast.success("User updated successfully");
       } else {
