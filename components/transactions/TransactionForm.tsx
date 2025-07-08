@@ -11,7 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -27,8 +26,6 @@ import {
   User,
   AlertTriangle,
   DollarSign,
-  TrendingUp,
-  TrendingDown,
   X,
 } from "lucide-react";
 import { CustomerSelector } from "@/components/customers/CustomerSelector";
@@ -40,7 +37,6 @@ interface TransactionFormProps {
 }
 
 export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
-  const [transactionType, setTransactionType] = useState<"currency_buy" | "currency_sell">("currency_buy");
   const [fromCurrency, setFromCurrency] = useState("");
   const [fromAmount, setFromAmount] = useState("");
   const [toCurrency, setToCurrency] = useState("");
@@ -73,7 +69,6 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
           fromCurrency,
           toCurrency,
           amount: parseFloat(fromAmount),
-          type: transactionType === "currency_buy" ? "buy" : "sell",
         }
       : "skip"
   );
@@ -103,14 +98,13 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
 
     try {
       const result = await createTransaction({
-        type: transactionType,
         fromCurrency,
         fromAmount: parseFloat(fromAmount),
         toCurrency,
         toAmount: parseFloat(toAmount),
         exchangeRate: parseFloat(exchangeRate),
         serviceFee: parseFloat(serviceFee) || 0,
-        serviceFeeType: "percentage",
+        serviceFeeType: "flat",
         paymentMethod: paymentMethod || undefined,
         customerId: selectedCustomer?.customerId || undefined,
         customerName: customerName || undefined,
@@ -130,7 +124,6 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
   };
 
   const resetForm = () => {
-    setTransactionType("currency_buy");
     setFromCurrency("");
     setFromAmount("");
     setToCurrency("");
@@ -152,7 +145,6 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
     setFromAmount(toAmount);
     setToCurrency(tempCurrency);
     setToAmount(tempAmount);
-    setTransactionType(transactionType === "currency_buy" ? "currency_sell" : "currency_buy");
   };
 
   const isAMLRequired = parseFloat(fromAmount) > 1000 || parseFloat(toAmount) > 1000;
@@ -173,44 +165,6 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Transaction Type */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ArrowLeftRight className="h-5 w-5" />
-                Transaction Type
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="transaction-type"
-                    checked={transactionType === "currency_buy"}
-                    onCheckedChange={(checked) => 
-                      setTransactionType(checked ? "currency_buy" : "currency_sell")
-                    }
-                  />
-                  <Label htmlFor="transaction-type" className="flex items-center gap-2">
-                    {transactionType === "currency_buy" ? (
-                      <>
-                        <TrendingUp className="h-4 w-4 text-green-600" />
-                        <span>Buy Order</span>
-                      </>
-                    ) : (
-                      <>
-                        <TrendingDown className="h-4 w-4 text-red-600" />
-                        <span>Sell Order</span>
-                      </>
-                    )}
-                  </Label>
-                </div>
-                <Badge variant={transactionType === "currency_buy" ? "default" : "secondary"}>
-                  {transactionType === "currency_buy" ? "Customer buying currency" : "Customer selling currency"}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Exchange Details */}
           <Card>
@@ -459,12 +413,6 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
           <CardContent>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span>Transaction Type:</span>
-                <Badge variant={transactionType === "currency_buy" ? "default" : "secondary"}>
-                  {transactionType === "currency_buy" ? "Buy Order" : "Sell Order"}
-                </Badge>
-              </div>
-              <div className="flex justify-between">
                 <span>Exchange:</span>
                 <span className="font-mono">
                   {fromAmount} {fromCurrency} → {toAmount} {toCurrency}
@@ -476,15 +424,16 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
               </div>
               <div className="flex justify-between">
                 <span>Service Fee:</span>
-                <span className="font-mono">{serviceFee} {fromCurrency}</span>
+                <span className="font-mono">${serviceFee}</span>
               </div>
               <Separator />
               <div className="flex justify-between font-semibold">
-                <span>Customer {transactionType === "currency_buy" ? "Pays" : "Receives"}:</span>
-                <span className="font-mono">
-                  {transactionType === "currency_buy" ? fromAmount : toAmount}{" "}
-                  {transactionType === "currency_buy" ? fromCurrency : toCurrency}
-                </span>
+                <span>Customer Pays:</span>
+                <span className="font-mono">{fromAmount} {fromCurrency}</span>
+              </div>
+              <div className="flex justify-between font-semibold">
+                <span>Customer Receives:</span>
+                <span className="font-mono">{toAmount} {toCurrency}</span>
               </div>
             </div>
           </CardContent>

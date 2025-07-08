@@ -16,14 +16,6 @@ function generateTransactionId(): string {
 
 export const create = mutation({
   args: {
-    type: v.union(
-      v.literal("currency_buy"),
-      v.literal("currency_sell"),
-      v.literal("cash_in"),
-      v.literal("cash_out"),
-      v.literal("transfer"),
-      v.literal("adjustment")
-    ),
     fromCurrency: v.string(),
     fromAmount: v.number(),
     toCurrency: v.string(),
@@ -42,24 +34,25 @@ export const create = mutation({
     const userId = await requireAuth(ctx);
     const now = Date.now();
     
+    // Auto-determine transaction type based on base currency
+    const setting = await ctx.db
+      .query("settings")
+      .withIndex("by_key", (q) => q.eq("key", "base_currency"))
+      .first();
+    const baseCurrency = setting?.value as string || "CAD";
+    const type: "currency_buy" | "currency_sell" = args.toCurrency === baseCurrency ? "currency_sell" : "currency_buy";
+    
     // Determine if AML is required (transactions over $1000 equivalent)
     const requiresAML = args.fromAmount > 1000 || args.toAmount > 1000;
     
-    // Determine category based on transaction type
-    let category: "cash_movement" | "currency_exchange" | "internal";
-    if (args.type === "currency_buy" || args.type === "currency_sell") {
-      category = "currency_exchange";
-    } else if (args.type === "cash_in" || args.type === "cash_out") {
-      category = "cash_movement";
-    } else {
-      category = "internal";
-    }
+    // Currency exchange category for all transactions in this context
+    const category: "currency_exchange" = "currency_exchange";
     
     const transaction = {
       transactionId: generateTransactionId(),
       userId,
       customerId: args.customerId,
-      type: args.type,
+      type,
       category,
       fromCurrency: args.fromCurrency,
       fromAmount: args.fromAmount,
@@ -553,53 +546,47 @@ export const calculateExchangeAmount = query({
     fromCurrency: v.string(),
     toCurrency: v.string(),
     amount: v.number(),
-    type: v.union(v.literal("buy"), v.literal("sell")),
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);
     
-    // Get currency rates
-    const fromCurrencyData = await ctx.db
-      .query("currencies")
-      .withIndex("by_code", (q) => q.eq("code", args.fromCurrency))
+    // Get base currency
+    const setting = await ctx.db
+      .query("settings")
+      .withIndex("by_key", (q) => q.eq("key", "base_currency"))
       .first();
+    const baseCurrency = setting?.value as string || "CAD";
     
-    const toCurrencyData = await ctx.db
-      .query("currencies")
-      .withIndex("by_code", (q) => q.eq("code", args.toCurrency))
-      .first();
+    const [fromCurrencyData, toCurrencyData] = await Promise.all([
+      ctx.db.query("currencies").withIndex("by_code", (q) => q.eq("code", args.fromCurrency)).first(),
+      ctx.db.query("currencies").withIndex("by_code", (q) => q.eq("code", args.toCurrency)).first()
+    ]);
     
     if (!fromCurrencyData || !toCurrencyData) {
       throw new Error("Currency not found");
     }
     
-    let exchangeRate: number;
-    
-    if (args.type === "buy") {
-      // Customer is buying toCurrency with fromCurrency
-      exchangeRate = toCurrencyData.buyRate / fromCurrencyData.marketRate;
-    } else {
-      // Customer is selling fromCurrency for toCurrency
-      exchangeRate = toCurrencyData.sellRate / fromCurrencyData.marketRate;
-    }
+    // Use sell rate for currency we're receiving, buy rate for currency we're giving
+    const fromRate = args.fromCurrency === baseCurrency ? fromCurrencyData.marketRate : fromCurrencyData.sellRate;
+    const toRate = args.toCurrency === baseCurrency ? toCurrencyData.marketRate : toCurrencyData.buyRate;
+    const exchangeRate = toRate / fromRate;
     
     const convertedAmount = args.amount * exchangeRate;
     
-    // Get service fee settings
+    // Get service fee settings (fixed dollar amount)
     const serviceFeeSettings = await ctx.db
       .query("settings")
       .withIndex("by_key", (q) => q.eq("key", "default_service_fee"))
       .first();
     
-    const defaultServiceFee = serviceFeeSettings?.value as number || 0;
-    const serviceFee = args.amount * (defaultServiceFee / 100);
+    const serviceFee = serviceFeeSettings?.value as number || 0;
     
     return {
       fromAmount: args.amount,
       toAmount: convertedAmount,
       exchangeRate,
       serviceFee,
-      serviceFeeType: "percentage" as const,
+      serviceFeeType: "flat" as const,
     };
   },
 });

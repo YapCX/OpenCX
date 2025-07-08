@@ -86,7 +86,6 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
           fromCurrency,
           toCurrency,
           amount: parseFloat(fromAmount),
-          type: transactionType === "currency_buy" ? "buy" : "sell",
         }
       : "skip"
   );
@@ -146,7 +145,7 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
         toAmount: parseFloat(toAmount),
         exchangeRate: parseFloat(exchangeRate),
         serviceFee: parseFloat(serviceFee) || 0,
-        serviceFeeType: "percentage",
+        serviceFeeType: "flat",
         paymentMethod: paymentMethod || undefined,
         customerId: selectedCustomer?.customerId || undefined,
         customerName: customerName || undefined,
@@ -506,7 +505,7 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
                 </div>
                 <div className="flex justify-between">
                   <span>Service Fee:</span>
-                  <span className="font-mono">{serviceFee} {fromCurrency}</span>
+                  <span className="font-mono">${serviceFee}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold">
