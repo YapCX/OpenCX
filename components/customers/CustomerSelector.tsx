@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -80,10 +80,14 @@ export function CustomerSelector({
   const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
-  const customers = useQuery(api.customers.list, {
+  const customersQuery = useQuery(api.customers.list, {
     searchTerm: searchTerm || undefined,
     limit: 50,
-  }) as Customer[] || [];
+  });
+
+  const customers = useMemo(() => {
+    return (customersQuery as Customer[]) || [];
+  }, [customersQuery]);
 
   // Find selected customer when selectedCustomerId changes
   useEffect(() => {

@@ -64,6 +64,7 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
   const [isCalculating] = useState(false);
 
   const currencies = useQuery(api.currencies.list, {}) || [];
+  const currentTill = useQuery(api.tills.getCurrentUserTill, {});
   const createTransaction = useMutation(api.transactions.create);
   const calculateExchange = useQuery(
     api.transactions.calculateExchangeAmount,
@@ -87,6 +88,8 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Note: We allow creating pending orders without till access
     
     if (!fromCurrency || !toCurrency || !fromAmount || !toAmount) {
       toast.error("Please fill in all required fields");
@@ -116,7 +119,8 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
         notes: notes || undefined,
       });
 
-      toast.success(`Transaction ${result.transactionId} created successfully`);
+      const statusMessage = currentTill ? "created and ready for processing" : "created as pending order";
+      toast.success(`Transaction ${result.transactionId} ${statusMessage}`);
       onClose();
       resetForm();
     } catch (error) {

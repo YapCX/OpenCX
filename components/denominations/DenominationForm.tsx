@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -372,9 +373,11 @@ export function DenominationForm({ editingId, onClose, isOpen }: DenominationFor
               >
                 {imagePreview ? (
                   <div className="space-y-2">
-                    <img
+                    <Image
                       src={imagePreview}
                       alt="Preview"
+                      width={128}
+                      height={128}
                       className="max-w-full max-h-32 mx-auto object-contain rounded"
                     />
                     <p className="text-sm text-muted-foreground">

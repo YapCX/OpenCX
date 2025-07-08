@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useMutation, useAction, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -93,8 +93,8 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
       // Set default values for new currencies (only if not already set)
       setFormData(prev => ({
         ...prev,
-        discountPercent: prev.discountPercent === "" ? defaultDiscountQuery.toString() : prev.discountPercent,
-        markupPercent: prev.markupPercent === "" ? defaultMarkupQuery.toString() : prev.markupPercent,
+        discountPercent: prev.discountPercent === "" ? (defaultDiscountQuery?.toString() ?? "0") : prev.discountPercent,
+        markupPercent: prev.markupPercent === "" ? (defaultMarkupQuery?.toString() ?? "0") : prev.markupPercent,
       }));
     }
   }, [isOpen, editingId, defaultDiscountQuery, defaultMarkupQuery]);
@@ -178,7 +178,7 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
         sellRate: calculatedSellRate 
       }));
     }
-  }, [calculatedBuyRate, calculatedSellRate]);
+  }, [calculatedBuyRate, calculatedSellRate, formData.buyRate, formData.sellRate]);
 
   const handleUpdateMarketRate = async () => {
     if (!formData.code) {

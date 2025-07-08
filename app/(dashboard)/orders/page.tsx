@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { OrderForm } from "@/components/orders/OrderForm";
-import { TransactionForm } from "@/components/transactions/TransactionForm";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +41,8 @@ import {
   Activity,
   Eye,
   Trash2,
+  Monitor,
+  AlertCircle,
 } from "lucide-react";
 
 type SortField = "createdAt" | "transactionId" | "fromAmount" | "status";
@@ -73,6 +74,8 @@ export default function OrdersPage() {
     sellOrders: 0,
     totalVolume: 0,
   };
+
+  const currentTill = useQuery(api.tills.getCurrentUserTill, {});
 
   const deleteTransaction = useMutation(api.transactions.remove);
   const updateStatus = useMutation(api.transactions.updateStatus);
@@ -202,6 +205,42 @@ export default function OrdersPage() {
         </p>
       </div>
 
+      {/* Till Status */}
+      <Card className={currentTill ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-full ${currentTill ? "bg-green-100" : "bg-red-100"}`}>
+              {currentTill ? (
+                <Monitor className="h-5 w-5 text-green-600" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              )}
+            </div>
+            <div className="flex-1">
+              {currentTill ? (
+                <div>
+                  <div className="font-medium text-green-800">
+                    Signed into Till: {currentTill.tillName} ({currentTill.tillId})
+                  </div>
+                  <div className="text-sm text-green-600">
+                    Session started: {new Date(currentTill.session.signInTime).toLocaleString()}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="font-medium text-red-800">
+                    Not signed into any till
+                  </div>
+                  <div className="text-sm text-red-600">
+                    Sign into a till to process orders immediately, or create pending orders for later processing
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -259,7 +298,9 @@ export default function OrdersPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-center gap-3">
-            <Button onClick={() => setShowForm(true)}>
+            <Button 
+              onClick={() => setShowForm(true)}
+            >
               <Plus className="h-4 w-4" />
               New Transaction
             </Button>
@@ -435,7 +476,11 @@ export default function OrdersPage() {
                         {searchTerm ? "Try adjusting your search" : "Get started by creating your first transaction"}
                       </div>
                       {!searchTerm && (
-                        <Button onClick={() => setShowForm(true)} variant="outline" className="mt-2">
+                        <Button 
+                          onClick={() => setShowForm(true)} 
+                          variant="outline" 
+                          className="mt-2"
+                        >
                           <Plus className="h-4 w-4 mr-2" />
                           Create Transaction
                         </Button>

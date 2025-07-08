@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { DenominationForm } from "@/components/denominations/DenominationForm";
+import Image from "next/image";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -409,10 +410,12 @@ export default function DenominationsPage() {
                   </TableCell>
                   <TableCell>
                     {denomination.imageUrl ? (
-                      <img
+                      <Image
                         src={denomination.imageUrl}
                         alt={`${denomination.currencyCode} ${denomination.value}`}
-                        className="w-8 h-8 object-contain rounded"
+                        width={32}
+                        height={32}
+                        className="object-contain rounded"
                       />
                     ) : (
                       <span className="text-muted-foreground text-sm">No image</span>

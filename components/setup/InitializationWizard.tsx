@@ -29,7 +29,10 @@ import {
   MapPin,
   Phone,
 } from "lucide-react";
+import { LogoUpload } from "@/components/ui/logo-upload";
+import { LogoDisplay } from "@/components/ui/logo-display";
 import defaults from "@/config/defaults.json";
+import { Id } from "@/convex/_generated/dataModel";
 
 interface WizardStep {
   id: string;
@@ -54,6 +57,8 @@ interface CompanyData {
   establishedDate: string;
   regulatoryBody: string;
   complianceOfficer: string;
+  logoImageId?: Id<"_storage">;
+  branchId?: string;
 }
 
 interface CurrencySelection {
@@ -139,6 +144,15 @@ export function InitializationWizard({ isOpen, onClose, onComplete }: Initializa
   // Form data states
   const [companyData, setCompanyData] = useState<CompanyData>({
     ...defaults.companySettings,
+    businessNumber: "",
+    licenseNumber: "",
+    address: "",
+    postalCode: "",
+    phone: "",
+    email: "",
+    website: "",
+    establishedDate: "",
+    complianceOfficer: "",
   });
 
   const [selectedCurrencies, setSelectedCurrencies] = useState<CurrencySelection[]>(
@@ -156,6 +170,7 @@ export function InitializationWizard({ isOpen, onClose, onComplete }: Initializa
   const [selectedIDTypes, setSelectedIDTypes] = useState<IDTypeSelection[]>(
     defaults.idTypes.map((idType) => ({
       ...idType,
+      country: idType.country || null, // Handle missing country field
       selected: true, // Pre-select all ID types
     }))
   );
@@ -405,6 +420,10 @@ function CompanyStep({ data, onChange }: { data: CompanyData; onChange: (data: C
     onChange({ ...data, [field]: value });
   };
 
+  const handleLogoChange = (logoId: Id<"_storage"> | undefined) => {
+    onChange({ ...data, logoImageId: logoId });
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
@@ -430,6 +449,27 @@ function CompanyStep({ data, onChange }: { data: CompanyData; onChange: (data: C
               <SelectItem value="Remittance Service">Remittance Service</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="branchId">Branch ID (Optional)</Label>
+          <Input
+            id="branchId"
+            value={data.branchId || ""}
+            onChange={(e) => updateField("branchId", e.target.value)}
+            placeholder="e.g., MTL-001, TOR-MAIN"
+          />
+          <p className="text-xs text-gray-500">
+            For multi-branch operations, specify a unique branch identifier
+          </p>
+        </div>
+        <div className="space-y-2">
+          <LogoUpload
+            currentLogoId={data.logoImageId}
+            onLogoChange={handleLogoChange}
+          />
         </div>
       </div>
 
@@ -851,10 +891,23 @@ function ReviewStep({
               Company Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
+            {companyData.logoImageId && (
+              <div className="flex items-center gap-2">
+                <strong>Logo:</strong>
+                <LogoDisplay 
+                  logoImageId={companyData.logoImageId} 
+                  companyName={companyData.companyName}
+                  size="sm"
+                />
+              </div>
+            )}
             <div><strong>Name:</strong> {companyData.companyName}</div>
             <div><strong>Type:</strong> {companyData.businessType}</div>
             <div><strong>Location:</strong> {companyData.city}, {companyData.province}</div>
+            {companyData.branchId && (
+              <div><strong>Branch ID:</strong> {companyData.branchId}</div>
+            )}
             <div><strong>Regulatory Body:</strong> {companyData.regulatoryBody}</div>
           </CardContent>
         </Card>

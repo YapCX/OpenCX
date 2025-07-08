@@ -8,20 +8,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Building2, 
-  Save, 
+import {
+  Building2,
+  Save,
   ArrowLeft,
   Lock,
   MapPin,
   Phone,
   Mail,
   Globe,
-  FileText,
-  Palette
+  FileText
 } from "lucide-react";
+import { LogoUpload } from "@/components/ui/logo-upload";
 import Link from "next/link";
 import { toast } from "sonner";
+import { Id } from "@/convex/_generated/dataModel";
 
 const BUSINESS_TYPES = [
   "Money Service Business (MSB)",
@@ -33,19 +34,19 @@ const BUSINESS_TYPES = [
 ];
 
 const PROVINCES = [
-  "Alberta", "British Columbia", "Manitoba", "New Brunswick", 
+  "Alberta", "British Columbia", "Manitoba", "New Brunswick",
   "Newfoundland and Labrador", "Northwest Territories", "Nova Scotia",
-  "Nunavut", "Ontario", "Prince Edward Island", "Quebec", 
+  "Nunavut", "Ontario", "Prince Edward Island", "Quebec",
   "Saskatchewan", "Yukon"
 ];
 
 export default function CompanySettingsPage() {
   // Check current user permissions
   const currentUserPermissions = useQuery(api.users.getCurrentUserPermissions);
-  
+
   // Get current company settings
   const companySettings = useQuery(api.settings.getCompanySettings);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     companyName: "",
@@ -63,9 +64,8 @@ export default function CompanySettingsPage() {
     establishedDate: "",
     regulatoryBody: "",
     complianceOfficer: "",
-    logoUrl: "",
-    primaryColor: "#000000",
-    secondaryColor: "#666666",
+    logoImageId: undefined as Id<"_storage"> | undefined,
+    branchId: "",
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -75,25 +75,25 @@ export default function CompanySettingsPage() {
   // Initialize form data when settings load
   useEffect(() => {
     if (companySettings) {
+      const settings = companySettings as any;
       setFormData({
-        companyName: companySettings.companyName || "",
-        businessNumber: companySettings.businessNumber || "",
-        licenseNumber: companySettings.licenseNumber || "",
-        address: companySettings.address || "",
-        city: companySettings.city || "",
-        province: companySettings.province || "",
-        postalCode: companySettings.postalCode || "",
-        country: companySettings.country || "Canada",
-        phone: companySettings.phone || "",
-        email: companySettings.email || "",
-        website: companySettings.website || "",
-        businessType: companySettings.businessType || "",
-        establishedDate: companySettings.establishedDate || "",
-        regulatoryBody: companySettings.regulatoryBody || "",
-        complianceOfficer: companySettings.complianceOfficer || "",
-        logoUrl: companySettings.logoUrl || "",
-        primaryColor: companySettings.primaryColor || "#000000",
-        secondaryColor: companySettings.secondaryColor || "#666666",
+        companyName: settings.companyName || "",
+        businessNumber: settings.businessNumber || "",
+        licenseNumber: settings.licenseNumber || "",
+        address: settings.address || "",
+        city: settings.city || "",
+        province: settings.province || "",
+        postalCode: settings.postalCode || "",
+        country: settings.country || "Canada",
+        phone: settings.phone || "",
+        email: settings.email || "",
+        website: settings.website || "",
+        businessType: settings.businessType || "",
+        establishedDate: settings.establishedDate || "",
+        regulatoryBody: settings.regulatoryBody || "",
+        complianceOfficer: settings.complianceOfficer || "",
+        logoImageId: settings.logoImageId || undefined,
+        branchId: settings.branchId || "",
       });
     }
   }, [companySettings]);
@@ -192,7 +192,7 @@ export default function CompanySettingsPage() {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="businessNumber">Business Number</Label>
                 <Input
@@ -214,7 +214,7 @@ export default function CompanySettingsPage() {
                   placeholder="MSB License #"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="businessType">Business Type</Label>
                 <Select
@@ -279,7 +279,7 @@ export default function CompanySettingsPage() {
                   placeholder="Toronto"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="province">Province</Label>
                 <Select
@@ -298,14 +298,14 @@ export default function CompanySettingsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="postalCode">Postal Code</Label>
                 <Input
                   id="postalCode"
                   value={formData.postalCode}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
+                  onChange={(e) => setFormData({
+                    ...formData,
                     postalCode: formatPostalCode(e.target.value)
                   })}
                   placeholder="A1A 1A1"
@@ -328,7 +328,7 @@ export default function CompanySettingsPage() {
                   placeholder="(555) 123-4567"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="email">
                   <Mail className="h-4 w-4 inline mr-1" />
@@ -342,7 +342,7 @@ export default function CompanySettingsPage() {
                   placeholder="info@company.com"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="website">
                   <Globe className="h-4 w-4 inline mr-1" />
@@ -382,7 +382,7 @@ export default function CompanySettingsPage() {
                   placeholder="FINTRAC, Provincial Regulator, etc."
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="complianceOfficer">Compliance Officer</Label>
                 <Input
@@ -400,86 +400,32 @@ export default function CompanySettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Palette className="h-5 w-5" />
-              Branding
+              <Building2 className="h-5 w-5" />
+              Branding & Multi-Branch Support
             </CardTitle>
             <CardDescription>
-              Visual identity and branding elements
+              Upload your company logo and configure branch settings
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="logoUrl">Logo URL</Label>
-              <Input
-                id="logoUrl"
-                type="url"
-                value={formData.logoUrl}
-                onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                placeholder="https://example.com/logo.png"
-              />
-              <p className="text-xs text-gray-500">
-                URL to your company logo image (recommended: PNG or SVG, max 200px height)
-              </p>
-            </div>
-
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="primaryColor">Primary Color</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="primaryColor"
-                    type="color"
-                    value={formData.primaryColor}
-                    onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
-                    className="w-16 h-10 p-1 rounded"
-                  />
-                  <Input
-                    value={formData.primaryColor}
-                    onChange={(e) => setFormData({ ...formData, primaryColor: e.target.value })}
-                    placeholder="#000000"
-                    className="flex-1"
-                  />
-                </div>
+                <Label htmlFor="branchId">Branch ID (Optional)</Label>
+                <Input
+                  id="branchId"
+                  value={formData.branchId}
+                  onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}
+                  placeholder="e.g., MTL-001, TOR-MAIN"
+                />
+                <p className="text-xs text-gray-500">
+                  For multi-branch operations, specify a unique branch identifier
+                </p>
               </div>
-              
               <div className="space-y-2">
-                <Label htmlFor="secondaryColor">Secondary Color</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="secondaryColor"
-                    type="color"
-                    value={formData.secondaryColor}
-                    onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })}
-                    className="w-16 h-10 p-1 rounded"
-                  />
-                  <Input
-                    value={formData.secondaryColor}
-                    onChange={(e) => setFormData({ ...formData, secondaryColor: e.target.value })}
-                    placeholder="#666666"
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Color Preview */}
-            <div className="p-4 border rounded-lg">
-              <h4 className="font-medium mb-2">Color Preview</h4>
-              <div className="flex items-center gap-4">
-                <div 
-                  className="w-12 h-12 rounded-lg border"
-                  style={{ backgroundColor: formData.primaryColor }}
+                <LogoUpload
+                  currentLogoId={formData.logoImageId}
+                  onLogoChange={(logoId) => setFormData({ ...formData, logoImageId: logoId })}
                 />
-                <div 
-                  className="w-12 h-12 rounded-lg border"
-                  style={{ backgroundColor: formData.secondaryColor }}
-                />
-                <div className="flex-1">
-                  <div className="text-sm">
-                    <div>Primary: {formData.primaryColor}</div>
-                    <div>Secondary: {formData.secondaryColor}</div>
-                  </div>
-                </div>
               </div>
             </div>
           </CardContent>

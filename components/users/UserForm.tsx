@@ -153,6 +153,8 @@ export function UserForm({ isOpen, onClose, editingId }: UserFormProps) {
 
       if (editingId) {
         const { email, ...updateData } = userData;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const _ = email; // email is extracted but not used in update
         await updateUser({
           id: editingId,
           ...updateData,

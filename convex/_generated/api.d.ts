@@ -16,6 +16,7 @@ import type {
 import type * as currencies from "../currencies.js";
 import type * as customers from "../customers.js";
 import type * as denominations from "../denominations.js";
+import type * as files from "../files.js";
 import type * as idTypes from "../idTypes.js";
 import type * as settings from "../settings.js";
 import type * as tillTransactions from "../tillTransactions.js";
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   currencies: typeof currencies;
   customers: typeof customers;
   denominations: typeof denominations;
+  files: typeof files;
   idTypes: typeof idTypes;
   settings: typeof settings;
   tillTransactions: typeof tillTransactions;

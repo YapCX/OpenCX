@@ -204,34 +204,6 @@ export default function SettingsPage() {
         </Card>
       )}
 
-      {/* Quick Actions */}
-      {currentUserPermissions?.isManager && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>
-              Common settings management tasks
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 md:grid-cols-2">
-              <Link href="/settings/currency">
-                <Button variant="outline" className="w-full justify-start">
-                  <DollarSign className="h-4 w-4 mr-2" />
-                  Update Exchange Rates
-                </Button>
-              </Link>
-              <Link href="/settings/company">
-                <Button variant="outline" className="w-full justify-start">
-                  <Building2 className="h-4 w-4 mr-2" />
-                  Update Company Info
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Access Notice */}
       <Card className="border-blue-200 bg-blue-50">
         <CardContent className="pt-6">

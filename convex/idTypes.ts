@@ -111,7 +111,7 @@ export const getDefault = query({
     if (existingTypes.length === 0) {
       return [
         { name: "Driver's License", requiresExpiry: true, country: "CA" },
-        { name: "Passport", requiresExpiry: true, country: null },
+        { name: "Passport", requiresExpiry: true },
         { name: "Provincial ID", requiresExpiry: true, country: "CA" },
         { name: "Health Card", requiresExpiry: false, country: "CA" },
         { name: "Social Insurance Number", requiresExpiry: false, country: "CA" },

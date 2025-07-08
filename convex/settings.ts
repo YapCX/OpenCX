@@ -289,9 +289,8 @@ export const updateCompanySettings = mutation({
     establishedDate: v.optional(v.string()),
     regulatoryBody: v.optional(v.string()),
     complianceOfficer: v.optional(v.string()),
-    logoUrl: v.optional(v.string()),
-    primaryColor: v.optional(v.string()),
-    secondaryColor: v.optional(v.string()),
+    logoImageId: v.optional(v.id("_storage")),
+    branchId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = await requireManager(ctx);
@@ -328,11 +327,11 @@ export const markSystemInitialized = mutation({
   args: {},
   handler: async (ctx) => {
     const user = await requireManager(ctx);
-    
+
     // This mutation doesn't need to store anything specific
     // The getSystemInitializationStatus query will detect completion
     // based on the presence of company settings, AML settings, currencies, etc.
-    
+
     console.log("System marked as fully initialized by:", user.clerkUserId);
     return { success: true, initializedAt: Date.now() };
   },

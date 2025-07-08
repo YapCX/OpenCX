@@ -15,8 +15,7 @@
     {
       "name": "Passport",
       "description": "Government issued passport",
-      "requiresExpiry": true,
-      "country": null
+      "requiresExpiry": true
     },
     {
       "name": "Quebec ID Card",
@@ -253,23 +252,11 @@
   },
   "companySettings": {
     "companyName": "OpenCX Exchange",
-    "businessNumber": "",
-    "licenseNumber": "",
-    "address": "",
     "city": "Montreal",
     "province": "Quebec",
-    "postalCode": "",
     "country": "Canada",
-    "phone": "",
-    "email": "",
-    "website": "",
     "businessType": "Money Services Business",
-    "establishedDate": "",
-    "regulatoryBody": "FINTRAC",
-    "complianceOfficer": "",
-    "logoUrl": "",
-    "primaryColor": "#2563eb",
-    "secondaryColor": "#64748b"
+    "regulatoryBody": "FINTRAC"
   },
   "adminUser": {
     "defaultPrivileges": {

@@ -37,7 +37,7 @@ const applicationTables = {
     tillId: v.optional(v.string()),      // Till where transaction occurred
     userId: v.string(),                  // Clerk user ID
     customerId: v.optional(v.string()),  // Customer ID for walk-in customers
-    
+
     // Transaction types
     type: v.union(
       v.literal("currency_buy"),    // Order type: Buy
@@ -47,30 +47,30 @@ const applicationTables = {
       v.literal("transfer"),
       v.literal("adjustment")
     ),
-    
+
     // Transaction category
     category: v.optional(v.union(
       v.literal("cash_movement"),
       v.literal("currency_exchange"),
       v.literal("internal")
     )),
-    
+
     // Currency exchange specific fields
     fromCurrency: v.string(),
     fromAmount: v.number(),
     toCurrency: v.string(),
     toAmount: v.number(),
     exchangeRate: v.number(),
-    
+
     // For non-exchange transactions (cash movements)
     amount: v.optional(v.number()),
     currency: v.optional(v.string()),
-    
+
     // Fee structure
     serviceFee: v.optional(v.number()),
     serviceFeeType: v.optional(v.union(v.literal("flat"), v.literal("percentage"))),
     flatFee: v.optional(v.number()),
-    
+
     // Payment and processing
     paymentMethod: v.optional(v.string()),
     status: v.union(
@@ -80,16 +80,16 @@ const applicationTables = {
       v.literal("failed"),
       v.literal("cancelled")
     ),
-    
+
     // Customer information
     customerName: v.optional(v.string()),
     customerEmail: v.optional(v.string()),
     customerPhone: v.optional(v.string()),
-    
+
     // Compliance and notes
     requiresAML: v.boolean(),
     notes: v.optional(v.string()),
-    
+
     // Timestamps
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -108,43 +108,43 @@ const applicationTables = {
   customers: defineTable({
     customerId: v.string(), // Auto-generated format: CUST-000001
     userId: v.string(), // Clerk user ID who created this customer
-    
+
     // Customer type
     type: v.union(
       v.literal("individual"),
       v.literal("corporate")
     ),
-    
+
     // Individual customer fields
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
     fullName: v.optional(v.string()),
     dateOfBirth: v.optional(v.string()),
     occupation: v.optional(v.string()),
-    
+
     // Corporate customer fields
     businessName: v.optional(v.string()),
     incorporationNumber: v.optional(v.string()),
     businessType: v.optional(v.string()),
     isMSB: v.optional(v.boolean()), // Money Service Business
-    
+
     // Contact person for corporate customers
     contactPersonName: v.optional(v.string()),
     contactPersonTitle: v.optional(v.string()),
     contactPersonEmail: v.optional(v.string()),
     contactPersonPhone: v.optional(v.string()),
-    
+
     // Common contact information
     email: v.optional(v.string()),
     phone: v.optional(v.string()),
-    
+
     // Address information
     address: v.optional(v.string()),
     city: v.optional(v.string()),
     province: v.optional(v.string()),
     postalCode: v.optional(v.string()),
     country: v.optional(v.string()),
-    
+
     // Status and compliance
     status: v.union(
       v.literal("active"),
@@ -153,30 +153,30 @@ const applicationTables = {
       v.literal("suspended"),
       v.literal("flagged")
     ),
-    
+
     // Risk and AML
     riskLevel: v.union(
       v.literal("low"),
       v.literal("medium"),
       v.literal("high")
     ),
-    
+
     amlStatus: v.union(
       v.literal("pending"),
       v.literal("approved"),
       v.literal("rejected"),
       v.literal("requires_review")
     ),
-    
+
     sanctionsScreeningStatus: v.union(
       v.literal("pending"),
       v.literal("clear"),
       v.literal("match"),
       v.literal("needs_review")
     ),
-    
+
     lastScreeningDate: v.optional(v.number()),
-    
+
     // Metadata
     notes: v.optional(v.string()),
     createdAt: v.number(),
@@ -338,16 +338,16 @@ const applicationTables = {
     // Link to Clerk authentication
     clerkUserId: v.string(), // Clerk user ID (identity.subject)
     email: v.string(),
-    
+
     // Basic information
     fullName: v.optional(v.string()),
-    
+
     // Roles and permissions
     isManager: v.boolean(),
     isComplianceOfficer: v.boolean(),
     isTemplate: v.boolean(), // Template users for quick account creation
     isActive: v.boolean(),
-    
+
     // Financial controls
     canModifyExchangeRates: v.boolean(),
     maxModificationIndividual: v.optional(v.number()),
@@ -355,7 +355,7 @@ const applicationTables = {
     canEditFeesCommissions: v.boolean(),
     canTransferBetweenAccounts: v.boolean(),
     canReconcileAccounts: v.boolean(),
-    
+
     // Granular permission system
     defaultPrivileges: v.object({
       view: v.boolean(),
@@ -364,7 +364,7 @@ const applicationTables = {
       delete: v.boolean(),
       print: v.boolean(),
     }),
-    
+
     // Module-specific permission exceptions
     moduleExceptions: v.optional(v.array(v.object({
       moduleName: v.string(),
@@ -376,7 +376,7 @@ const applicationTables = {
         print: v.boolean(),
       }),
     }))),
-    
+
     // Invitation system
     invitationStatus: v.union(
       v.literal("pending"),
@@ -386,7 +386,7 @@ const applicationTables = {
     invitationToken: v.optional(v.string()),
     invitationSentAt: v.optional(v.number()),
     invitationExpiresAt: v.optional(v.number()),
-    
+
     // Metadata
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -419,14 +419,14 @@ const applicationTables = {
     // Screening configuration
     autoScreeningEnabled: v.boolean(),
     enabledSanctionLists: v.array(v.string()), // ["OFAC", "UN", "EU", "UK", "CANADA"]
-    
+
     // Risk thresholds
     riskThresholds: v.object({
       low: v.number(),    // 0-30
       medium: v.number(), // 31-70
       high: v.number(),   // 71-100
     }),
-    
+
     // Transaction limits and controls
     transactionLimits: v.object({
       individualDaily: v.number(),
@@ -434,28 +434,42 @@ const applicationTables = {
       corporateDaily: v.number(),
       corporateTransaction: v.number(),
     }),
-    
+
     // Automated actions
     autoHoldOnMatch: v.boolean(),
     requireOverrideReason: v.boolean(),
     autoReportSuspicious: v.boolean(),
-    
+
     // Service fees
     defaultServiceFee: v.number(),
     serviceFeeType: v.union(v.literal("flat"), v.literal("percentage")),
-    
+
     // PEP (Politically Exposed Person) settings
     pepScreeningEnabled: v.boolean(),
     adverseMediaScreeningEnabled: v.boolean(),
-    
+
     // Audit and compliance
     retentionPeriodDays: v.number(), // Data retention period
     requireTwoPersonApproval: v.boolean(),
-    
+
     // Metadata
     lastUpdated: v.number(),
     updatedBy: v.string(), // Clerk user ID
   }),
+
+  // File storage metadata
+  files: defineTable({
+    storageId: v.id("_storage"),
+    fileName: v.string(),
+    fileType: v.string(),
+    fileSize: v.number(),
+    description: v.optional(v.string()),
+    uploadedAt: v.number(),
+    uploadedBy: v.string(), // Clerk user ID
+  })
+    .index("by_storage_id", ["storageId"])
+    .index("by_uploaded_by", ["uploadedBy"])
+    .index("by_uploaded_at", ["uploadedAt"]),
 
   // Company/Business Settings
   companySettings: defineTable({
@@ -463,7 +477,7 @@ const applicationTables = {
     companyName: v.string(),
     businessNumber: v.optional(v.string()),
     licenseNumber: v.optional(v.string()),
-    
+
     // Contact information
     address: v.optional(v.string()),
     city: v.optional(v.string()),
@@ -473,20 +487,21 @@ const applicationTables = {
     phone: v.optional(v.string()),
     email: v.optional(v.string()),
     website: v.optional(v.string()),
-    
+
     // Business details
     businessType: v.optional(v.string()),
     establishedDate: v.optional(v.string()),
-    
+
     // Regulatory information
     regulatoryBody: v.optional(v.string()),
     complianceOfficer: v.optional(v.string()),
-    
+
     // System branding
-    logoUrl: v.optional(v.string()),
-    primaryColor: v.optional(v.string()),
-    secondaryColor: v.optional(v.string()),
-    
+    logoImageId: v.optional(v.id("_storage")),
+
+    // Multi-branch support
+    branchId: v.optional(v.string()),
+
     // Metadata
     lastUpdated: v.number(),
     updatedBy: v.string(), // Clerk user ID
