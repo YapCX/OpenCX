@@ -6,6 +6,7 @@ import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { OrderForm } from "@/components/orders/OrderForm";
+import { TransactionDetails } from "@/components/transactions/TransactionDetails";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,14 +57,19 @@ export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [typeFilter, setTypeFilter] = useState<string>("");
+  const [showDetails, setShowDetails] = useState(false);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<Id<"transactions"> | null>(null);
 
   const transactions = useQuery(api.transactions.list, {
+    category: "currency_exchange", // Only show customer orders, not till transactions
     searchTerm: searchTerm || undefined,
     status: statusFilter && statusFilter !== "all" ? statusFilter as "pending" | "processing" | "completed" | "failed" | "cancelled" : undefined,
-    type: typeFilter && typeFilter !== "all" ? typeFilter as "currency_buy" | "currency_sell" | "cash_in" | "cash_out" | "transfer" | "adjustment" : undefined,
+    type: typeFilter && typeFilter !== "all" ? typeFilter as "currency_buy" | "currency_sell" : undefined,
   }) || [];
 
-  const stats = useQuery(api.transactions.getStats, {}) || {
+  const stats = useQuery(api.transactions.getStats, {
+    category: "currency_exchange" // Only count customer orders, not till transactions
+  }) || {
     total: 0,
     pending: 0,
     processing: 0,
@@ -101,15 +107,27 @@ export default function OrdersPage() {
   };
 
   const handleStatusUpdate = async (id: Id<"transactions">, status: string) => {
+    // Check if completing a transaction requires till access
+    if (status === "completed" && !currentTill) {
+      toast.error("Please sign into a till to complete currency exchange transactions");
+      return;
+    }
+
     try {
       await updateStatus({
         id,
-        status: status as "pending" | "processing" | "completed" | "failed" | "cancelled"
+        status: status as "pending" | "processing" | "completed" | "failed" | "cancelled",
+        tillId: currentTill?.tillId
       });
-      toast.success(`Transaction ${status}`);
+      toast.success(`Transaction ${status}${status === "completed" ? " and till balances updated" : ""}`);
     } catch {
       toast.error('Failed to update transaction status');
     }
+  };
+
+  const handleViewDetails = (id: Id<"transactions">) => {
+    setSelectedTransactionId(id);
+    setShowDetails(true);
   };
 
   const getStatusIcon = (status: string) => {
@@ -439,6 +457,7 @@ export default function OrdersPage() {
                         variant="ghost"
                         size="sm"
                         title="View Details"
+                        onClick={() => handleViewDetails(transaction._id)}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -493,6 +512,16 @@ export default function OrdersPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Transaction Details Modal */}
+      <TransactionDetails
+        transactionId={selectedTransactionId}
+        isOpen={showDetails}
+        onClose={() => {
+          setShowDetails(false);
+          setSelectedTransactionId(null);
+        }}
+      />
     </div>
   );
 }

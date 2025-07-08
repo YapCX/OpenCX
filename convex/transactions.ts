@@ -45,11 +45,22 @@ export const create = mutation({
     // Determine if AML is required (transactions over $1000 equivalent)
     const requiresAML = args.fromAmount > 1000 || args.toAmount > 1000;
     
+    // Determine category based on transaction type
+    let category: "cash_movement" | "currency_exchange" | "internal";
+    if (args.type === "currency_buy" || args.type === "currency_sell") {
+      category = "currency_exchange";
+    } else if (args.type === "cash_in" || args.type === "cash_out") {
+      category = "cash_movement";
+    } else {
+      category = "internal";
+    }
+    
     const transaction = {
       transactionId: generateTransactionId(),
       userId,
       customerId: args.customerId,
       type: args.type,
+      category,
       fromCurrency: args.fromCurrency,
       fromAmount: args.fromAmount,
       toCurrency: args.toCurrency,
@@ -90,6 +101,11 @@ export const list = query({
       v.literal("transfer"),
       v.literal("adjustment")
     )),
+    category: v.optional(v.union(
+      v.literal("cash_movement"),
+      v.literal("currency_exchange"),
+      v.literal("internal")
+    )),
     limit: v.optional(v.number()),
     searchTerm: v.optional(v.string()),
   },
@@ -104,6 +120,10 @@ export const list = query({
     
     if (args.type) {
       query = query.filter((q) => q.eq(q.field("type"), args.type));
+    }
+    
+    if (args.category) {
+      query = query.filter((q) => q.eq(q.field("category"), args.category));
     }
     
     let transactions = await query
@@ -165,6 +185,121 @@ export const getByTransactionId = query({
   },
 });
 
+export const update = mutation({
+  args: {
+    id: v.id("transactions"),
+    type: v.optional(v.union(
+      v.literal("currency_buy"),
+      v.literal("currency_sell"),
+      v.literal("cash_in"),
+      v.literal("cash_out"),
+      v.literal("transfer"),
+      v.literal("adjustment")
+    )),
+    fromCurrency: v.optional(v.string()),
+    fromAmount: v.optional(v.number()),
+    toCurrency: v.optional(v.string()),
+    toAmount: v.optional(v.number()),
+    exchangeRate: v.optional(v.number()),
+    serviceFee: v.optional(v.number()),
+    serviceFeeType: v.optional(v.union(v.literal("flat"), v.literal("percentage"))),
+    paymentMethod: v.optional(v.string()),
+    customerName: v.optional(v.string()),
+    customerEmail: v.optional(v.string()),
+    customerPhone: v.optional(v.string()),
+    customerId: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+    const transaction = await ctx.db.get(args.id);
+    
+    if (!transaction) {
+      throw new Error("Transaction not found");
+    }
+    
+    if (transaction.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
+    
+    // Only allow updates to pending transactions
+    if (transaction.status !== "pending") {
+      throw new Error("Can only edit pending transactions");
+    }
+    
+    const now = Date.now();
+    const updates: any = {
+      updatedAt: now,
+    };
+    
+    // Only update fields that are provided
+    if (args.type !== undefined) {
+      updates.type = args.type;
+      
+      // Update category when type changes
+      if (args.type === "currency_buy" || args.type === "currency_sell") {
+        updates.category = "currency_exchange";
+      } else if (args.type === "cash_in" || args.type === "cash_out") {
+        updates.category = "cash_movement";
+      } else {
+        updates.category = "internal";
+      }
+    }
+    
+    if (args.fromCurrency !== undefined) updates.fromCurrency = args.fromCurrency;
+    if (args.fromAmount !== undefined) {
+      updates.fromAmount = args.fromAmount;
+      // Update AML requirement based on new amount
+      updates.requiresAML = args.fromAmount > 1000 || (args.toAmount !== undefined ? args.toAmount > 1000 : transaction.toAmount > 1000);
+    }
+    if (args.toCurrency !== undefined) updates.toCurrency = args.toCurrency;
+    if (args.toAmount !== undefined) {
+      updates.toAmount = args.toAmount;
+      // Update AML requirement based on new amount
+      updates.requiresAML = args.toAmount > 1000 || (args.fromAmount !== undefined ? args.fromAmount > 1000 : transaction.fromAmount > 1000);
+    }
+    if (args.exchangeRate !== undefined) updates.exchangeRate = args.exchangeRate;
+    if (args.serviceFee !== undefined) updates.serviceFee = args.serviceFee;
+    if (args.serviceFeeType !== undefined) updates.serviceFeeType = args.serviceFeeType;
+    if (args.paymentMethod !== undefined) updates.paymentMethod = args.paymentMethod;
+    if (args.customerName !== undefined) updates.customerName = args.customerName;
+    if (args.customerEmail !== undefined) updates.customerEmail = args.customerEmail;
+    if (args.customerPhone !== undefined) updates.customerPhone = args.customerPhone;
+    if (args.customerId !== undefined) updates.customerId = args.customerId;
+    if (args.notes !== undefined) updates.notes = args.notes;
+    
+    await ctx.db.patch(args.id, updates);
+    return { success: true };
+  },
+});
+
+// Helper function to update till cash account balances
+async function updateTillCashAccount(ctx: any, tillId: string, currency: string, amount: number) {
+  const cashAccount = await ctx.db
+    .query("cashLedgerAccounts")
+    .withIndex("by_till_and_currency", (q: any) => 
+      q.eq("tillId", tillId).eq("currencyCode", currency)
+    )
+    .unique();
+
+  if (!cashAccount) {
+    throw new Error(`Cash account for ${currency} not found in till ${tillId}`);
+  }
+
+  const newBalance = cashAccount.balance + amount;
+  
+  if (newBalance < 0) {
+    throw new Error(`Insufficient ${currency} balance in till ${tillId}. Current: ${cashAccount.balance}, Requested: ${amount}`);
+  }
+
+  await ctx.db.patch(cashAccount._id, {
+    balance: newBalance,
+    lastUpdated: Date.now(),
+  });
+
+  return { oldBalance: cashAccount.balance, newBalance };
+}
+
 export const updateStatus = mutation({
   args: {
     id: v.id("transactions"),
@@ -176,6 +311,7 @@ export const updateStatus = mutation({
       v.literal("cancelled")
     ),
     notes: v.optional(v.string()),
+    tillId: v.optional(v.string()), // Required for completing transactions
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);
@@ -201,6 +337,53 @@ export const updateStatus = mutation({
     
     if (args.status === "completed") {
       updates.completedAt = now;
+      
+      // Update till balances for currency exchange transactions
+      if (transaction.category === "currency_exchange") {
+        // Get the till ID - either from args or find user's current till
+        let tillId = args.tillId;
+        
+        if (!tillId) {
+          // Find user's current active till session
+          const currentSession = await ctx.db
+            .query("tillSessions")
+            .withIndex("by_user_id", (q: any) => q.eq("userId", userId))
+            .filter((q: any) => q.eq(q.field("isActive"), true))
+            .first();
+          
+          if (currentSession) {
+            tillId = currentSession.tillId;
+          }
+        }
+        
+        if (!tillId) {
+          throw new Error("No active till session found. Please sign into a till to complete transactions.");
+        }
+        
+        // Update till balances based on transaction type
+        try {
+          if (transaction.type === "currency_buy") {
+            // Customer buys toCurrency with fromCurrency
+            // Till receives fromCurrency (what customer pays) - INCREASE
+            // Till gives out toCurrency (what customer receives) - DECREASE
+            await updateTillCashAccount(ctx, tillId, transaction.fromCurrency, transaction.fromAmount);
+            await updateTillCashAccount(ctx, tillId, transaction.toCurrency, -transaction.toAmount);
+            
+          } else if (transaction.type === "currency_sell") {
+            // Customer sells fromCurrency for toCurrency
+            // Till receives fromCurrency (what customer sells) - INCREASE
+            // Till gives out toCurrency (what customer gets paid) - DECREASE
+            await updateTillCashAccount(ctx, tillId, transaction.fromCurrency, transaction.fromAmount);
+            await updateTillCashAccount(ctx, tillId, transaction.toCurrency, -transaction.toAmount);
+          }
+          
+          // Store the till ID in the transaction for audit purposes
+          updates.tillId = tillId;
+          
+        } catch (error) {
+          throw new Error(`Failed to update till balances: ${error}`);
+        }
+      }
     }
     
     await ctx.db.patch(args.id, updates);
@@ -233,14 +416,25 @@ export const remove = mutation({
 });
 
 export const getStats = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    category: v.optional(v.union(
+      v.literal("cash_movement"),
+      v.literal("currency_exchange"),
+      v.literal("internal")
+    )),
+  },
+  handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);
     
-    const transactions = await ctx.db
+    let query = ctx.db
       .query("transactions")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+      .withIndex("by_user", (q) => q.eq("userId", userId));
+    
+    if (args.category) {
+      query = query.filter((q) => q.eq(q.field("category"), args.category));
+    }
+    
+    const transactions = await query.collect();
     
     const stats = {
       total: transactions.length,
