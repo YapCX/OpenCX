@@ -24,6 +24,27 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Id } from "@/convex/_generated/dataModel";
 
+// Extended company settings interface that includes all possible properties
+interface ExtendedCompanySettings {
+  companyName: string;
+  businessNumber?: string;
+  licenseNumber?: string;
+  address?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
+  country?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  businessType?: string;
+  establishedDate?: string;
+  regulatoryBody?: string;
+  complianceOfficer?: string;
+  logoImageId?: Id<"_storage">;
+  branchId?: string;
+}
+
 const BUSINESS_TYPES = [
   "Money Service Business (MSB)",
   "Foreign Exchange Dealer",
@@ -75,7 +96,7 @@ export default function CompanySettingsPage() {
   // Initialize form data when settings load
   useEffect(() => {
     if (companySettings) {
-      const settings = companySettings as any;
+      const settings = companySettings as ExtendedCompanySettings;
       setFormData({
         companyName: settings.companyName || "",
         businessNumber: settings.businessNumber || "",

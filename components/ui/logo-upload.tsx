@@ -71,7 +71,7 @@ export function LogoUpload({ currentLogoId, onLogoChange, className }: LogoUploa
       const { storageId } = await result.json();
 
       // Save file metadata
-      const fileId = await saveFile({
+      await saveFile({
         storageId,
         fileName: file.name,
         fileType: file.type,
