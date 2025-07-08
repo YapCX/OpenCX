@@ -44,6 +44,7 @@ import {
   Trash2,
   Monitor,
   AlertCircle,
+  History,
 } from "lucide-react";
 
 type SortField = "createdAt" | "transactionId" | "fromAmount" | "status";
@@ -59,16 +60,19 @@ export default function OrdersPage() {
   const [typeFilter, setTypeFilter] = useState<string>("");
   const [showDetails, setShowDetails] = useState(false);
   const [selectedTransactionId, setSelectedTransactionId] = useState<Id<"transactions"> | null>(null);
+  const [currentSessionOnly, setCurrentSessionOnly] = useState(true);
 
   const transactions = useQuery(api.transactions.list, {
     category: "currency_exchange", // Only show customer orders, not till transactions
     searchTerm: searchTerm || undefined,
     status: statusFilter && statusFilter !== "all" ? statusFilter as "pending" | "processing" | "completed" | "failed" | "cancelled" : undefined,
     type: typeFilter && typeFilter !== "all" ? typeFilter as "currency_buy" | "currency_sell" : undefined,
+    currentSessionOnly,
   }) || [];
 
   const stats = useQuery(api.transactions.getStats, {
-    category: "currency_exchange" // Only count customer orders, not till transactions
+    category: "currency_exchange", // Only count customer orders, not till transactions
+    currentSessionOnly,
   }) || {
     total: 0,
     pending: 0,
@@ -82,6 +86,7 @@ export default function OrdersPage() {
   };
 
   const currentTill = useQuery(api.tills.getCurrentUserTill, {});
+  const userPermissions = useQuery(api.users.getCurrentUserPermissions, {});
 
   const deleteTransaction = useMutation(api.transactions.remove);
   const updateStatus = useMutation(api.transactions.updateStatus);
@@ -324,6 +329,29 @@ export default function OrdersPage() {
             </Button>
 
             <Separator orientation="vertical" className="h-6" />
+
+            {/* Session Filter Toggle for Tellers */}
+            {userPermissions && !userPermissions.isManager && !userPermissions.isComplianceOfficer && (
+              <>
+                <Button
+                  variant={currentSessionOnly ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentSessionOnly(true)}
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Current Session
+                </Button>
+                <Button
+                  variant={!currentSessionOnly ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentSessionOnly(false)}
+                >
+                  <History className="h-4 w-4 mr-2" />
+                  All Sessions
+                </Button>
+                <Separator orientation="vertical" className="h-6" />
+              </>
+            )}
 
             <div className="flex items-center gap-2">
               <Select value={statusFilter} onValueChange={setStatusFilter}>

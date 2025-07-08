@@ -25,7 +25,8 @@ import {
   TrendingUp,
   TrendingDown,
   AlertCircle,
-  Info
+  Info,
+  History
 } from "lucide-react";
 
 export function TillTransactions() {
@@ -33,12 +34,17 @@ export function TillTransactions() {
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("");
   const [notes, setNotes] = useState("");
+  const [currentSessionOnly, setCurrentSessionOnly] = useState(true);
 
   // Queries
   const currentTill = useQuery(api.tills.getCurrentUserTill, {});
   const tillBalances = useQuery(api.tillTransactions.getCurrentTillBalances, {}) || [];
-  const transactions = useQuery(api.tillTransactions.getCurrentTillTransactions, { limit: 50 }) || [];
+  const transactions = useQuery(api.tillTransactions.getCurrentTillTransactions, { 
+    limit: 50,
+    currentSessionOnly,
+  }) || [];
   const currencies = useQuery(api.currencies.list, {}) || [];
+  const userPermissions = useQuery(api.users.getCurrentUserPermissions, {});
 
   // Mutations
   const createTransaction = useMutation(api.tillTransactions.create);
@@ -81,11 +87,13 @@ export function TillTransactions() {
   };
 
   const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency,
+    const formatted = new Intl.NumberFormat("en-US", {
       minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
+    
+    // Show amount with currency code for clarity
+    return `${formatted} ${currency}`;
   };
 
   const getTransactionIcon = (type: string) => {
@@ -288,13 +296,39 @@ export function TillTransactions() {
         <TabsContent value="transaction-history" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Transaction History
-              </CardTitle>
-              <CardDescription>
-                Recent transactions for {currentTill.tillName}
-              </CardDescription>
+              <div className="flex flex-col space-y-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Transaction History
+                  </CardTitle>
+                  <CardDescription>
+                    Recent transactions for {currentTill.tillName}
+                  </CardDescription>
+                </div>
+                
+                {/* Session Filter Toggle for Tellers */}
+                {userPermissions && !userPermissions.isManager && !userPermissions.isComplianceOfficer && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={currentSessionOnly ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentSessionOnly(true)}
+                    >
+                      <Clock className="h-4 w-4 mr-2" />
+                      Current Session
+                    </Button>
+                    <Button
+                      variant={!currentSessionOnly ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentSessionOnly(false)}
+                    >
+                      <History className="h-4 w-4 mr-2" />
+                      All Sessions
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               <Table>

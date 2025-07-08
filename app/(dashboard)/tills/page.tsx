@@ -100,11 +100,13 @@ export default function TillsPage() {
   };
 
   const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: currency,
+    const formatted = new Intl.NumberFormat("en-US", {
       minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
+    
+    // Show amount with currency code for clarity
+    return `${formatted} ${currency}`;
   };
 
   if (showForm) {

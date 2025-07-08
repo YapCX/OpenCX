@@ -107,12 +107,53 @@ export const list = query({
       v.literal("internal")
     )),
     limit: v.optional(v.number()),
+    offset: v.optional(v.number()),
     searchTerm: v.optional(v.string()),
+    currentSessionOnly: v.optional(v.boolean()), // For tellers to see only current session
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);
     
-    let query = ctx.db.query("transactions").withIndex("by_user", (q) => q.eq("userId", userId));
+    // Get user to check if they're a manager
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", userId))
+      .first();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    let query;
+    
+    if (user.isManager || user.isComplianceOfficer) {
+      // Managers and compliance officers can see all transactions
+      query = ctx.db.query("transactions").withIndex("by_created_at");
+    } else {
+      // Regular tellers see only their own transactions
+      if (args.currentSessionOnly) {
+        // Get current active till session for the user
+        const currentSession = await ctx.db
+          .query("tillSessions")
+          .withIndex("by_user_id", (q) => q.eq("userId", userId))
+          .filter((q) => q.eq(q.field("isActive"), true))
+          .first();
+        
+        if (currentSession) {
+          // Filter transactions from current session onwards
+          query = ctx.db
+            .query("transactions")
+            .withIndex("by_user", (q) => q.eq("userId", userId))
+            .filter((q) => q.gte(q.field("createdAt"), currentSession.signInTime));
+        } else {
+          // No active session, return empty results
+          return [];
+        }
+      } else {
+        // Show all user's transactions (for pagination through previous sessions)
+        query = ctx.db.query("transactions").withIndex("by_user", (q) => q.eq("userId", userId));
+      }
+    }
     
     if (args.status) {
       query = query.filter((q) => q.eq(q.field("status"), args.status));
@@ -129,6 +170,11 @@ export const list = query({
     let transactions = await query
       .order("desc")
       .take(args.limit || 100);
+    
+    // Apply offset for pagination
+    if (args.offset) {
+      transactions = transactions.slice(args.offset);
+    }
     
     // Apply search filter if provided
     if (args.searchTerm) {
@@ -422,13 +468,61 @@ export const getStats = query({
       v.literal("currency_exchange"),
       v.literal("internal")
     )),
+    currentSessionOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);
     
-    let query = ctx.db
-      .query("transactions")
-      .withIndex("by_user", (q) => q.eq("userId", userId));
+    // Get user to check if they're a manager
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", userId))
+      .first();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    let query;
+    
+    if (user.isManager || user.isComplianceOfficer) {
+      // Managers and compliance officers can see all transactions
+      query = ctx.db.query("transactions").withIndex("by_created_at");
+    } else {
+      // Regular tellers see only their own transactions
+      if (args.currentSessionOnly) {
+        // Get current active till session for the user
+        const currentSession = await ctx.db
+          .query("tillSessions")
+          .withIndex("by_user_id", (q) => q.eq("userId", userId))
+          .filter((q) => q.eq(q.field("isActive"), true))
+          .first();
+        
+        if (currentSession) {
+          // Filter transactions from current session onwards
+          query = ctx.db
+            .query("transactions")
+            .withIndex("by_user", (q) => q.eq("userId", userId))
+            .filter((q) => q.gte(q.field("createdAt"), currentSession.signInTime));
+        } else {
+          // No active session, return empty stats
+          return {
+            total: 0,
+            pending: 0,
+            processing: 0,
+            completed: 0,
+            failed: 0,
+            cancelled: 0,
+            buyOrders: 0,
+            sellOrders: 0,
+            totalVolume: 0,
+          };
+        }
+      } else {
+        // Show all user's transactions stats
+        query = ctx.db.query("transactions").withIndex("by_user", (q) => q.eq("userId", userId));
+      }
+    }
     
     if (args.category) {
       query = query.filter((q) => q.eq(q.field("category"), args.category));

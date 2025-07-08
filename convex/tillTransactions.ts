@@ -120,25 +120,90 @@ export const list = query({
   args: {
     tillId: v.optional(v.string()),
     limit: v.optional(v.number()),
+    offset: v.optional(v.number()),
+    currentSessionOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    const userId = await requireAuth(ctx);
+
+    // Get user to check if they're a manager
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", userId))
+      .first();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
 
     let transactions;
 
-    if (args.tillId) {
-      transactions = await ctx.db
-        .query("transactions")
-        .withIndex("by_till_id", (q) => q.eq("tillId", args.tillId))
-        .order("desc")
-        .collect();
+    if (user.isManager || user.isComplianceOfficer) {
+      // Managers and compliance officers can see all till transactions
+      if (args.tillId) {
+        transactions = await ctx.db
+          .query("transactions")
+          .withIndex("by_till_id", (q) => q.eq("tillId", args.tillId))
+          .order("desc")
+          .collect();
+      } else {
+        transactions = await ctx.db
+          .query("transactions")
+          .order("desc")
+          .collect();
+      }
     } else {
-      transactions = await ctx.db
-        .query("transactions")
-        .order("desc")
-        .collect();
+      // Regular tellers see only their own transactions
+      if (args.currentSessionOnly) {
+        // Get current active till session for the user
+        const currentSession = await ctx.db
+          .query("tillSessions")
+          .withIndex("by_user_id", (q) => q.eq("userId", userId))
+          .filter((q) => q.eq(q.field("isActive"), true))
+          .first();
+        
+        if (currentSession) {
+          // Filter transactions from current session onwards
+          const userTillId = args.tillId || currentSession.tillId;
+          transactions = await ctx.db
+            .query("transactions")
+            .withIndex("by_till_id", (q) => q.eq("tillId", userTillId))
+            .filter((q) => 
+              q.and(
+                q.eq(q.field("userId"), userId),
+                q.gte(q.field("createdAt"), currentSession.signInTime)
+              )
+            )
+            .order("desc")
+            .collect();
+        } else {
+          // No active session, return empty results
+          return [];
+        }
+      } else {
+        // Show all user's transactions (for pagination through previous sessions)
+        if (args.tillId) {
+          transactions = await ctx.db
+            .query("transactions")
+            .withIndex("by_till_id", (q) => q.eq("tillId", args.tillId))
+            .filter((q) => q.eq(q.field("userId"), userId))
+            .order("desc")
+            .collect();
+        } else {
+          transactions = await ctx.db
+            .query("transactions")
+            .withIndex("by_user", (q) => q.eq("userId", userId))
+            .order("desc")
+            .collect();
+        }
+      }
     }
 
+    // Apply offset and limit for pagination
+    if (args.offset) {
+      transactions = transactions.slice(args.offset);
+    }
+    
     if (args.limit) {
       transactions = transactions.slice(0, args.limit);
     }
@@ -148,9 +213,22 @@ export const list = query({
 });
 
 export const getCurrentTillTransactions = query({
-  args: { limit: v.optional(v.number()) },
+  args: { 
+    limit: v.optional(v.number()),
+    currentSessionOnly: v.optional(v.boolean()),
+  },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);
+
+    // Get user to check if they're a manager
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", userId))
+      .first();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
 
     // Get user's current active session
     const activeSession = await ctx.db
@@ -163,11 +241,40 @@ export const getCurrentTillTransactions = query({
       return [];
     }
 
-    let transactions = await ctx.db
-      .query("transactions")
-      .withIndex("by_till_id", (q) => q.eq("tillId", activeSession.tillId))
-      .order("desc")
-      .collect();
+    let transactions;
+
+    if (user.isManager || user.isComplianceOfficer) {
+      // Managers and compliance officers can see all transactions in the till
+      transactions = await ctx.db
+        .query("transactions")
+        .withIndex("by_till_id", (q) => q.eq("tillId", activeSession.tillId))
+        .order("desc")
+        .collect();
+    } else {
+      // Regular tellers see only their own transactions
+      if (args.currentSessionOnly) {
+        // Filter transactions from current session onwards
+        transactions = await ctx.db
+          .query("transactions")
+          .withIndex("by_till_id", (q) => q.eq("tillId", activeSession.tillId))
+          .filter((q) => 
+            q.and(
+              q.eq(q.field("userId"), userId),
+              q.gte(q.field("createdAt"), activeSession.signInTime)
+            )
+          )
+          .order("desc")
+          .collect();
+      } else {
+        // Show all user's transactions in this till
+        transactions = await ctx.db
+          .query("transactions")
+          .withIndex("by_till_id", (q) => q.eq("tillId", activeSession.tillId))
+          .filter((q) => q.eq(q.field("userId"), userId))
+          .order("desc")
+          .collect();
+      }
+    }
 
     if (args.limit) {
       transactions = transactions.slice(0, args.limit);
