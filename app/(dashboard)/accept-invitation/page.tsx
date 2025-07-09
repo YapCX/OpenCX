@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useUser, SignInButton } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -10,6 +10,7 @@ import { CheckCircle, XCircle, UserPlus } from "lucide-react";
 function AcceptInvitationContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  const router = useRouter();
   const { user } = useUser();
   const [isAccepting, setIsAccepting] = useState(false);
   const [isAccepted, setIsAccepted] = useState(false);
@@ -35,7 +36,7 @@ function AcceptInvitationContent() {
 
       // Redirect to dashboard after a short delay
       setTimeout(() => {
-        window.location.href = "/dashboard";
+        router.push("/dashboard");
       }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to accept invitation");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useReducer } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
@@ -52,34 +52,67 @@ interface ModuleException {
   privileges: Privileges;
 }
 
+interface PrivilegeState {
+  defaultPrivileges: Privileges;
+  moduleExceptions: ModuleException[];
+}
+
+type PrivilegeAction = 
+  | { type: 'SET_DEFAULT_PRIVILEGE'; field: keyof Privileges; value: boolean }
+  | { type: 'SET_MODULE_EXCEPTION'; moduleName: string; privileges: Privileges }
+  | { type: 'REMOVE_MODULE_EXCEPTION'; moduleName: string }
+  | { type: 'RESET_PRIVILEGES'; defaultPrivileges: Privileges; moduleExceptions: ModuleException[] }
+  | { type: 'INITIALIZE_PRIVILEGES' };
+
+const privilegeReducer = (state: PrivilegeState, action: PrivilegeAction): PrivilegeState => {
+  switch (action.type) {
+    case 'SET_DEFAULT_PRIVILEGE':
+      return {
+        ...state,
+        defaultPrivileges: {
+          ...state.defaultPrivileges,
+          [action.field]: action.value,
+        },
+      };
+    case 'SET_MODULE_EXCEPTION':
+      const existingIndex = state.moduleExceptions.findIndex(e => e.moduleName === action.moduleName);
+      if (existingIndex >= 0) {
+        const newExceptions = [...state.moduleExceptions];
+        newExceptions[existingIndex] = { moduleName: action.moduleName, privileges: action.privileges };
+        return { ...state, moduleExceptions: newExceptions };
+      } else {
+        return {
+          ...state,
+          moduleExceptions: [...state.moduleExceptions, { moduleName: action.moduleName, privileges: action.privileges }],
+        };
+      }
+    case 'REMOVE_MODULE_EXCEPTION':
+      return {
+        ...state,
+        moduleExceptions: state.moduleExceptions.filter(e => e.moduleName !== action.moduleName),
+      };
+    case 'RESET_PRIVILEGES':
+      return {
+        defaultPrivileges: action.defaultPrivileges,
+        moduleExceptions: action.moduleExceptions,
+      };
+    case 'INITIALIZE_PRIVILEGES':
+      return {
+        defaultPrivileges: {
+          view: true,
+          create: false,
+          modify: false,
+          delete: false,
+          print: true,
+        },
+        moduleExceptions: [],
+      };
+    default:
+      return state;
+  }
+};
 
 export function UserForm({ isOpen, onClose, editingId }: UserFormProps) {
-  const [formData, setFormData] = useState({
-    email: "",
-    fullName: "",
-    isManager: false,
-    isComplianceOfficer: false,
-    isTemplate: false,
-    isActive: true,
-    canModifyExchangeRates: false,
-    maxModificationIndividual: "",
-    maxModificationCorporate: "",
-    canEditFeesCommissions: false,
-    canTransferBetweenAccounts: false,
-    canReconcileAccounts: false,
-  });
-
-  const [defaultPrivileges, setDefaultPrivileges] = useState<Privileges>({
-    view: true,
-    create: false,
-    modify: false,
-    delete: false,
-    print: true,
-  });
-
-  const [moduleExceptions, setModuleExceptions] = useState<ModuleException[]>([]);
-  const [invitationLink, setInvitationLink] = useState<string>("");
-
   const existingUser = useQuery(
     api.users.get,
     editingId ? { id: editingId } : "skip"
@@ -89,51 +122,39 @@ export function UserForm({ isOpen, onClose, editingId }: UserFormProps) {
   const createUser = useMutation(api.users.create);
   const updateUser = useMutation(api.users.update);
 
+  const [formData, setFormData] = useState({
+    email: existingUser?.email ?? "",
+    fullName: existingUser?.fullName ?? "",
+    isManager: existingUser?.isManager ?? false,
+    isComplianceOfficer: existingUser?.isComplianceOfficer ?? false,
+    isTemplate: existingUser?.isTemplate ?? false,
+    isActive: existingUser?.isActive ?? true,
+    canModifyExchangeRates: existingUser?.canModifyExchangeRates ?? false,
+    maxModificationIndividual: existingUser?.maxModificationIndividual?.toString() ?? "",
+    maxModificationCorporate: existingUser?.maxModificationCorporate?.toString() ?? "",
+    canEditFeesCommissions: existingUser?.canEditFeesCommissions ?? false,
+    canTransferBetweenAccounts: existingUser?.canTransferBetweenAccounts ?? false,
+    canReconcileAccounts: existingUser?.canReconcileAccounts ?? false,
+  });
+
+  const [privilegeState, dispatchPrivilege] = useReducer(privilegeReducer, {
+    defaultPrivileges: existingUser?.defaultPrivileges ?? {
+      view: true,
+      create: false,
+      modify: false,
+      delete: false,
+      print: true,
+    },
+    moduleExceptions: existingUser?.moduleExceptions ?? [],
+  });
+  const [invitationLink, setInvitationLink] = useState<string>("");
+
+  // Reset invitation link when dialog closes/opens
   useEffect(() => {
-    if (existingUser) {
-      setFormData({
-        email: existingUser.email,
-        fullName: existingUser.fullName || "",
-        isManager: existingUser.isManager,
-        isComplianceOfficer: existingUser.isComplianceOfficer,
-        isTemplate: existingUser.isTemplate,
-        isActive: existingUser.isActive,
-        canModifyExchangeRates: existingUser.canModifyExchangeRates,
-        maxModificationIndividual: existingUser.maxModificationIndividual?.toString() || "",
-        maxModificationCorporate: existingUser.maxModificationCorporate?.toString() || "",
-        canEditFeesCommissions: existingUser.canEditFeesCommissions,
-        canTransferBetweenAccounts: existingUser.canTransferBetweenAccounts,
-        canReconcileAccounts: existingUser.canReconcileAccounts,
-      });
-      setDefaultPrivileges(existingUser.defaultPrivileges);
-      setModuleExceptions(existingUser.moduleExceptions || []);
-    } else {
-      // Reset form for new user
-      setFormData({
-        email: "",
-        fullName: "",
-        isManager: false,
-        isComplianceOfficer: false,
-        isTemplate: false,
-        isActive: true,
-        canModifyExchangeRates: false,
-        maxModificationIndividual: "",
-        maxModificationCorporate: "",
-        canEditFeesCommissions: false,
-        canTransferBetweenAccounts: false,
-        canReconcileAccounts: false,
-      });
-      setDefaultPrivileges({
-        view: true,
-        create: false,
-        modify: false,
-        delete: false,
-        print: true,
-      });
-      setModuleExceptions([]);
+    if (!isOpen) {
       setInvitationLink("");
     }
-  }, [existingUser, isOpen]);
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,8 +168,8 @@ export function UserForm({ isOpen, onClose, editingId }: UserFormProps) {
         maxModificationCorporate: formData.maxModificationCorporate 
           ? parseFloat(formData.maxModificationCorporate) 
           : undefined,
-        defaultPrivileges,
-        moduleExceptions,
+        defaultPrivileges: privilegeState.defaultPrivileges,
+        moduleExceptions: privilegeState.moduleExceptions,
       };
 
       if (editingId) {
@@ -181,35 +202,37 @@ export function UserForm({ isOpen, onClose, editingId }: UserFormProps) {
   };
 
   const handlePrivilegeChange = (privilege: keyof Privileges, checked: boolean) => {
-    setDefaultPrivileges(prev => ({
-      ...prev,
-      [privilege]: checked,
-    }));
-  };
-
-  const handleModuleExceptionChange = (moduleName: string, privilege: keyof Privileges, checked: boolean) => {
-    setModuleExceptions(prev => {
-      const existing = prev.find(e => e.moduleName === moduleName);
-      
-      if (existing) {
-        return prev.map(e => 
-          e.moduleName === moduleName 
-            ? { ...e, privileges: { ...e.privileges, [privilege]: checked } }
-            : e
-        );
-      } else {
-        return [...prev, {
-          moduleName,
-          privileges: { ...defaultPrivileges, [privilege]: checked }
-        }];
-      }
+    dispatchPrivilege({
+      type: 'SET_DEFAULT_PRIVILEGE',
+      field: privilege,
+      value: checked,
     });
   };
 
-  const getEffectivePrivilege = (moduleName: string, privilege: keyof Privileges): boolean => {
-    const exception = moduleExceptions.find(e => e.moduleName === moduleName);
-    return exception ? exception.privileges[privilege] : defaultPrivileges[privilege];
+  const handleModuleExceptionChange = (moduleName: string, privilege: keyof Privileges, checked: boolean) => {
+    const existing = privilegeState.moduleExceptions.find(e => e.moduleName === moduleName);
+    
+    if (existing) {
+      dispatchPrivilege({
+        type: 'SET_MODULE_EXCEPTION',
+        moduleName,
+        privileges: { ...existing.privileges, [privilege]: checked },
+      });
+    } else {
+      dispatchPrivilege({
+        type: 'SET_MODULE_EXCEPTION',
+        moduleName,
+        privileges: { ...privilegeState.defaultPrivileges, [privilege]: checked },
+      });
+    }
   };
+
+  const getEffectivePrivilege = useMemo(() => {
+    return (moduleName: string, privilege: keyof Privileges): boolean => {
+      const exception = privilegeState.moduleExceptions.find(e => e.moduleName === moduleName);
+      return exception ? exception.privileges[privilege] : privilegeState.defaultPrivileges[privilege];
+    };
+  }, [privilegeState.moduleExceptions, privilegeState.defaultPrivileges]);
 
   const copyInvitationLink = () => {
     navigator.clipboard.writeText(invitationLink);
@@ -474,11 +497,11 @@ export function UserForm({ isOpen, onClose, editingId }: UserFormProps) {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-5 gap-4">
-                    {(Object.keys(defaultPrivileges) as Array<keyof Privileges>).map(privilege => (
+                    {(Object.keys(privilegeState.defaultPrivileges) as Array<keyof Privileges>).map(privilege => (
                       <div key={privilege} className="flex items-center space-x-2">
                         <Checkbox
                           id={`default-${privilege}`}
-                          checked={defaultPrivileges[privilege]}
+                          checked={privilegeState.defaultPrivileges[privilege]}
                           onCheckedChange={(checked) => 
                             handlePrivilegeChange(privilege, checked as boolean)
                           }
@@ -506,12 +529,12 @@ export function UserForm({ isOpen, onClose, editingId }: UserFormProps) {
                         <div key={moduleName} className="border rounded-lg p-4">
                           <div className="flex items-center justify-between mb-3">
                             <Label className="capitalize font-medium">{moduleName}</Label>
-                            {moduleExceptions.some(e => e.moduleName === moduleName) && (
+                            {privilegeState.moduleExceptions.some(e => e.moduleName === moduleName) && (
                               <Badge variant="outline">Modified</Badge>
                             )}
                           </div>
                           <div className="grid grid-cols-5 gap-4">
-                            {(Object.keys(defaultPrivileges) as Array<keyof Privileges>).map(privilege => (
+                            {(Object.keys(privilegeState.defaultPrivileges) as Array<keyof Privileges>).map(privilege => (
                               <div key={privilege} className="flex items-center space-x-2">
                                 <Checkbox
                                   id={`${moduleName}-${privilege}`}

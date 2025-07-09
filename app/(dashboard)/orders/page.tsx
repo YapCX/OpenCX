@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -187,20 +187,22 @@ export default function OrdersPage() {
     }).format(amount);
   };
 
-  // Sort transactions
-  const sortedTransactions = [...transactions].sort((a, b) => {
-    let aValue = a[sortField];
-    let bValue = b[sortField];
+  // Sort transactions - memoized to prevent unnecessary re-renders
+  const sortedTransactions = useMemo(() => {
+    return [...transactions].sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
 
-    if (typeof aValue === "string") {
-      aValue = aValue.toLowerCase();
-      bValue = (bValue as string).toLowerCase();
-    }
+      if (typeof aValue === "string") {
+        aValue = aValue.toLowerCase();
+        bValue = (bValue as string).toLowerCase();
+      }
 
-    if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-    if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
-    return 0;
-  });
+      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [transactions, sortField, sortDirection]);
 
   if (showForm) {
     return (

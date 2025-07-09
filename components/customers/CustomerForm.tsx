@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -43,37 +43,35 @@ interface CustomerFormProps {
   isOpen: boolean;
 }
 
-export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) {
-  const [customerType, setCustomerType] = useState<"individual" | "corporate">("individual");
-
+interface CustomerFormData {
+  customerType: "individual" | "corporate";
   // Individual fields
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
-  const [occupation, setOccupation] = useState("");
-
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  occupation: string;
   // Corporate fields
-  const [businessName, setBusinessName] = useState("");
-  const [incorporationNumber, setIncorporationNumber] = useState("");
-  const [businessType, setBusinessType] = useState("");
-  const [isMSB, setIsMSB] = useState(false);
-
+  businessName: string;
+  incorporationNumber: string;
+  businessType: string;
+  isMSB: boolean;
   // Contact person for corporate
-  const [contactPersonName, setContactPersonName] = useState("");
-  const [contactPersonTitle, setContactPersonTitle] = useState("");
-  const [contactPersonEmail, setContactPersonEmail] = useState("");
-  const [contactPersonPhone, setContactPersonPhone] = useState("");
-
+  contactPersonName: string;
+  contactPersonTitle: string;
+  contactPersonEmail: string;
+  contactPersonPhone: string;
   // Common fields
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [province, setProvince] = useState("");
-  const [postalCode, setPostalCode] = useState("");
-  const [country, setCountry] = useState("Canada");
-  const [notes, setNotes] = useState("");
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  country: string;
+  notes: string;
+}
 
+export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) {
   const createCustomer = useMutation(api.customers.create);
   const updateCustomer = useMutation(api.customers.update);
   const existingCustomer = useQuery(
@@ -81,50 +79,51 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
     editingId ? { id: editingId } : "skip"
   );
 
-  // Load existing customer data for editing
-  useEffect(() => {
-    if (existingCustomer) {
-      setCustomerType(existingCustomer.type);
-      setFirstName(existingCustomer.firstName || "");
-      setLastName(existingCustomer.lastName || "");
-      setDateOfBirth(existingCustomer.dateOfBirth || "");
-      setOccupation(existingCustomer.occupation || "");
-      setBusinessName(existingCustomer.businessName || "");
-      setIncorporationNumber(existingCustomer.incorporationNumber || "");
-      setBusinessType(existingCustomer.businessType || "");
-      setIsMSB(existingCustomer.isMSB || false);
-      setContactPersonName(existingCustomer.contactPersonName || "");
-      setContactPersonTitle(existingCustomer.contactPersonTitle || "");
-      setContactPersonEmail(existingCustomer.contactPersonEmail || "");
-      setContactPersonPhone(existingCustomer.contactPersonPhone || "");
-      setEmail(existingCustomer.email || "");
-      setPhone(existingCustomer.phone || "");
-      setAddress(existingCustomer.address || "");
-      setCity(existingCustomer.city || "");
-      setProvince(existingCustomer.province || "");
-      setPostalCode(existingCustomer.postalCode || "");
-      setCountry(existingCustomer.country || "Canada");
-      setNotes(existingCustomer.notes || "");
-    }
-  }, [existingCustomer]);
+  const [formData, setFormData] = useState<CustomerFormData>({
+    customerType: existingCustomer?.type ?? "individual",
+    firstName: existingCustomer?.firstName ?? "",
+    lastName: existingCustomer?.lastName ?? "",
+    dateOfBirth: existingCustomer?.dateOfBirth ?? "",
+    occupation: existingCustomer?.occupation ?? "",
+    businessName: existingCustomer?.businessName ?? "",
+    incorporationNumber: existingCustomer?.incorporationNumber ?? "",
+    businessType: existingCustomer?.businessType ?? "",
+    isMSB: existingCustomer?.isMSB ?? false,
+    contactPersonName: existingCustomer?.contactPersonName ?? "",
+    contactPersonTitle: existingCustomer?.contactPersonTitle ?? "",
+    contactPersonEmail: existingCustomer?.contactPersonEmail ?? "",
+    contactPersonPhone: existingCustomer?.contactPersonPhone ?? "",
+    email: existingCustomer?.email ?? "",
+    phone: existingCustomer?.phone ?? "",
+    address: existingCustomer?.address ?? "",
+    city: existingCustomer?.city ?? "",
+    province: existingCustomer?.province ?? "",
+    postalCode: existingCustomer?.postalCode ?? "",
+    country: existingCustomer?.country ?? "Canada",
+    notes: existingCustomer?.notes ?? "",
+  });
+
+  const updateFormData = (field: keyof CustomerFormData, value: string | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validation
-    if (customerType === "individual") {
-      if (!firstName || !lastName) {
+    if (formData.customerType === "individual") {
+      if (!formData.firstName || !formData.lastName) {
         toast.error("First name and last name are required for individual customers");
         return;
       }
     } else {
-      if (!businessName) {
+      if (!formData.businessName) {
         toast.error("Business name is required for corporate customers");
         return;
       }
     }
 
-    if (!phone && !email) {
+    if (!formData.phone && !formData.email) {
       toast.error("At least one contact method (phone or email) is required");
       return;
     }
@@ -133,51 +132,51 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
       if (editingId) {
         await updateCustomer({
           id: editingId,
-          firstName: firstName || undefined,
-          lastName: lastName || undefined,
-          dateOfBirth: dateOfBirth || undefined,
-          occupation: occupation || undefined,
-          businessName: businessName || undefined,
-          incorporationNumber: incorporationNumber || undefined,
-          businessType: businessType || undefined,
-          isMSB,
-          contactPersonName: contactPersonName || undefined,
-          contactPersonTitle: contactPersonTitle || undefined,
-          contactPersonEmail: contactPersonEmail || undefined,
-          contactPersonPhone: contactPersonPhone || undefined,
-          email: email || undefined,
-          phone: phone || undefined,
-          address: address || undefined,
-          city: city || undefined,
-          province: province || undefined,
-          postalCode: postalCode || undefined,
-          country: country || undefined,
-          notes: notes || undefined,
+          firstName: formData.firstName || undefined,
+          lastName: formData.lastName || undefined,
+          dateOfBirth: formData.dateOfBirth || undefined,
+          occupation: formData.occupation || undefined,
+          businessName: formData.businessName || undefined,
+          incorporationNumber: formData.incorporationNumber || undefined,
+          businessType: formData.businessType || undefined,
+          isMSB: formData.isMSB,
+          contactPersonName: formData.contactPersonName || undefined,
+          contactPersonTitle: formData.contactPersonTitle || undefined,
+          contactPersonEmail: formData.contactPersonEmail || undefined,
+          contactPersonPhone: formData.contactPersonPhone || undefined,
+          email: formData.email || undefined,
+          phone: formData.phone || undefined,
+          address: formData.address || undefined,
+          city: formData.city || undefined,
+          province: formData.province || undefined,
+          postalCode: formData.postalCode || undefined,
+          country: formData.country || undefined,
+          notes: formData.notes || undefined,
         });
         toast.success("Customer updated successfully");
       } else {
         const result = await createCustomer({
-          type: customerType,
-          firstName: firstName || undefined,
-          lastName: lastName || undefined,
-          dateOfBirth: dateOfBirth || undefined,
-          occupation: occupation || undefined,
-          businessName: businessName || undefined,
-          incorporationNumber: incorporationNumber || undefined,
-          businessType: businessType || undefined,
-          isMSB,
-          contactPersonName: contactPersonName || undefined,
-          contactPersonTitle: contactPersonTitle || undefined,
-          contactPersonEmail: contactPersonEmail || undefined,
-          contactPersonPhone: contactPersonPhone || undefined,
-          email: email || undefined,
-          phone: phone || undefined,
-          address: address || undefined,
-          city: city || undefined,
-          province: province || undefined,
-          postalCode: postalCode || undefined,
-          country: country || undefined,
-          notes: notes || undefined,
+          type: formData.customerType,
+          firstName: formData.firstName || undefined,
+          lastName: formData.lastName || undefined,
+          dateOfBirth: formData.dateOfBirth || undefined,
+          occupation: formData.occupation || undefined,
+          businessName: formData.businessName || undefined,
+          incorporationNumber: formData.incorporationNumber || undefined,
+          businessType: formData.businessType || undefined,
+          isMSB: formData.isMSB,
+          contactPersonName: formData.contactPersonName || undefined,
+          contactPersonTitle: formData.contactPersonTitle || undefined,
+          contactPersonEmail: formData.contactPersonEmail || undefined,
+          contactPersonPhone: formData.contactPersonPhone || undefined,
+          email: formData.email || undefined,
+          phone: formData.phone || undefined,
+          address: formData.address || undefined,
+          city: formData.city || undefined,
+          province: formData.province || undefined,
+          postalCode: formData.postalCode || undefined,
+          country: formData.country || undefined,
+          notes: formData.notes || undefined,
         });
         toast.success(`Customer ${result.customerId} created successfully`);
       }
@@ -190,68 +189,53 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
   };
 
   const resetForm = () => {
-    setCustomerType("individual");
-    setFirstName("");
-    setLastName("");
-    setDateOfBirth("");
-    setOccupation("");
-    setBusinessName("");
-    setIncorporationNumber("");
-    setBusinessType("");
-    setIsMSB(false);
-    setContactPersonName("");
-    setContactPersonTitle("");
-    setContactPersonEmail("");
-    setContactPersonPhone("");
-    setEmail("");
-    setPhone("");
-    setAddress("");
-    setCity("");
-    setProvince("");
-    setPostalCode("");
-    setCountry("Canada");
-    setNotes("");
+    setFormData({
+      customerType: "individual",
+      firstName: "",
+      lastName: "",
+      dateOfBirth: "",
+      occupation: "",
+      businessName: "",
+      incorporationNumber: "",
+      businessType: "",
+      isMSB: false,
+      contactPersonName: "",
+      contactPersonTitle: "",
+      contactPersonEmail: "",
+      contactPersonPhone: "",
+      email: "",
+      phone: "",
+      address: "",
+      city: "",
+      province: "",
+      postalCode: "",
+      country: "Canada",
+      notes: "",
+    });
   };
 
-  const getComplianceIndicator = () => {
-    if (!existingCustomer) return null;
-
-    const { amlStatus, sanctionsScreeningStatus, status } = existingCustomer;
-
-    if (status === "flagged") {
-      return (
-        <Badge variant="destructive" className="flex items-center gap-1">
-          <AlertTriangle className="h-3 w-3" />
-          Flagged
-        </Badge>
-      );
-    }
-
-    if (amlStatus === "approved" && sanctionsScreeningStatus === "clear") {
-      return (
-        <Badge variant="default" className="flex items-center gap-1 bg-green-100 text-green-800">
-          <CheckCircle className="h-3 w-3" />
-          Verified
-        </Badge>
-      );
-    }
-
-    if (amlStatus === "pending" || sanctionsScreeningStatus === "pending") {
-      return (
-        <Badge variant="secondary" className="flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          Pending Review
-        </Badge>
-      );
-    }
-
-    return (
+  const complianceIndicator = !existingCustomer ? null :
+    existingCustomer.status === "flagged" ? (
+      <Badge variant="destructive" className="flex items-center gap-1">
+        <AlertTriangle className="h-3 w-3" />
+        Flagged
+      </Badge>
+    ) : existingCustomer.amlStatus === "approved" && existingCustomer.sanctionsScreeningStatus === "clear" ? (
+      <Badge variant="default" className="flex items-center gap-1 bg-green-100 text-green-800">
+        <CheckCircle className="h-3 w-3" />
+        Verified
+      </Badge>
+    ) : existingCustomer.amlStatus === "pending" || existingCustomer.sanctionsScreeningStatus === "pending" ? (
+      <Badge variant="secondary" className="flex items-center gap-1">
+        <Clock className="h-3 w-3" />
+        Pending Review
+      </Badge>
+    ) : (
       <Badge variant="outline" className="flex items-center gap-1">
         <Shield className="h-3 w-3" />
         Under Review
       </Badge>
     );
-  };
 
   if (!isOpen) return null;
 
@@ -260,7 +244,7 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            {customerType === "individual" ? (
+            {formData.customerType === "individual" ? (
               <User className="h-6 w-6" />
             ) : (
               <Building2 className="h-6 w-6" />
@@ -273,7 +257,7 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
           {existingCustomer && (
             <div className="flex items-center gap-2 mt-2">
               <span className="text-sm font-medium">ID: {existingCustomer.customerId}</span>
-              {getComplianceIndicator()}
+              {complianceIndicator}
             </div>
           )}
         </div>
@@ -297,13 +281,13 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="customer-type"
-                    checked={customerType === "individual"}
+                    checked={formData.customerType === "individual"}
                     onCheckedChange={(checked) =>
-                      setCustomerType(checked ? "individual" : "corporate")
+                      updateFormData("customerType", checked ? "individual" : "corporate")
                     }
                   />
                   <Label htmlFor="customer-type" className="flex items-center gap-2">
-                    {customerType === "individual" ? (
+                    {formData.customerType === "individual" ? (
                       <>
                         <User className="h-4 w-4" />
                         Individual
@@ -317,7 +301,7 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                   </Label>
                 </div>
                 <Badge variant="outline">
-                  {customerType === "individual" ? "Personal Account" : "Business Account"}
+                  {formData.customerType === "individual" ? "Personal Account" : "Business Account"}
                 </Badge>
               </div>
             </CardContent>
@@ -336,7 +320,7 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  {customerType === "individual" ? (
+                  {formData.customerType === "individual" ? (
                     <>
                       <User className="h-5 w-5" />
                       Personal Information
@@ -350,15 +334,15 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {customerType === "individual" ? (
+                {formData.customerType === "individual" ? (
                   <>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="firstName">First Name *</Label>
                         <Input
                           id="firstName"
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
+                          value={formData.firstName}
+                          onChange={(e) => updateFormData("firstName", e.target.value)}
                           placeholder="Enter first name"
                           required
                         />
@@ -367,8 +351,8 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                         <Label htmlFor="lastName">Last Name *</Label>
                         <Input
                           id="lastName"
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
+                          value={formData.lastName}
+                          onChange={(e) => updateFormData("lastName", e.target.value)}
                           placeholder="Enter last name"
                           required
                         />
@@ -381,16 +365,16 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                         <Input
                           id="dateOfBirth"
                           type="date"
-                          value={dateOfBirth}
-                          onChange={(e) => setDateOfBirth(e.target.value)}
+                          value={formData.dateOfBirth}
+                          onChange={(e) => updateFormData("dateOfBirth", e.target.value)}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="occupation">Occupation</Label>
                         <Input
                           id="occupation"
-                          value={occupation}
-                          onChange={(e) => setOccupation(e.target.value)}
+                          value={formData.occupation}
+                          onChange={(e) => updateFormData("occupation", e.target.value)}
                           placeholder="Enter occupation"
                         />
                       </div>
@@ -402,8 +386,8 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                       <Label htmlFor="businessName">Business Name *</Label>
                       <Input
                         id="businessName"
-                        value={businessName}
-                        onChange={(e) => setBusinessName(e.target.value)}
+                        value={formData.businessName}
+                        onChange={(e) => updateFormData("businessName", e.target.value)}
                         placeholder="Enter business name"
                         required
                       />
@@ -414,14 +398,14 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                         <Label htmlFor="incorporationNumber">Incorporation Number</Label>
                         <Input
                           id="incorporationNumber"
-                          value={incorporationNumber}
-                          onChange={(e) => setIncorporationNumber(e.target.value)}
+                          value={formData.incorporationNumber}
+                          onChange={(e) => updateFormData("incorporationNumber", e.target.value)}
                           placeholder="Enter incorporation number"
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="businessType">Business Type</Label>
-                        <Select value={businessType} onValueChange={setBusinessType}>
+                        <Select value={formData.businessType} onValueChange={(value) => updateFormData("businessType", value)}>
                           <SelectTrigger>
                             <SelectValue placeholder="Select business type" />
                           </SelectTrigger>
@@ -440,14 +424,14 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                     <div className="flex items-center space-x-2">
                       <Switch
                         id="msb"
-                        checked={isMSB}
-                        onCheckedChange={setIsMSB}
+                        checked={formData.isMSB}
+                        onCheckedChange={(checked) => updateFormData("isMSB", checked)}
                       />
                       <Label htmlFor="msb" className="flex items-center gap-2">
                         <Briefcase className="h-4 w-4" />
                         Money Service Business (MSB)
                       </Label>
-                      {isMSB && (
+                      {formData.isMSB && (
                         <Badge variant="secondary">Requires Enhanced Due Diligence</Badge>
                       )}
                     </div>
@@ -461,8 +445,8 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                           <Label htmlFor="contactPersonName">Contact Name</Label>
                           <Input
                             id="contactPersonName"
-                            value={contactPersonName}
-                            onChange={(e) => setContactPersonName(e.target.value)}
+                            value={formData.contactPersonName}
+                            onChange={(e) => updateFormData("contactPersonName", e.target.value)}
                             placeholder="Enter contact person name"
                           />
                         </div>
@@ -470,8 +454,8 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                           <Label htmlFor="contactPersonTitle">Title</Label>
                           <Input
                             id="contactPersonTitle"
-                            value={contactPersonTitle}
-                            onChange={(e) => setContactPersonTitle(e.target.value)}
+                            value={formData.contactPersonTitle}
+                            onChange={(e) => updateFormData("contactPersonTitle", e.target.value)}
                             placeholder="Enter title"
                           />
                         </div>
@@ -482,8 +466,8 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                           <Input
                             id="contactPersonEmail"
                             type="email"
-                            value={contactPersonEmail}
-                            onChange={(e) => setContactPersonEmail(e.target.value)}
+                            value={formData.contactPersonEmail}
+                            onChange={(e) => updateFormData("contactPersonEmail", e.target.value)}
                             placeholder="contact@business.com"
                           />
                         </div>
@@ -492,8 +476,8 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                           <Input
                             id="contactPersonPhone"
                             type="tel"
-                            value={contactPersonPhone}
-                            onChange={(e) => setContactPersonPhone(e.target.value)}
+                            value={formData.contactPersonPhone}
+                            onChange={(e) => updateFormData("contactPersonPhone", e.target.value)}
                             placeholder="+1 (555) 123-4567"
                           />
                         </div>
@@ -524,8 +508,8 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                     <Input
                       id="email"
                       type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={formData.email}
+                      onChange={(e) => updateFormData("email", e.target.value)}
                       placeholder="customer@example.com"
                     />
                   </div>
@@ -537,8 +521,8 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                     <Input
                       id="phone"
                       type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      value={formData.phone}
+                      onChange={(e) => updateFormData("phone", e.target.value)}
                       placeholder="+1 (555) 123-4567"
                     />
                   </div>
@@ -558,8 +542,8 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                   <Label htmlFor="address">Street Address</Label>
                   <Input
                     id="address"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
+                    value={formData.address}
+                    onChange={(e) => updateFormData("address", e.target.value)}
                     placeholder="123 Main Street"
                   />
                 </div>
@@ -569,14 +553,14 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                     <Label htmlFor="city">City</Label>
                     <Input
                       id="city"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
+                      value={formData.city}
+                      onChange={(e) => updateFormData("city", e.target.value)}
                       placeholder="Toronto"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="province">Province/State</Label>
-                    <Select value={province} onValueChange={setProvince}>
+                    <Select value={formData.province} onValueChange={(value) => updateFormData("province", value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select province" />
                       </SelectTrigger>
@@ -604,14 +588,14 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                     <Label htmlFor="postalCode">Postal Code</Label>
                     <Input
                       id="postalCode"
-                      value={postalCode}
-                      onChange={(e) => setPostalCode(e.target.value)}
+                      value={formData.postalCode}
+                      onChange={(e) => updateFormData("postalCode", e.target.value)}
                       placeholder="M5V 3A1"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="country">Country</Label>
-                    <Select value={country} onValueChange={setCountry}>
+                    <Select value={formData.country} onValueChange={(value) => updateFormData("country", value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select country" />
                       </SelectTrigger>
@@ -641,8 +625,8 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
                   <Label htmlFor="notes">Notes</Label>
                   <Textarea
                     id="notes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
+                    value={formData.notes}
+                    onChange={(e) => updateFormData("notes", e.target.value)}
                     placeholder="Additional notes about this customer..."
                     rows={4}
                   />

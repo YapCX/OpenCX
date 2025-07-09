@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -56,12 +56,12 @@ export default function DenominationsPage() {
   const bulkDelete = useMutation(api.denominations.bulkDelete);
   const loadStandardDenominations = useMutation(api.denominations.loadStandardDenominations);
 
-  // Data processing
-  const filteredDenominations = denominations.filter(d =>
+  // Data processing - memoized to prevent unnecessary re-renders
+  const filteredDenominations = useMemo(() => denominations.filter(d =>
     !filterCurrency || filterCurrency === "all" || d.currencyCode === filterCurrency
-  );
+  ), [denominations, filterCurrency]);
 
-  const sortedDenominations = [...filteredDenominations].sort((a, b) => {
+  const sortedDenominations = useMemo(() => [...filteredDenominations].sort((a, b) => {
     let aValue: string | number | boolean = a[sortField];
     let bValue: string | number | boolean = b[sortField];
 
@@ -73,7 +73,7 @@ export default function DenominationsPage() {
     if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
     if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
     return 0;
-  });
+  }), [filteredDenominations, sortField, sortDirection]);
 
   // Handler functions
   const handleNew = () => {

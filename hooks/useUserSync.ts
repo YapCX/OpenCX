@@ -35,7 +35,7 @@ export function useUserSync() {
     };
 
     syncUser();
-  }, [isAuthenticated, user, syncFromClerk]);
+  }, [isAuthenticated, user]);
 
   return { isAuthenticated, user, syncError, isLoading };
 }

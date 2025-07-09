@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -48,14 +48,20 @@ interface EditTransactionFormProps {
 }
 
 export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: EditTransactionFormProps) {
-  const [transactionType, setTransactionType] = useState<"currency_buy" | "currency_sell">("currency_buy");
-  const [fromCurrency, setFromCurrency] = useState("");
-  const [fromAmount, setFromAmount] = useState("");
-  const [toCurrency, setToCurrency] = useState("");
-  const [toAmount, setToAmount] = useState("");
-  const [exchangeRate, setExchangeRate] = useState("");
-  const [serviceFee, setServiceFee] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("");
+  const transaction = useQuery(
+    api.transactions.getById,
+    transactionId ? { id: transactionId } : "skip"
+  );
+  const currencies = useQuery(api.currencies.list, {}) || [];
+  const updateTransaction = useMutation(api.transactions.update);
+
+  const [transactionType, setTransactionType] = useState<"currency_buy" | "currency_sell">(
+    transaction?.type as "currency_buy" | "currency_sell" ?? "currency_buy"
+  );
+  const [fromCurrency, setFromCurrency] = useState(transaction?.fromCurrency ?? "");
+  const [fromAmount, setFromAmount] = useState(transaction?.fromAmount.toString() ?? "");
+  const [toCurrency, setToCurrency] = useState(transaction?.toCurrency ?? "");
+  const [paymentMethod, setPaymentMethod] = useState(transaction?.paymentMethod ?? "");
   const [selectedCustomer, setSelectedCustomer] = useState<{
     _id: Id<"customers">;
     customerId: string;
@@ -65,23 +71,15 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
     email?: string;
     phone?: string;
   } | null>(null);
-  const [customerName, setCustomerName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [notes, setNotes] = useState("");
-  const [isCalculating, setIsCalculating] = useState(false);
+  const [customerName, setCustomerName] = useState(transaction?.customerName ?? "");
+  const [customerEmail, setCustomerEmail] = useState(transaction?.customerEmail ?? "");
+  const [customerPhone, setCustomerPhone] = useState(transaction?.customerPhone ?? "");
+  const [notes, setNotes] = useState(transaction?.notes ?? "");
   const [isSaving, setIsSaving] = useState(false);
-
-  const transaction = useQuery(
-    api.transactions.getById,
-    transactionId ? { id: transactionId } : "skip"
-  );
-  const currencies = useQuery(api.currencies.list, {}) || [];
-  const updateTransaction = useMutation(api.transactions.update);
   
   const calculateExchange = useQuery(
     api.transactions.calculateExchangeAmount,
-    fromCurrency && toCurrency && fromAmount && !isNaN(parseFloat(fromAmount)) && !isCalculating
+    fromCurrency && toCurrency && fromAmount && !isNaN(parseFloat(fromAmount))
       ? {
           fromCurrency,
           toCurrency,
@@ -90,31 +88,10 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
       : "skip"
   );
 
-  // Load transaction data when it becomes available
-  useEffect(() => {
-    if (transaction) {
-      setTransactionType(transaction.type as "currency_buy" | "currency_sell");
-      setFromCurrency(transaction.fromCurrency);
-      setFromAmount(transaction.fromAmount.toString());
-      setToCurrency(transaction.toCurrency);
-      setToAmount(transaction.toAmount.toString());
-      setExchangeRate(transaction.exchangeRate.toString());
-      setServiceFee((transaction.serviceFee || 0).toString());
-      setPaymentMethod(transaction.paymentMethod || "");
-      setCustomerName(transaction.customerName || "");
-      setCustomerEmail(transaction.customerEmail || "");
-      setCustomerPhone(transaction.customerPhone || "");
-      setNotes(transaction.notes || "");
-    }
-  }, [transaction]);
-
-  useEffect(() => {
-    if (calculateExchange && !isCalculating) {
-      setToAmount(calculateExchange.toAmount.toFixed(4));
-      setExchangeRate(calculateExchange.exchangeRate.toFixed(6));
-      setServiceFee(calculateExchange.serviceFee.toFixed(2));
-    }
-  }, [calculateExchange, isCalculating]);
+  // Derive calculated values from the exchange calculation or use original transaction values
+  const calculatedToAmount = calculateExchange ? calculateExchange.toAmount.toFixed(4) : transaction?.toAmount.toString() || "";
+  const calculatedExchangeRate = calculateExchange ? calculateExchange.exchangeRate.toFixed(6) : transaction?.exchangeRate.toString() || "";
+  const calculatedServiceFee = calculateExchange ? calculateExchange.serviceFee.toFixed(2) : (transaction?.serviceFee || 0).toString();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,12 +101,12 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
       return;
     }
     
-    if (!fromCurrency || !toCurrency || !fromAmount || !toAmount) {
+    if (!fromCurrency || !toCurrency || !fromAmount || !calculatedToAmount) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    if (parseFloat(fromAmount) <= 0 || parseFloat(toAmount) <= 0) {
+    if (parseFloat(fromAmount) <= 0 || parseFloat(calculatedToAmount) <= 0) {
       toast.error("Amount must be greater than 0");
       return;
     }
@@ -142,9 +119,9 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
         fromCurrency,
         fromAmount: parseFloat(fromAmount),
         toCurrency,
-        toAmount: parseFloat(toAmount),
-        exchangeRate: parseFloat(exchangeRate),
-        serviceFee: parseFloat(serviceFee) || 0,
+        toAmount: parseFloat(calculatedToAmount),
+        exchangeRate: parseFloat(calculatedExchangeRate),
+        serviceFee: parseFloat(calculatedServiceFee) || 0,
         serviceFeeType: "flat",
         paymentMethod: paymentMethod || undefined,
         customerId: selectedCustomer?.customerId || undefined,
@@ -167,15 +144,13 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
 
   const handleSwapCurrencies = () => {
     const tempCurrency = fromCurrency;
-    const tempAmount = fromAmount;
     setFromCurrency(toCurrency);
-    setFromAmount(toAmount);
+    setFromAmount(calculatedToAmount);
     setToCurrency(tempCurrency);
-    setToAmount(tempAmount);
     setTransactionType(transactionType === "currency_buy" ? "currency_sell" : "currency_buy");
   };
 
-  const isAMLRequired = parseFloat(fromAmount) > 1000 || parseFloat(toAmount) > 1000;
+  const isAMLRequired = parseFloat(fromAmount) > 1000 || parseFloat(calculatedToAmount) > 1000;
 
   if (!transaction) {
     return (
@@ -282,11 +257,7 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
                       step="0.01"
                       placeholder="0.00"
                       value={fromAmount}
-                      onChange={(e) => {
-                        setFromAmount(e.target.value);
-                        setIsCalculating(true);
-                        setTimeout(() => setIsCalculating(false), 100);
-                      }}
+                      onChange={(e) => setFromAmount(e.target.value)}
                     />
                   </div>
                 </div>
@@ -331,8 +302,9 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
                       type="number"
                       step="0.01"
                       placeholder="0.00"
-                      value={toAmount}
-                      onChange={(e) => setToAmount(e.target.value)}
+                      value={calculatedToAmount}
+                      className="bg-muted"
+                      readOnly
                     />
                   </div>
                 </div>
@@ -345,9 +317,9 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
                       type="number"
                       step="0.000001"
                       placeholder="0.000000"
-                      value={exchangeRate}
-                      onChange={(e) => setExchangeRate(e.target.value)}
-                      className="font-mono"
+                      value={calculatedExchangeRate}
+                      className="font-mono bg-muted"
+                      readOnly
                     />
                   </div>
 
@@ -358,8 +330,9 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
                       type="number"
                       step="0.01"
                       placeholder="0.00"
-                      value={serviceFee}
-                      onChange={(e) => setServiceFee(e.target.value)}
+                      value={calculatedServiceFee}
+                      className="bg-muted"
+                      readOnly
                     />
                   </div>
                 </div>
@@ -496,22 +469,22 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
                 <div className="flex justify-between">
                   <span>Exchange:</span>
                   <span className="font-mono">
-                    {fromAmount} {fromCurrency} → {toAmount} {toCurrency}
+                    {fromAmount} {fromCurrency} → {calculatedToAmount} {toCurrency}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Rate:</span>
-                  <span className="font-mono">{exchangeRate}</span>
+                  <span className="font-mono">{calculatedExchangeRate}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Service Fee:</span>
-                  <span className="font-mono">${serviceFee}</span>
+                  <span className="font-mono">${calculatedServiceFee}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold">
                   <span>Customer {transactionType === "currency_buy" ? "Pays" : "Receives"}:</span>
                   <span className="font-mono">
-                    {transactionType === "currency_buy" ? fromAmount : toAmount}{" "}
+                    {transactionType === "currency_buy" ? fromAmount : calculatedToAmount}{" "}
                     {transactionType === "currency_buy" ? fromCurrency : toCurrency}
                   </span>
                 </div>
@@ -525,7 +498,7 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
             </Button>
             <Button 
               type="submit" 
-              disabled={!fromCurrency || !toCurrency || !fromAmount || !toAmount || isSaving}
+              disabled={!fromCurrency || !toCurrency || !fromAmount || !calculatedToAmount || isSaving}
             >
               <Save className="h-4 w-4 mr-2" />
               {isSaving ? "Saving..." : "Save Changes"}

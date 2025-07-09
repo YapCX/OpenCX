@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -150,20 +150,22 @@ export default function CurrenciesPage() {
     }).format(rate);
   };
 
-  // Sort currencies
-  const sortedCurrencies = [...currencies].sort((a, b) => {
-    let aValue = a[sortField];
-    let bValue = b[sortField];
+  // Sort currencies - memoized to prevent unnecessary re-renders
+  const sortedCurrencies = useMemo(() => {
+    return [...currencies].sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
 
-    if (typeof aValue === "string") {
-      aValue = aValue.toLowerCase();
-      bValue = (bValue as string).toLowerCase();
-    }
+      if (typeof aValue === "string") {
+        aValue = aValue.toLowerCase();
+        bValue = (bValue as string).toLowerCase();
+      }
 
-    if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-    if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
-    return 0;
-  });
+      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [currencies, sortField, sortDirection]);
 
   if (showForm) {
     return (

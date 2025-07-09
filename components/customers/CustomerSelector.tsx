@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -78,37 +78,24 @@ export function CustomerSelector({
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-
   const customersQuery = useQuery(api.customers.list, {
     searchTerm: searchTerm || undefined,
     limit: 50,
   });
 
-  const customers = useMemo(() => {
-    return (customersQuery as Customer[]) || [];
-  }, [customersQuery]);
+  const customers = (customersQuery as Customer[]) || [];
 
-  // Find selected customer when selectedCustomerId changes
-  useEffect(() => {
-    if (selectedCustomerId) {
-      const customer = customers.find(c => c.customerId === selectedCustomerId);
-      if (customer) {
-        setSelectedCustomer(customer);
-      }
-    } else {
-      setSelectedCustomer(null);
-    }
-  }, [selectedCustomerId, customers]);
+  // Derive selected customer from selectedCustomerId and customers list
+  const selectedCustomer = selectedCustomerId 
+    ? customers.find(c => c.customerId === selectedCustomerId) || null
+    : null;
 
   const handleSelectCustomer = (customer: Customer | null) => {
-    setSelectedCustomer(customer);
     onSelectCustomer(customer);
     setOpen(false);
   };
 
   const handleWalkIn = () => {
-    setSelectedCustomer(null);
     onSelectCustomer(null);
     setOpen(false);
   };
@@ -147,18 +134,20 @@ export function CustomerSelector({
     return null;
   };
 
-  const filteredCustomers = customers.filter(customer => {
-    const searchLower = searchTerm.toLowerCase();
-    const name = getCustomerDisplayName(customer).toLowerCase();
-    const id = customer.customerId.toLowerCase();
-    const phone = customer.phone?.toLowerCase() || "";
-    const email = customer.email?.toLowerCase() || "";
-    
-    return name.includes(searchLower) || 
-           id.includes(searchLower) || 
-           phone.includes(searchLower) || 
-           email.includes(searchLower);
-  });
+  const filteredCustomers = useMemo(() => {
+    return customers.filter(customer => {
+      const searchLower = searchTerm.toLowerCase();
+      const name = getCustomerDisplayName(customer).toLowerCase();
+      const id = customer.customerId.toLowerCase();
+      const phone = customer.phone?.toLowerCase() || "";
+      const email = customer.email?.toLowerCase() || "";
+      
+      return name.includes(searchLower) || 
+             id.includes(searchLower) || 
+             phone.includes(searchLower) || 
+             email.includes(searchLower);
+    });
+  }, [customers, searchTerm]);
 
   return (
     <div className="space-y-2">

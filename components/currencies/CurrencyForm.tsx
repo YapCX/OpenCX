@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useMutation, useAction, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -27,23 +27,6 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
   const defaultDiscountQuery = useQuery(api.settings.getSetting, { key: "default_discount_percent" });
   const defaultMarkupQuery = useQuery(api.settings.getSetting, { key: "default_markup_percent" });
 
-  const [formData, setFormData] = useState({
-    code: "",
-    name: "",
-    country: "",
-    flag: "",
-    symbol: "",
-    marketRate: "",
-    discountPercent: "",
-    markupPercent: "",
-    buyRate: "",
-    sellRate: "",
-    manualBuyRate: false,
-    manualSellRate: false,
-  });
-
-  const [isUpdatingRate, setIsUpdatingRate] = useState(false);
-
   const existingCurrency = useQuery(
     api.currencies.get,
     editingId ? { id: editingId } : "skip"
@@ -53,132 +36,94 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
   const updateCurrency = useMutation(api.currencies.update);
   const fetchMarketRate = useAction(api.currencies.fetchMarketRate);
 
-  useEffect(() => {
-    if (existingCurrency) {
-      setFormData({
-        code: existingCurrency.code,
-        name: existingCurrency.name,
-        country: existingCurrency.country,
-        flag: existingCurrency.flag,
-        symbol: existingCurrency.symbol,
-        marketRate: existingCurrency.marketRate.toString(),
-        discountPercent: existingCurrency.discountPercent.toString(),
-        markupPercent: existingCurrency.markupPercent.toString(),
-        buyRate: existingCurrency.buyRate.toString(),
-        sellRate: existingCurrency.sellRate.toString(),
-        manualBuyRate: existingCurrency.manualBuyRate,
-        manualSellRate: existingCurrency.manualSellRate,
-      });
-    }
-  }, [existingCurrency]);
+  const [formData, setFormData] = useState({
+    code: existingCurrency?.code ?? "",
+    name: existingCurrency?.name ?? "",
+    country: existingCurrency?.country ?? "",
+    flag: existingCurrency?.flag ?? "",
+    symbol: existingCurrency?.symbol ?? "",
+    marketRate: existingCurrency?.marketRate.toString() ?? "",
+    discountPercent: existingCurrency?.discountPercent.toString() ?? defaultDiscountQuery?.toString() ?? "",
+    markupPercent: existingCurrency?.markupPercent.toString() ?? defaultMarkupQuery?.toString() ?? "",
+    buyRate: existingCurrency?.buyRate.toString() ?? "",
+    sellRate: existingCurrency?.sellRate.toString() ?? "",
+    manualBuyRate: existingCurrency?.manualBuyRate ?? false,
+    manualSellRate: existingCurrency?.manualSellRate ?? false,
+  });
 
-  // Reset form when dialog opens for new currency or set defaults
-  useEffect(() => {
-    if (isOpen && !editingId) {
-      setFormData({
-        code: "",
-        name: "",
-        country: "",
-        flag: "",
-        symbol: "",
-        marketRate: "",
-        discountPercent: defaultDiscountQuery?.toString() || "",
-        markupPercent: defaultMarkupQuery?.toString() || "",
-        buyRate: "",
-        sellRate: "",
-        manualBuyRate: false,
-        manualSellRate: false,
-      });
-    } else if (!editingId && defaultDiscountQuery !== undefined && defaultMarkupQuery !== undefined) {
-      // Set default values for new currencies (only if not already set)
-      setFormData(prev => ({
-        ...prev,
-        discountPercent: prev.discountPercent === "" ? (defaultDiscountQuery?.toString() ?? "0") : prev.discountPercent,
-        markupPercent: prev.markupPercent === "" ? (defaultMarkupQuery?.toString() ?? "0") : prev.markupPercent,
-      }));
-    }
-  }, [isOpen, editingId, defaultDiscountQuery, defaultMarkupQuery]);
+  const [isUpdatingRate, setIsUpdatingRate] = useState(false);
 
   // Auto-populate currency info when code changes
-  useEffect(() => {
-    const autoPopulateCurrencyInfo = async () => {
-      if (!formData.code || formData.code.length !== 3 || editingId) {
-        return;
-      }
+  const handleCurrencyCodeChange = React.useCallback(async (code: string) => {
+    setFormData(prev => ({ ...prev, code: code.toUpperCase() }));
+    
+    if (!code || code.length !== 3 || editingId) {
+      return;
+    }
 
-      if (formData.name || formData.country || formData.flag) {
-        return;
-      }
+    if (formData.name || formData.country || formData.flag) {
+      return;
+    }
 
-      try {
-        // Use the regular function instead of Convex action
-        const currencyInfo = getCurrencyInfo(formData.code);
+    try {
+      const currencyInfo = getCurrencyInfo(code);
 
-        if (currencyInfo) {
+      if (currencyInfo) {
+        setFormData(prev => ({
+          ...prev,
+          name: currencyInfo.name,
+          country: currencyInfo.country || "",
+          flag: currencyInfo.flag || "",
+          symbol: currencyInfo.symbol,
+        }));
+
+        // Auto-fetch market rate as well
+        try {
+          const rateResult = await fetchMarketRate({
+            currencyCode: code,
+            baseCurrency: baseCurrencyQuery
+          });
+
           setFormData(prev => ({
             ...prev,
-            name: currencyInfo.name,
-            country: currencyInfo.country || "",
-            flag: currencyInfo.flag || "",
-            symbol: currencyInfo.symbol,
+            marketRate: rateResult.rate.toString()
           }));
-
-          // Auto-fetch market rate as well
-          try {
-            const rateResult = await fetchMarketRate({
-              currencyCode: formData.code,
-              baseCurrency: baseCurrencyQuery
-            });
-
-            setFormData(prev => ({
-              ...prev,
-              marketRate: rateResult.rate.toString()
-            }));
-          } catch (error) {
-            console.error("Failed to auto-fetch market rate:", error);
-          }
+        } catch (error) {
+          console.error("Failed to auto-fetch market rate:", error);
         }
-      } catch (error) {
-        console.error("Failed to auto-populate currency info:", error);
       }
-    };
+    } catch (error) {
+      console.error("Failed to auto-populate currency info:", error);
+    }
+  }, [editingId, formData.name, formData.country, formData.flag, baseCurrencyQuery, fetchMarketRate]);
 
-    const timeoutId = setTimeout(autoPopulateCurrencyInfo, 500);
-    return () => clearTimeout(timeoutId);
-  }, [formData.code, editingId, fetchMarketRate, baseCurrencyQuery, formData.name, formData.country, formData.flag]);
+  const deferredCurrencyCodeChange = React.useDeferredValue(handleCurrencyCodeChange);
 
   // Calculate rates when market rate or percentages change
-  const { calculatedBuyRate, calculatedSellRate } = React.useMemo(() => {
-    const marketRate = parseFloat(formData.marketRate);
-    const discountPercent = parseFloat(formData.discountPercent);
-    const markupPercent = parseFloat(formData.markupPercent);
+  const marketRate = parseFloat(formData.marketRate);
+  const discountPercent = parseFloat(formData.discountPercent);
+  const markupPercent = parseFloat(formData.markupPercent);
 
-    let buyRate = formData.buyRate;
-    let sellRate = formData.sellRate;
+  const calculatedBuyRate = React.useMemo(() => {
+    return !isNaN(marketRate) && marketRate > 0 && !formData.manualBuyRate && !isNaN(discountPercent)
+      ? (marketRate * (1 - discountPercent / 100)).toFixed(4)
+      : formData.buyRate;
+  }, [marketRate, discountPercent, formData.manualBuyRate, formData.buyRate]);
 
-    if (!isNaN(marketRate) && marketRate > 0) {
-      if (!formData.manualBuyRate && !isNaN(discountPercent)) {
-        buyRate = (marketRate * (1 - discountPercent / 100)).toFixed(4);
-      }
+  const calculatedSellRate = React.useMemo(() => {
+    return !isNaN(marketRate) && marketRate > 0 && !formData.manualSellRate && !isNaN(markupPercent)
+      ? (marketRate * (1 + markupPercent / 100)).toFixed(4)
+      : formData.sellRate;
+  }, [marketRate, markupPercent, formData.manualSellRate, formData.sellRate]);
 
-      if (!formData.manualSellRate && !isNaN(markupPercent)) {
-        sellRate = (marketRate * (1 + markupPercent / 100)).toFixed(4);
-      }
-    }
-
-    return { calculatedBuyRate: buyRate, calculatedSellRate: sellRate };
-  }, [formData.marketRate, formData.discountPercent, formData.markupPercent, formData.manualBuyRate, formData.manualSellRate, formData.buyRate, formData.sellRate]);
-
-  // Update form data when calculated rates change
+  // Update buy/sell rates when they change
   React.useEffect(() => {
-    if (calculatedBuyRate !== formData.buyRate || calculatedSellRate !== formData.sellRate) {
-      setFormData(prev => ({ 
-        ...prev, 
-        buyRate: calculatedBuyRate, 
-        sellRate: calculatedSellRate 
-      }));
-    }
-  }, [calculatedBuyRate, calculatedSellRate, formData.buyRate, formData.sellRate]);
+    setFormData(prev => ({ 
+      ...prev, 
+      buyRate: calculatedBuyRate, 
+      sellRate: calculatedSellRate 
+    }));
+  }, [calculatedBuyRate, calculatedSellRate]);
 
   const handleUpdateMarketRate = async () => {
     if (!formData.code) {
@@ -267,7 +212,11 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
   };
 
   const handleChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'code' && typeof value === 'string') {
+      deferredCurrencyCodeChange(value);
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   if (baseCurrencyQuery === undefined || defaultDiscountQuery === undefined || defaultMarkupQuery === undefined) {
@@ -312,7 +261,7 @@ export function CurrencyForm({ editingId, onClose, isOpen }: CurrencyFormProps) 
                   <Input
                     id="code"
                     value={formData.code}
-                    onChange={(e) => handleChange("code", e.target.value.toUpperCase())}
+                    onChange={(e) => handleChange("code", e.target.value)}
                     placeholder="USD"
                     maxLength={3}
                     required

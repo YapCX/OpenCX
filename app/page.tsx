@@ -1,16 +1,11 @@
 "use client";
 
-import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { Unauthenticated, AuthLoading } from "convex/react";
 import { LandingPage } from "@/components/landing/LandingPage";
 
 export default function HomePage() {
   return (
     <>
-      <Authenticated>
-        <RedirectToDashboard />
-      </Authenticated>
       <Unauthenticated>
         <LandingPage />
       </Unauthenticated>
@@ -24,15 +19,4 @@ export default function HomePage() {
       </AuthLoading>
     </>
   );
-}
-
-function RedirectToDashboard() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace("/orders");
-  }, [router]);
-
-  // Return null to prevent rendering the spinner
-  return null;
 }

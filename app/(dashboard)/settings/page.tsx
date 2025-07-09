@@ -15,7 +15,7 @@ import {
   Wand2
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { InitializationWizard } from "@/components/setup/InitializationWizard";
 
 export default function SettingsPage() {
@@ -28,25 +28,7 @@ export default function SettingsPage() {
   const baseCurrency = useQuery(api.settings.getBaseCurrency);
   const companySettings = useQuery(api.settings.getCompanySettings);
   
-  const handleWizardComplete = () => {
-    // Refresh the page data or show success message
-    window.location.reload();
-  };
-
-  // Permission check - only managers can access most settings
-  if (currentUserPermissions === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">Loading...</h1>
-          <p className="text-gray-600">Checking permissions...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const settingsCategories = [
+  const settingsCategories = useMemo(() => [
     {
       title: "Currency Settings",
       description: "Manage base currency, default rates, and exchange settings",
@@ -77,9 +59,27 @@ export default function SettingsPage() {
       color: "text-red-600",
       bgColor: "bg-red-50",
     },
-  ];
+  ], [currentUserPermissions, baseCurrency, companySettings]);
 
-  const accessibleSettings = settingsCategories.filter(category => category.accessible);
+  const accessibleSettings = useMemo(() => settingsCategories.filter(category => category.accessible), [settingsCategories]);
+  
+  const handleWizardComplete = () => {
+    // Refresh the page data or show success message
+    window.location.reload();
+  };
+
+  // Permission check - only managers can access most settings
+  if (currentUserPermissions === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">Loading...</h1>
+          <p className="text-gray-600">Checking permissions...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (currentUserPermissions !== undefined && accessibleSettings.length === 0) {
     return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -169,29 +169,31 @@ export default function CustomersPage() {
     return { label: "Under Review", color: "bg-gray-100 text-gray-800", icon: <Clock className="h-3 w-3" /> };
   };
 
-  // Sort customers
-  const sortedCustomers = [...customers].sort((a, b) => {
-    let aValue: string | number | undefined = a[sortField];
-    let bValue: string | number | undefined = b[sortField];
+  // Sort customers - memoized to prevent unnecessary re-renders
+  const sortedCustomers = useMemo(() => {
+    return [...customers].sort((a, b) => {
+      let aValue: string | number | undefined = a[sortField];
+      let bValue: string | number | undefined = b[sortField];
 
-    if (sortField === "fullName") {
-      aValue = getCustomerName(a);
-      bValue = getCustomerName(b);
-    }
+      if (sortField === "fullName") {
+        aValue = getCustomerName(a);
+        bValue = getCustomerName(b);
+      }
 
-    if (typeof aValue === "string" && typeof bValue === "string") {
-      aValue = aValue.toLowerCase();
-      bValue = bValue.toLowerCase();
-    }
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
 
-    if (aValue == null && bValue == null) return 0;
-    if (aValue == null) return 1;
-    if (bValue == null) return -1;
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return 1;
+      if (bValue == null) return -1;
 
-    if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-    if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
-    return 0;
-  });
+      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [customers, sortField, sortDirection]);
 
   if (showForm) {
     return (

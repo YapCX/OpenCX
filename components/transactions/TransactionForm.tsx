@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -40,9 +40,6 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
   const [fromCurrency, setFromCurrency] = useState("");
   const [fromAmount, setFromAmount] = useState("");
   const [toCurrency, setToCurrency] = useState("");
-  const [toAmount, setToAmount] = useState("");
-  const [exchangeRate, setExchangeRate] = useState("");
-  const [serviceFee, setServiceFee] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<{
     _id: Id<"customers">;
@@ -57,7 +54,6 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [notes, setNotes] = useState("");
-  const [isCalculating] = useState(false);
 
   const currencies = useQuery(api.currencies.list, {}) || [];
   const currentTill = useQuery(api.tills.getCurrentUserTill, {});
@@ -73,25 +69,22 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
       : "skip"
   );
 
-  useEffect(() => {
-    if (calculateExchange && !isCalculating) {
-      setToAmount(calculateExchange.toAmount.toFixed(4));
-      setExchangeRate(calculateExchange.exchangeRate.toFixed(6));
-      setServiceFee(calculateExchange.serviceFee.toFixed(2));
-    }
-  }, [calculateExchange, isCalculating]);
+  // Derive calculated values from the exchange calculation
+  const calculatedToAmount = calculateExchange ? calculateExchange.toAmount.toFixed(4) : "";
+  const calculatedExchangeRate = calculateExchange ? calculateExchange.exchangeRate.toFixed(6) : "";
+  const calculatedServiceFee = calculateExchange ? calculateExchange.serviceFee.toFixed(2) : "";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Note: We allow creating pending orders without till access
     
-    if (!fromCurrency || !toCurrency || !fromAmount || !toAmount) {
+    if (!fromCurrency || !toCurrency || !fromAmount || !calculatedToAmount) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    if (parseFloat(fromAmount) <= 0 || parseFloat(toAmount) <= 0) {
+    if (parseFloat(fromAmount) <= 0 || parseFloat(calculatedToAmount) <= 0) {
       toast.error("Amount must be greater than 0");
       return;
     }
@@ -101,9 +94,9 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
         fromCurrency,
         fromAmount: parseFloat(fromAmount),
         toCurrency,
-        toAmount: parseFloat(toAmount),
-        exchangeRate: parseFloat(exchangeRate),
-        serviceFee: parseFloat(serviceFee) || 0,
+        toAmount: parseFloat(calculatedToAmount),
+        exchangeRate: parseFloat(calculatedExchangeRate),
+        serviceFee: parseFloat(calculatedServiceFee) || 0,
         serviceFeeType: "flat",
         paymentMethod: paymentMethod || undefined,
         customerId: selectedCustomer?.customerId || undefined,
@@ -127,9 +120,6 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
     setFromCurrency("");
     setFromAmount("");
     setToCurrency("");
-    setToAmount("");
-    setExchangeRate("");
-    setServiceFee("");
     setPaymentMethod("");
     setSelectedCustomer(null);
     setCustomerName("");
@@ -140,14 +130,12 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
 
   const handleSwapCurrencies = () => {
     const tempCurrency = fromCurrency;
-    const tempAmount = fromAmount;
     setFromCurrency(toCurrency);
-    setFromAmount(toAmount);
+    setFromAmount(calculatedToAmount);
     setToCurrency(tempCurrency);
-    setToAmount(tempAmount);
   };
 
-  const isAMLRequired = parseFloat(fromAmount) > 1000 || parseFloat(toAmount) > 1000;
+  const isAMLRequired = parseFloat(fromAmount) > 1000 || parseFloat(calculatedToAmount) > 1000;
 
   if (!isOpen) return null;
 
@@ -249,8 +237,7 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    value={toAmount}
-                    onChange={(e) => setToAmount(e.target.value)}
+                    value={calculatedToAmount}
                     className="bg-muted"
                     readOnly
                   />
@@ -265,8 +252,7 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
                     type="number"
                     step="0.000001"
                     placeholder="0.000000"
-                    value={exchangeRate}
-                    onChange={(e) => setExchangeRate(e.target.value)}
+                    value={calculatedExchangeRate}
                     className="bg-muted font-mono"
                     readOnly
                   />
@@ -279,8 +265,7 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    value={serviceFee}
-                    onChange={(e) => setServiceFee(e.target.value)}
+                    value={calculatedServiceFee}
                     className="bg-muted"
                     readOnly
                   />
@@ -415,16 +400,16 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
               <div className="flex justify-between">
                 <span>Exchange:</span>
                 <span className="font-mono">
-                  {fromAmount} {fromCurrency} → {toAmount} {toCurrency}
+                  {fromAmount} {fromCurrency} → {calculatedToAmount} {toCurrency}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Rate:</span>
-                <span className="font-mono">{exchangeRate}</span>
+                <span className="font-mono">{calculatedExchangeRate}</span>
               </div>
               <div className="flex justify-between">
                 <span>Service Fee:</span>
-                <span className="font-mono">${serviceFee}</span>
+                <span className="font-mono">${calculatedServiceFee}</span>
               </div>
               <Separator />
               <div className="flex justify-between font-semibold">
@@ -433,7 +418,7 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
               </div>
               <div className="flex justify-between font-semibold">
                 <span>Customer Receives:</span>
-                <span className="font-mono">{toAmount} {toCurrency}</span>
+                <span className="font-mono">{calculatedToAmount} {toCurrency}</span>
               </div>
             </div>
           </CardContent>
@@ -443,7 +428,7 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={!fromCurrency || !toCurrency || !fromAmount || !toAmount}>
+          <Button type="submit" disabled={!fromCurrency || !toCurrency || !fromAmount || !calculatedToAmount}>
             Create Transaction
           </Button>
         </div>
