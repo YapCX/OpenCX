@@ -17,7 +17,7 @@ export interface TransactionForPrint {
   customerEmail?: string;
   customerPhone?: string;
   customerId?: string;
-  requiresAML: boolean;
+  requiresCompliance: boolean;
   notes?: string;
   createdAt: number;
   updatedAt: number;
@@ -227,9 +227,9 @@ export function generateTransactionReceipt(transaction: TransactionForPrint): st
     ` : ''}
   </div>
 
-  ${transaction.requiresAML ? `
-  <div class="aml-notice">
-    <strong>AML COMPLIANCE:</strong> This transaction requires AML compliance verification due to amount exceeding $1,000.
+  ${transaction.requiresCompliance ? `
+  <div class="compliance-notice">
+    <strong>COMPLIANCE:</strong> This transaction requires compliance verification due to amount exceeding $1,000.
   </div>
   ` : ''}
 

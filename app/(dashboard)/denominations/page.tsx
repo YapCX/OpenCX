@@ -40,7 +40,7 @@ export default function DenominationsPage() {
   const [isImporting, setIsImporting] = useState(false);
 
   // Queries
-  const denominations = useQuery(api.denominations.list, {}) || [];
+  const denominationsQuery = useQuery(api.denominations.list, {});
   const currencies = useQuery(api.currencies.list, {}) || [];
   const standardDenominations = useQuery(
     api.denominations.checkStandardDenominations,
@@ -57,9 +57,12 @@ export default function DenominationsPage() {
   const loadStandardDenominations = useMutation(api.denominations.loadStandardDenominations);
 
   // Data processing - memoized to prevent unnecessary re-renders
-  const filteredDenominations = useMemo(() => denominations.filter(d =>
-    !filterCurrency || filterCurrency === "all" || d.currencyCode === filterCurrency
-  ), [denominations, filterCurrency]);
+  const filteredDenominations = useMemo(() => {
+    const denominations = denominationsQuery || [];
+    return denominations.filter(d =>
+      !filterCurrency || filterCurrency === "all" || d.currencyCode === filterCurrency
+    );
+  }, [denominationsQuery, filterCurrency]);
 
   const sortedDenominations = useMemo(() => [...filteredDenominations].sort((a, b) => {
     let aValue: string | number | boolean = a[sortField];

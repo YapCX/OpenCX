@@ -44,7 +44,7 @@ export default function CurrenciesPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const currencies = useQuery(api.currencies.list, { searchTerm }) || [];
+  const currenciesQuery = useQuery(api.currencies.list, { searchTerm });
   const deleteCurrency = useMutation(api.currencies.remove);
   const bulkUpdateRates = useAction(api.currencies.bulkUpdateRates);
 
@@ -132,7 +132,7 @@ export default function CurrenciesPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(new Set(currencies.map(c => c._id)));
+      setSelectedIds(new Set(sortedCurrencies.map(c => c._id)));
     } else {
       setSelectedIds(new Set());
     }
@@ -152,6 +152,7 @@ export default function CurrenciesPage() {
 
   // Sort currencies - memoized to prevent unnecessary re-renders
   const sortedCurrencies = useMemo(() => {
+    const currencies = currenciesQuery || [];
     return [...currencies].sort((a, b) => {
       let aValue = a[sortField];
       let bValue = b[sortField];
@@ -165,7 +166,7 @@ export default function CurrenciesPage() {
       if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
-  }, [currencies, sortField, sortDirection]);
+  }, [currenciesQuery, sortField, sortDirection]);
 
   if (showForm) {
     return (

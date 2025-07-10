@@ -119,7 +119,7 @@ const steps: WizardStep[] = [
   },
   {
     id: "aml",
-    title: "AML & Compliance",
+    title: "Compliance",
     description: "Configure anti-money laundering settings",
     icon: Shield,
   },
@@ -163,8 +163,8 @@ export function InitializationWizard({ isOpen, onClose, onComplete }: Initializa
     }))
   );
 
-  const [amlData, setAMLData] = useState<AMLData>({
-    ...defaults.amlSettings,
+  const [complianceData, setComplianceData] = useState<AMLData>({
+    ...defaults.complianceSettings,
   });
 
   const [selectedIDTypes, setSelectedIDTypes] = useState<IDTypeSelection[]>(
@@ -177,7 +177,7 @@ export function InitializationWizard({ isOpen, onClose, onComplete }: Initializa
 
   // Mutation hooks
   const updateCompanySettings = useMutation(api.settings.updateCompanySettings);
-  const updateAMLSettings = useMutation(api.settings.updateAMLSettings);
+  const updateComplianceSettings = useMutation(api.settings.updateComplianceSettings);
   const createCurrency = useMutation(api.currencies.create);
   const createIDType = useMutation(api.idTypes.create);
   const setSetting = useMutation(api.settings.setSetting);
@@ -250,8 +250,8 @@ export function InitializationWizard({ isOpen, onClose, onComplete }: Initializa
       // 3. Update company settings
       await updateCompanySettings(companyData);
 
-      // 4. Update AML settings
-      await updateAMLSettings(amlData);
+      // 4. Update compliance settings
+      await updateComplianceSettings(complianceData);
 
       // 5. Create selected currencies
       const currenciesToCreate = selectedCurrencies
@@ -301,7 +301,7 @@ export function InitializationWizard({ isOpen, onClose, onComplete }: Initializa
       case "currencies":
         return <CurrenciesStep data={selectedCurrencies} onChange={setSelectedCurrencies} />;
       case "aml":
-        return <AMLStep data={amlData} onChange={setAMLData} />;
+        return <AMLStep data={complianceData} onChange={setComplianceData} />;
       case "idtypes":
         return <IDTypesStep data={selectedIDTypes} onChange={setSelectedIDTypes} />;
       case "review":
@@ -309,7 +309,7 @@ export function InitializationWizard({ isOpen, onClose, onComplete }: Initializa
           <ReviewStep
             companyData={companyData}
             selectedCurrencies={selectedCurrencies}
-            amlData={amlData}
+            complianceData={complianceData}
             selectedIDTypes={selectedIDTypes}
           />
         );
@@ -672,7 +672,7 @@ function AMLStep({ data, onChange }: { data: AMLData; onChange: (data: AMLData) 
   return (
     <div className="space-y-6">
       <div className="bg-red-50 p-4 rounded-lg">
-        <h4 className="font-medium text-red-900 mb-2">AML & Compliance Settings</h4>
+        <h4 className="font-medium text-red-900 mb-2">Compliance Settings</h4>
         <p className="text-sm text-red-700">
           These settings help ensure compliance with anti-money laundering regulations.
           The defaults are set for Canadian MSB requirements.
@@ -863,12 +863,12 @@ function IDTypesStep({ data, onChange }: { data: IDTypeSelection[]; onChange: (d
 function ReviewStep({
   companyData,
   selectedCurrencies,
-  amlData,
+  complianceData,
   selectedIDTypes
 }: {
   companyData: CompanyData;
   selectedCurrencies: CurrencySelection[];
-  amlData: AMLData;
+  complianceData: AMLData;
   selectedIDTypes: IDTypeSelection[];
 }) {
   const selectedCurrencyCodes = selectedCurrencies.filter(c => c.selected);
@@ -941,10 +941,10 @@ function ReviewStep({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div><strong>Auto Screening:</strong> {amlData.autoScreeningEnabled ? "Enabled" : "Disabled"}</div>
-            <div><strong>Individual Limit:</strong> ${amlData.transactionLimits.individualTransaction}</div>
-            <div><strong>Corporate Limit:</strong> ${amlData.transactionLimits.corporateTransaction}</div>
-            <div><strong>Two-Person Approval:</strong> {amlData.requireTwoPersonApproval ? "Required" : "Not Required"}</div>
+            <div><strong>Auto Screening:</strong> {complianceData.autoScreeningEnabled ? "Enabled" : "Disabled"}</div>
+            <div><strong>Individual Limit:</strong> ${complianceData.transactionLimits.individualTransaction}</div>
+            <div><strong>Corporate Limit:</strong> ${complianceData.transactionLimits.corporateTransaction}</div>
+            <div><strong>Two-Person Approval:</strong> {complianceData.requireTwoPersonApproval ? "Required" : "Not Required"}</div>
           </CardContent>
         </Card>
 

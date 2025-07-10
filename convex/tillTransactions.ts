@@ -95,7 +95,7 @@ export const create = mutation({
       toAmount: args.amount,
       exchangeRate: 1,
       status: "completed",
-      requiresAML: false,
+      requiresCompliance: false,
       notes: args.notes,
       createdAt: now,
       updatedAt: now,
@@ -327,8 +327,8 @@ export const createCurrencyExchange = mutation({
       throw new Error("You must be signed into this till to create transactions");
     }
 
-    // Check if transaction requires AML
-    const requiresAML = args.fromAmount >= 1000 || args.toAmount >= 1000;
+    // Check if transaction requires compliance
+    const requiresCompliance = args.fromAmount >= 1000 || args.toAmount >= 1000;
 
     const now = Date.now();
     const transactionId = generateTransactionId();
@@ -351,7 +351,7 @@ export const createCurrencyExchange = mutation({
       customerName: args.customerName,
       customerEmail: args.customerEmail,
       customerPhone: args.customerPhone,
-      requiresAML,
+      requiresCompliance,
       notes: args.notes,
       status: "completed",
       createdAt: now,
@@ -376,7 +376,7 @@ export const createCurrencyExchange = mutation({
     return {
       transactionId,
       transactionDocId,
-      requiresAML,
+      requiresCompliance,
     };
   },
 });

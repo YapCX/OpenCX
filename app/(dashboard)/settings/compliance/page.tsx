@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { 
   Shield, 
@@ -20,81 +19,119 @@ import {
   Users,
   DollarSign,
   Database,
-  CheckCircle2
+  CheckCircle2,
+  FileText,
+  Loader2
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
 const SANCTION_LISTS = [
-  { id: "OFAC", name: "OFAC (US Treasury)", description: "Office of Foreign Assets Control" },
-  { id: "UN", name: "UN Security Council", description: "United Nations sanctions list" },
-  { id: "EU", name: "EU Sanctions", description: "European Union consolidated list" },
-  { id: "UK", name: "UK HMT Sanctions", description: "UK Treasury sanctions list" },
-  { id: "CANADA", name: "Canada OSFI", description: "Canadian sanctions list" },
-];
-
-const SERVICE_FEE_TYPES = [
-  { value: "flat", label: "Flat Fee", description: "Fixed amount per transaction" },
-  { value: "percentage", label: "Percentage", description: "Percentage of transaction amount" },
+  { id: "OFAC_SDN", name: "OFAC SDN", description: "US Treasury Office of Foreign Assets Control - Specially Designated Nationals" },
+  { id: "OSFI", name: "OSFI", description: "Office of the Superintendent of Financial Institutions (Canada)" },
+  { id: "SEMA", name: "SEMA", description: "Securities and Exchange Monitoring Authority" },
+  { id: "NZ", name: "New Zealand", description: "New Zealand Sanctions List" },
+  { id: "UK", name: "UK Sanctions", description: "UK Government Sanctions List" },
+  { id: "UN", name: "UN Sanctions", description: "United Nations Sanctions List" },
+  { id: "AUSTRAC", name: "AUSTRAC", description: "Australian Transaction Reports and Analysis Centre" },
+  { id: "EU", name: "EU Sanctions", description: "European Union Sanctions List" },
 ];
 
 export default function ComplianceSettingsPage() {
   // Check current user permissions
   const currentUserPermissions = useQuery(api.users.getCurrentUserPermissions);
   
-  // Get current AML settings
-  const amlSettings = useQuery(api.settings.getAMLSettings);
+  // Get current compliance settings
+  const complianceSettings = useQuery(api.settings.getComplianceSettings);
   
   // Form state
   const [formData, setFormData] = useState({
-    autoScreeningEnabled: true,
-    enabledSanctionLists: ["OFAC", "UN", "EU"],
+    // Master switches
+    performComplianceChecks: true,
+    activateRuleBasedCompliance: false,
+    
+    // Thresholds
+    requireProfileThreshold: 1000,
+    lctThreshold: 10000,
+    requireSinThreshold: 3000,
+    requirePepThreshold: 1000,
+    
+    // Sanctions lists
+    enabledSanctionLists: [] as string[],
+    
+    // Warnings
+    warnIncompleteKyc: true,
+    warnRepeatTransactionsDays: 7,
+    autoCheckCustomerBeforeInvoice: false,
+    customerProfileReviewDays: 365,
+    
+    // AML settings
+    autoScreeningEnabled: false,
+    pepScreeningEnabled: false,
+    adverseMediaScreeningEnabled: false,
+    autoHoldOnMatch: false,
+    requireOverrideReason: true,
+    autoReportSuspicious: false,
+    retentionPeriodDays: 2555,
+    requireTwoPersonApproval: false,
+    
+    // Transaction limits
+    transactionLimits: {
+      individualDaily: 10000,
+      individualTransaction: 5000,
+      corporateDaily: 50000,
+      corporateTransaction: 25000,
+    },
+    
+    // Risk thresholds
     riskThresholds: {
       low: 30,
       medium: 70,
       high: 100,
     },
-    transactionLimits: {
-      individualDaily: 10000,
-      individualTransaction: 3000,
-      corporateDaily: 50000,
-      corporateTransaction: 15000,
-    },
-    autoHoldOnMatch: true,
-    requireOverrideReason: true,
-    autoReportSuspicious: false,
-    defaultServiceFee: 2.0,
-    serviceFeeType: "flat" as "flat" | "percentage",
-    pepScreeningEnabled: true,
-    adverseMediaScreeningEnabled: false,
-    retentionPeriodDays: 2555,
-    requireTwoPersonApproval: true,
   });
   const [isLoading, setIsLoading] = useState(false);
 
   // Mutations
-  const updateAMLSettings = useMutation(api.settings.updateAMLSettings);
+  const updateComplianceSettings = useMutation(api.settings.updateComplianceSettings);
 
   // Initialize form data when settings load
   useEffect(() => {
-    if (amlSettings) {
+    if (complianceSettings) {
       setFormData({
-        autoScreeningEnabled: amlSettings.autoScreeningEnabled,
-        enabledSanctionLists: amlSettings.enabledSanctionLists,
-        riskThresholds: amlSettings.riskThresholds,
-        transactionLimits: amlSettings.transactionLimits,
-        autoHoldOnMatch: amlSettings.autoHoldOnMatch,
-        requireOverrideReason: amlSettings.requireOverrideReason,
-        autoReportSuspicious: amlSettings.autoReportSuspicious,
-        defaultServiceFee: amlSettings.defaultServiceFee,
-        serviceFeeType: amlSettings.serviceFeeType,
-        pepScreeningEnabled: amlSettings.pepScreeningEnabled,
-        adverseMediaScreeningEnabled: amlSettings.adverseMediaScreeningEnabled,
-        retentionPeriodDays: amlSettings.retentionPeriodDays,
-        requireTwoPersonApproval: amlSettings.requireTwoPersonApproval,
+        performComplianceChecks: complianceSettings.performComplianceChecks as boolean,
+        activateRuleBasedCompliance: complianceSettings.activateRuleBasedCompliance as boolean,
+        requireProfileThreshold: complianceSettings.requireProfileThreshold as number,
+        lctThreshold: complianceSettings.lctThreshold as number,
+        requireSinThreshold: complianceSettings.requireSinThreshold as number,
+        requirePepThreshold: complianceSettings.requirePepThreshold as number,
+        enabledSanctionLists: complianceSettings.enabledSanctionLists as string[],
+        warnIncompleteKyc: complianceSettings.warnIncompleteKyc as boolean,
+        warnRepeatTransactionsDays: complianceSettings.warnRepeatTransactionsDays as number,
+        autoCheckCustomerBeforeInvoice: complianceSettings.autoCheckCustomerBeforeInvoice as boolean,
+        customerProfileReviewDays: complianceSettings.customerProfileReviewDays as number,
+        autoScreeningEnabled: complianceSettings.autoScreeningEnabled as boolean,
+        pepScreeningEnabled: complianceSettings.pepScreeningEnabled as boolean,
+        adverseMediaScreeningEnabled: complianceSettings.adverseMediaScreeningEnabled as boolean,
+        autoHoldOnMatch: complianceSettings.autoHoldOnMatch as boolean,
+        requireOverrideReason: complianceSettings.requireOverrideReason as boolean,
+        autoReportSuspicious: complianceSettings.autoReportSuspicious as boolean,
+        retentionPeriodDays: complianceSettings.retentionPeriodDays as number,
+        requireTwoPersonApproval: complianceSettings.requireTwoPersonApproval as boolean,
+        transactionLimits: complianceSettings.transactionLimits as {
+          individualDaily: number;
+          individualTransaction: number;
+          corporateDaily: number;
+          corporateTransaction: number;
+        },
+        riskThresholds: complianceSettings.riskThresholds as {
+          low: number;
+          medium: number;
+          high: number;
+        },
       });
     }
-  }, [amlSettings]);
+  }, [complianceSettings]);
 
   // Permission check
   if (currentUserPermissions === null) {
@@ -132,7 +169,7 @@ export default function ComplianceSettingsPage() {
     setIsLoading(true);
 
     try {
-      await updateAMLSettings(formData);
+      await updateComplianceSettings(formData);
       toast.success("Compliance settings updated successfully");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to update settings");
@@ -176,94 +213,362 @@ export default function ComplianceSettingsPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Screening Configuration */}
+        {/* Master Control */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Screening Configuration
+              <Shield className="h-5 w-5 text-red-600" />
+              Master Compliance Controls
             </CardTitle>
             <CardDescription>
-              Configure automatic customer screening and sanctions checking
+              Primary switches that control all compliance features
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Auto Screening */}
+          <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label htmlFor="autoScreening">Automatic Screening</Label>
-                <p className="text-sm text-gray-500">
-                  Automatically screen customers against sanctions lists
+              <div className="flex-1">
+                <Label htmlFor="performComplianceChecks" className="text-base font-medium">
+                  Perform Compliance Checks & Validations
+                </Label>
+                <p className="text-sm text-gray-600 mt-1">
+                  Master switch for all compliance and AML features
                 </p>
               </div>
               <Switch
-                id="autoScreening"
-                checked={formData.autoScreeningEnabled}
-                onCheckedChange={(checked) => 
-                  setFormData({ ...formData, autoScreeningEnabled: checked })
-                }
+                id="performComplianceChecks"
+                checked={formData.performComplianceChecks}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, performComplianceChecks: checked }))}
               />
             </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <Label htmlFor="activateRuleBasedCompliance" className="text-base font-medium">
+                  Activate Rule Based AML Policies
+                </Label>
+                <p className="text-sm text-gray-600 mt-1">
+                  Enable automated rule-based AML screening and enforcement
+                </p>
+              </div>
+              <Switch
+                id="activateRuleBasedCompliance"
+                checked={formData.activateRuleBasedCompliance}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, activateRuleBasedCompliance: checked }))}
+                disabled={!formData.performComplianceChecks}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Sanctions Lists */}
-            <div className="space-y-3">
-              <Label>Enabled Sanctions Lists</Label>
-              <div className="grid gap-3 md:grid-cols-2">
-                {SANCTION_LISTS.map((list) => (
-                  <div key={list.id} className="flex items-start space-x-3 p-3 border rounded-lg">
-                    <Checkbox
-                      id={list.id}
-                      checked={formData.enabledSanctionLists.includes(list.id)}
-                      onCheckedChange={(checked) => 
-                        handleSanctionListToggle(list.id, checked as boolean)
-                      }
-                    />
-                    <div className="grid gap-1.5 leading-none">
-                      <Label htmlFor={list.id} className="font-medium">
-                        {list.name}
-                      </Label>
-                      <p className="text-xs text-gray-500">
-                        {list.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+        {/* Compliance Thresholds */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-green-600" />
+              Compliance Thresholds
+            </CardTitle>
+            <CardDescription>
+              Transaction amount thresholds that trigger compliance requirements
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="requireProfileThreshold">Customer Profile Required Amount</Label>
+                <Input
+                  id="requireProfileThreshold"
+                  type="number"
+                  value={formData.requireProfileThreshold}
+                  onChange={(e) => setFormData(prev => ({ ...prev, requireProfileThreshold: Number(e.target.value) }))}
+                  disabled={!formData.performComplianceChecks}
+                />
+                <p className="text-xs text-gray-500">Require customer profile when local amount exceeds this threshold</p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="lctThreshold">Large Cash Transaction (LCT) Threshold</Label>
+                <Input
+                  id="lctThreshold"
+                  type="number"
+                  value={formData.lctThreshold}
+                  onChange={(e) => setFormData(prev => ({ ...prev, lctThreshold: Number(e.target.value) }))}
+                  disabled={!formData.performComplianceChecks}
+                />
+                <p className="text-xs text-gray-500">Threshold for large cash transaction reporting</p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="requireSinThreshold">Social Security Required Amount</Label>
+                <Input
+                  id="requireSinThreshold"
+                  type="number"
+                  value={formData.requireSinThreshold}
+                  onChange={(e) => setFormData(prev => ({ ...prev, requireSinThreshold: Number(e.target.value) }))}
+                  disabled={!formData.performComplianceChecks}
+                />
+                <p className="text-xs text-gray-500">Require SSN/SIN for transactions exceeding this amount</p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="requirePepThreshold">Additional Documentation Threshold</Label>
+                <Input
+                  id="requirePepThreshold"
+                  type="number"
+                  value={formData.requirePepThreshold}
+                  onChange={(e) => setFormData(prev => ({ ...prev, requirePepThreshold: Number(e.target.value) }))}
+                  disabled={!formData.performComplianceChecks}
+                />
+                <p className="text-xs text-gray-500">Require additional documentation (e.g., PEP) above this amount</p>
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Additional Screening Options */}
-            <div className="grid gap-4 md:grid-cols-2">
+        {/* Sanctions Lists */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-blue-600" />
+              Sanctions & Watchlists
+            </CardTitle>
+            <CardDescription>
+              Configure which sanctions lists to check customers against
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {SANCTION_LISTS.map((list) => (
+                <div key={list.id} className="flex items-start space-x-3 p-3 border rounded-lg">
+                  <Checkbox
+                    id={list.id}
+                    checked={formData.enabledSanctionLists.includes(list.id)}
+                    onCheckedChange={(checked) => 
+                      handleSanctionListToggle(list.id, checked as boolean)
+                    }
+                    disabled={!formData.performComplianceChecks || !formData.activateRuleBasedCompliance}
+                  />
+                  <div className="flex-1">
+                    <Label htmlFor={list.id} className="text-sm font-medium">
+                      {list.name}
+                    </Label>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {list.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {formData.enabledSanctionLists.length > 0 && (
+              <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <div className="text-sm text-green-800">
+                  <strong>{formData.enabledSanctionLists.length} sanctions list(s) enabled:</strong>{" "}
+                  {formData.enabledSanctionLists.join(", ")}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Transaction Warnings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              Transaction Warnings
+            </CardTitle>
+            <CardDescription>
+              Configure warnings that appear during transaction processing
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <Label htmlFor="warnIncompleteKyc" className="text-base font-medium">
+                  Warn if Customer Profile is Incomplete (KYC)
+                </Label>
+                <p className="text-sm text-gray-600 mt-1">
+                  Show warning when customer profile is missing required information
+                </p>
+              </div>
+              <Switch
+                id="warnIncompleteKyc"
+                checked={formData.warnIncompleteKyc}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, warnIncompleteKyc: checked }))}
+                disabled={!formData.performComplianceChecks}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="warnRepeatTransactionsDays">
+                Warn Repeat Transactions (Days Apart)
+              </Label>
+              <Input
+                id="warnRepeatTransactionsDays"
+                type="number"
+                value={formData.warnRepeatTransactionsDays}
+                onChange={(e) => setFormData(prev => ({ ...prev, warnRepeatTransactionsDays: Number(e.target.value) }))}
+                disabled={!formData.performComplianceChecks}
+              />
+              <p className="text-xs text-gray-500">
+                Warn if customer has made transactions within this many days (0 to disable)
+              </p>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <Label htmlFor="autoCheckCustomerBeforeInvoice" className="text-base font-medium">
+                  Automatically Check Customer Before Every Invoice
+                </Label>
+                <p className="text-sm text-gray-600 mt-1">
+                  Perform automated customer screening before creating invoices
+                </p>
+              </div>
+              <Switch
+                id="autoCheckCustomerBeforeInvoice"
+                checked={formData.autoCheckCustomerBeforeInvoice}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, autoCheckCustomerBeforeInvoice: checked }))}
+                disabled={!formData.performComplianceChecks}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="customerProfileReviewDays">
+                Customer Profile Review Cycle (Days)
+              </Label>
+              <Input
+                id="customerProfileReviewDays"
+                type="number"
+                value={formData.customerProfileReviewDays}
+                onChange={(e) => setFormData(prev => ({ ...prev, customerProfileReviewDays: Number(e.target.value) }))}
+                disabled={!formData.performComplianceChecks}
+              />
+              <p className="text-xs text-gray-500">
+                Request review of customer profile after this many days
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Advanced AML Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-purple-600" />
+              Advanced AML Settings
+            </CardTitle>
+            <CardDescription>
+              Configure advanced anti-money laundering features
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center justify-between p-3 border rounded-lg">
                 <div>
-                  <Label htmlFor="pepScreening">PEP Screening</Label>
+                  <Label htmlFor="autoScreeningEnabled">Auto Screening Enabled</Label>
                   <p className="text-xs text-gray-500">
-                    Politically Exposed Persons
+                    Automatically screen customers against watchlists
                   </p>
                 </div>
                 <Switch
-                  id="pepScreening"
+                  id="autoScreeningEnabled"
+                  checked={formData.autoScreeningEnabled}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, autoScreeningEnabled: checked }))}
+                  disabled={!formData.performComplianceChecks || !formData.activateRuleBasedCompliance}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <Label htmlFor="pepScreeningEnabled">PEP Screening</Label>
+                  <p className="text-xs text-gray-500">
+                    Screen for Politically Exposed Persons
+                  </p>
+                </div>
+                <Switch
+                  id="pepScreeningEnabled"
                   checked={formData.pepScreeningEnabled}
-                  onCheckedChange={(checked) => 
-                    setFormData({ ...formData, pepScreeningEnabled: checked })
-                  }
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, pepScreeningEnabled: checked }))}
+                  disabled={!formData.performComplianceChecks || !formData.activateRuleBasedCompliance}
                 />
               </div>
-
+              
               <div className="flex items-center justify-between p-3 border rounded-lg">
                 <div>
-                  <Label htmlFor="adverseMedia">Adverse Media</Label>
+                  <Label htmlFor="adverseMediaScreeningEnabled">Adverse Media Screening</Label>
                   <p className="text-xs text-gray-500">
-                    Negative news screening
+                    Screen for negative media coverage
                   </p>
                 </div>
                 <Switch
-                  id="adverseMedia"
+                  id="adverseMediaScreeningEnabled"
                   checked={formData.adverseMediaScreeningEnabled}
-                  onCheckedChange={(checked) => 
-                    setFormData({ ...formData, adverseMediaScreeningEnabled: checked })
-                  }
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, adverseMediaScreeningEnabled: checked }))}
+                  disabled={!formData.performComplianceChecks || !formData.activateRuleBasedCompliance}
                 />
               </div>
+              
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <Label htmlFor="autoHoldOnMatch">Auto Hold on Match</Label>
+                  <p className="text-xs text-gray-500">
+                    Automatically hold transactions on sanctions match
+                  </p>
+                </div>
+                <Switch
+                  id="autoHoldOnMatch"
+                  checked={formData.autoHoldOnMatch}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, autoHoldOnMatch: checked }))}
+                  disabled={!formData.performComplianceChecks || !formData.activateRuleBasedCompliance}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <Label htmlFor="requireOverrideReason">Require Override Reason</Label>
+                  <p className="text-xs text-gray-500">
+                    Require reason when overriding compliance checks
+                  </p>
+                </div>
+                <Switch
+                  id="requireOverrideReason"
+                  checked={formData.requireOverrideReason}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, requireOverrideReason: checked }))}
+                  disabled={!formData.performComplianceChecks}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <Label htmlFor="requireTwoPersonApproval">Two-Person Approval</Label>
+                  <p className="text-xs text-gray-500">
+                    Require two-person approval for high-risk transactions
+                  </p>
+                </div>
+                <Switch
+                  id="requireTwoPersonApproval"
+                  checked={formData.requireTwoPersonApproval}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, requireTwoPersonApproval: checked }))}
+                  disabled={!formData.performComplianceChecks}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="retentionPeriodDays">
+                Data Retention Period (Days)
+              </Label>
+              <Input
+                id="retentionPeriodDays"
+                type="number"
+                value={formData.retentionPeriodDays}
+                onChange={(e) => setFormData(prev => ({ ...prev, retentionPeriodDays: Number(e.target.value) }))}
+                disabled={!formData.performComplianceChecks}
+              />
+              <p className="text-xs text-gray-500">
+                How long to retain compliance data (default: 2555 days = 7 years)
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -580,69 +885,6 @@ export default function ComplianceSettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Service Fees */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
-              Service Fees
-            </CardTitle>
-            <CardDescription>
-              Configure default service fee structure
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="serviceFeeType">Fee Type</Label>
-                <Select
-                  value={formData.serviceFeeType}
-                  onValueChange={(value) => setFormData({
-                    ...formData,
-                    serviceFeeType: value as "flat" | "percentage"
-                  })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SERVICE_FEE_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        <div>
-                          <div className="font-medium">{type.label}</div>
-                          <div className="text-xs text-gray-500">{type.description}</div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="serviceFee">
-                  {formData.serviceFeeType === "flat" ? "Fee Amount ($)" : "Fee Percentage (%)"}
-                </Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                    {formData.serviceFeeType === "flat" ? "$" : "%"}
-                  </span>
-                  <Input
-                    id="serviceFee"
-                    type="number"
-                    step={formData.serviceFeeType === "flat" ? "0.01" : "0.1"}
-                    min="0"
-                    value={formData.defaultServiceFee}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      defaultServiceFee: parseFloat(e.target.value) || 0
-                    })}
-                    className="pl-8"
-                  />
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Save Button */}
         <div className="flex justify-end gap-3">
@@ -653,7 +895,10 @@ export default function ComplianceSettingsPage() {
           </Link>
           <Button type="submit" disabled={isLoading}>
             {isLoading ? (
-              <>Saving...</>
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Saving...
+              </>
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />

@@ -54,7 +54,7 @@ interface Customer {
   phone?: string;
   status: string;
   riskLevel: string;
-  amlStatus: string;
+  complianceStatus: string;
   sanctionsScreeningStatus: string;
 }
 
@@ -83,12 +83,14 @@ export function CustomerSelector({
     limit: 50,
   });
 
-  const customers = (customersQuery as Customer[]) || [];
 
   // Derive selected customer from selectedCustomerId and customers list
-  const selectedCustomer = selectedCustomerId 
-    ? customers.find(c => c.customerId === selectedCustomerId) || null
-    : null;
+  const selectedCustomer = useMemo(() => {
+    const customers = (customersQuery as Customer[]) || [];
+    return selectedCustomerId 
+      ? customers.find(c => c.customerId === selectedCustomerId) || null
+      : null;
+  }, [selectedCustomerId, customersQuery]);
 
   const handleSelectCustomer = (customer: Customer | null) => {
     onSelectCustomer(customer);
@@ -117,7 +119,7 @@ export function CustomerSelector({
 
   const getStatusColor = (customer: Customer) => {
     if (customer.status === "flagged") return "destructive";
-    if (customer.amlStatus === "approved" && customer.sanctionsScreeningStatus === "clear") {
+    if (customer.complianceStatus === "approved" && customer.sanctionsScreeningStatus === "clear") {
       return "default";
     }
     if (customer.status === "suspended") return "secondary";
@@ -128,13 +130,14 @@ export function CustomerSelector({
     if (customer.status === "flagged") {
       return <AlertTriangle className="h-3 w-3" />;
     }
-    if (customer.amlStatus === "approved" && customer.sanctionsScreeningStatus === "clear") {
+    if (customer.complianceStatus === "approved" && customer.sanctionsScreeningStatus === "clear") {
       return <Shield className="h-3 w-3" />;
     }
     return null;
   };
 
   const filteredCustomers = useMemo(() => {
+    const customers = (customersQuery as Customer[]) || [];
     return customers.filter(customer => {
       const searchLower = searchTerm.toLowerCase();
       const name = getCustomerDisplayName(customer).toLowerCase();
@@ -147,7 +150,7 @@ export function CustomerSelector({
              phone.includes(searchLower) || 
              email.includes(searchLower);
     });
-  }, [customers, searchTerm]);
+  }, [customersQuery, searchTerm]);
 
   return (
     <div className="space-y-2">

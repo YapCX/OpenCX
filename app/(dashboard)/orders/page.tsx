@@ -62,13 +62,13 @@ export default function OrdersPage() {
   const [selectedTransactionId, setSelectedTransactionId] = useState<Id<"transactions"> | null>(null);
   const [currentSessionOnly, setCurrentSessionOnly] = useState(true);
 
-  const transactions = useQuery(api.transactions.list, {
+  const transactionsQuery = useQuery(api.transactions.list, {
     category: "currency_exchange", // Only show customer orders, not till transactions
     searchTerm: searchTerm || undefined,
     status: statusFilter && statusFilter !== "all" ? statusFilter as "pending" | "processing" | "completed" | "failed" | "cancelled" : undefined,
     type: typeFilter && typeFilter !== "all" ? typeFilter as "currency_buy" | "currency_sell" : undefined,
     currentSessionOnly,
-  }) || [];
+  });
 
   const stats = useQuery(api.transactions.getStats, {
     category: "currency_exchange", // Only count customer orders, not till transactions
@@ -189,6 +189,7 @@ export default function OrdersPage() {
 
   // Sort transactions - memoized to prevent unnecessary re-renders
   const sortedTransactions = useMemo(() => {
+    const transactions = transactionsQuery || [];
     return [...transactions].sort((a, b) => {
       let aValue = a[sortField];
       let bValue = b[sortField];
@@ -202,7 +203,7 @@ export default function OrdersPage() {
       if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
-  }, [transactions, sortField, sortDirection]);
+  }, [transactionsQuery, sortField, sortDirection]);
 
   if (showForm) {
     return (

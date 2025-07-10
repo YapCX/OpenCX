@@ -348,11 +348,11 @@ export function TransactionDetails({ transactionId, isOpen, onClose }: Transacti
                   </div>
                 )}
 
-                {transaction.requiresAML && (
+                {transaction.requiresCompliance && (
                   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <div className="flex items-center gap-2 text-yellow-800">
                       <AlertTriangle className="h-4 w-4" />
-                      <span className="font-medium">AML Compliance Required</span>
+                      <span className="font-medium">Compliance Required</span>
                     </div>
                   </div>
                 )}

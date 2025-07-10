@@ -14,6 +14,135 @@ function generateTransactionId(): string {
   return `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
+// Helper function to check compliance requirements
+async function checkComplianceRequirements(ctx: any, args: any) {
+  const warnings: string[] = [];
+  
+  // Get compliance settings
+  const generalSettings = await ctx.db.query("settings").collect();
+  const settingsMap = Object.fromEntries(generalSettings.map((s: any) => [s.key, s.value]));
+  const complianceSettings = await ctx.db.query("complianceSettings").first();
+  
+  // Check if compliance checks are enabled
+  const performComplianceChecks = settingsMap.performComplianceChecks ?? true;
+  if (!performComplianceChecks) {
+    return { warnings, requiresCompliance: false };
+  }
+  
+  const activateRuleBasedAml = settingsMap.activateRuleBasedAml ?? false;
+  const requireProfileThreshold = settingsMap.requireProfileThreshold ?? 1000;
+  const lctThreshold = settingsMap.lctThreshold ?? 10000;
+  const requireSinThreshold = settingsMap.requireSinThreshold ?? 3000;
+  const requirePepThreshold = settingsMap.requirePepThreshold ?? 1000;
+  const warnIncompleteKyc = settingsMap.warnIncompleteKyc ?? true;
+  const warnRepeatTransactionsDays = settingsMap.warnRepeatTransactionsDays ?? 7;
+  
+  const transactionAmount = Math.max(args.fromAmount, args.toAmount);
+  
+  // Check if compliance is required based on thresholds
+  let requiresCompliance = false;
+  
+  // Profile threshold check
+  if (transactionAmount > requireProfileThreshold) {
+    requiresCompliance = true;
+    if (!args.customerId) {
+      warnings.push("CUSTOMER_PROFILE_REQUIRED");
+    }
+  }
+  
+  // LCT threshold check
+  if (transactionAmount > lctThreshold) {
+    requiresCompliance = true;
+    warnings.push("LCT_THRESHOLD_EXCEEDED");
+  }
+  
+  // SIN threshold check
+  if (transactionAmount > requireSinThreshold) {
+    requiresCompliance = true;
+    warnings.push("SIN_REQUIRED");
+  }
+  
+  // PEP threshold check
+  if (transactionAmount > requirePepThreshold) {
+    requiresCompliance = true;
+    warnings.push("PEP_DOCUMENTATION_REQUIRED");
+  }
+  
+  // Customer-specific checks
+  if (args.customerId) {
+    const customer = await ctx.db.query("customers").filter((q: any) => q.eq(q.field("customerId"), args.customerId)).first();
+    
+    if (customer) {
+      // KYC completeness check
+      if (warnIncompleteKyc) {
+        const isIncomplete = !customer.firstName || !customer.lastName || !customer.address || !customer.phone;
+        if (isIncomplete) {
+          warnings.push("INCOMPLETE_KYC");
+        }
+      }
+      
+      // Repeat transaction check
+      if (warnRepeatTransactionsDays > 0) {
+        const cutoffDate = Date.now() - (warnRepeatTransactionsDays * 24 * 60 * 60 * 1000);
+        const recentTransactions = await ctx.db
+          .query("transactions")
+          .filter((q: any) => q.eq(q.field("customerId"), args.customerId))
+          .filter((q: any) => q.gte(q.field("createdAt"), cutoffDate))
+          .collect();
+        
+        if (recentTransactions.length > 0) {
+          warnings.push("REPEAT_TRANSACTION_WARNING");
+        }
+      }
+      
+      // Risk level checks
+      if (customer.riskLevel === "high") {
+        warnings.push("HIGH_RISK_CUSTOMER");
+        requiresCompliance = true;
+      }
+      
+      // Sanctions screening status
+      if (customer.sanctionsScreeningStatus === "match") {
+        warnings.push("SANCTIONS_MATCH");
+        requiresCompliance = true;
+      }
+      
+      // Compliance status check
+      if (customer.complianceStatus === "pending" || customer.complianceStatus === "requires_review") {
+        warnings.push("COMPLIANCE_REVIEW_REQUIRED");
+        requiresCompliance = true;
+      }
+    }
+  }
+  
+  // Rule-based compliance checks
+  if (activateRuleBasedAml && complianceSettings) {
+    // Auto screening checks
+    if (complianceSettings.autoScreeningEnabled && args.customerId) {
+      warnings.push("AUTO_SCREENING_REQUIRED");
+    }
+    
+    // Transaction limits
+    if (complianceSettings.transactionLimits) {
+      const { individualTransaction, corporateTransaction } = complianceSettings.transactionLimits;
+      const customer = args.customerId ? await ctx.db.query("customers").filter((q: any) => q.eq(q.field("customerId"), args.customerId)).first() : null;
+      
+      const limit = customer?.type === "corporate" ? corporateTransaction : individualTransaction;
+      if (transactionAmount > limit) {
+        warnings.push("TRANSACTION_LIMIT_EXCEEDED");
+        requiresCompliance = true;
+      }
+    }
+    
+    // Two-person approval requirement
+    if (complianceSettings.requireTwoPersonApproval && requiresCompliance) {
+      warnings.push("TWO_PERSON_APPROVAL_REQUIRED");
+    }
+  }
+  
+  return { warnings, requiresCompliance };
+}
+
 export const create = mutation({
   args: {
     fromCurrency: v.string(),
@@ -29,6 +158,8 @@ export const create = mutation({
     customerPhone: v.optional(v.string()),
     customerId: v.optional(v.string()),
     notes: v.optional(v.string()),
+    overrideWarnings: v.optional(v.boolean()), // Allow overriding warnings for authorized users
+    overrideReason: v.optional(v.string()), // Required reason for overrides
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx);
@@ -42,8 +173,45 @@ export const create = mutation({
     const baseCurrency = setting?.value as string || "CAD";
     const type: "currency_buy" | "currency_sell" = args.toCurrency === baseCurrency ? "currency_sell" : "currency_buy";
     
-    // Determine if AML is required (transactions over $1000 equivalent)
-    const requiresAML = args.fromAmount > 1000 || args.toAmount > 1000;
+    // Perform compliance checks
+    const complianceResult = await checkComplianceRequirements(ctx, args);
+    
+    // Get user for permission checks
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", userId))
+      .first();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    // Check if warnings should block the transaction
+    if (complianceResult.warnings.length > 0 && !args.overrideWarnings) {
+      // Get warning tolerance level (we'll implement this later)
+      const warningToleranceLevel = "Normal" as "Severe" | "Normal" | "Relax"; // Default to Normal for now
+      
+      if (warningToleranceLevel === "Severe") {
+        // Block transaction on any warning
+        throw new Error(`Transaction blocked due to compliance warnings: ${complianceResult.warnings.join(", ")}`);
+      } else if (warningToleranceLevel === "Normal") {
+        // Allow transaction but return warnings
+        // Continue to create transaction
+      }
+      // "Relax" mode would skip warnings entirely
+    }
+    
+    // Check if override reason is required
+    if (args.overrideWarnings) {
+      const requireOverrideReason = await ctx.db
+        .query("settings")
+        .withIndex("by_key", (q) => q.eq("key", "requireOverrideReason"))
+        .first();
+      
+      if (requireOverrideReason?.value && !args.overrideReason) {
+        throw new Error("Override reason is required when bypassing compliance warnings");
+      }
+    }
     
     // Currency exchange category for all transactions in this context
     const category: "currency_exchange" = "currency_exchange";
@@ -66,14 +234,22 @@ export const create = mutation({
       customerName: args.customerName,
       customerEmail: args.customerEmail,
       customerPhone: args.customerPhone,
-      requiresAML,
-      notes: args.notes,
+      requiresCompliance: complianceResult.requiresCompliance,
+      notes: args.overrideReason ? `${args.notes || ""}\n\nOverride Reason: ${args.overrideReason}` : args.notes,
       createdAt: now,
       updatedAt: now,
     };
     
     const id = await ctx.db.insert("transactions", transaction);
-    return { id, transactionId: transaction.transactionId };
+    
+    // Return transaction details along with compliance warnings
+    return { 
+      id, 
+      transactionId: transaction.transactionId,
+      warnings: complianceResult.warnings,
+      requiresCompliance: complianceResult.requiresCompliance,
+      success: true 
+    };
   },
 });
 
@@ -288,14 +464,14 @@ export const update = mutation({
     if (args.fromCurrency !== undefined) updates.fromCurrency = args.fromCurrency;
     if (args.fromAmount !== undefined) {
       updates.fromAmount = args.fromAmount;
-      // Update AML requirement based on new amount
-      updates.requiresAML = args.fromAmount > 1000 || (args.toAmount !== undefined ? args.toAmount > 1000 : transaction.toAmount > 1000);
+      // Update compliance requirement based on new amount
+      updates.requiresCompliance = args.fromAmount > 1000 || (args.toAmount !== undefined ? args.toAmount > 1000 : transaction.toAmount > 1000);
     }
     if (args.toCurrency !== undefined) updates.toCurrency = args.toCurrency;
     if (args.toAmount !== undefined) {
       updates.toAmount = args.toAmount;
-      // Update AML requirement based on new amount
-      updates.requiresAML = args.toAmount > 1000 || (args.fromAmount !== undefined ? args.fromAmount > 1000 : transaction.fromAmount > 1000);
+      // Update compliance requirement based on new amount
+      updates.requiresCompliance = args.toAmount > 1000 || (args.fromAmount !== undefined ? args.fromAmount > 1000 : transaction.fromAmount > 1000);
     }
     if (args.exchangeRate !== undefined) updates.exchangeRate = args.exchangeRate;
     if (args.serviceFee !== undefined) updates.serviceFee = args.serviceFee;

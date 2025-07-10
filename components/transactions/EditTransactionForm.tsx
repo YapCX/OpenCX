@@ -150,7 +150,7 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
     setTransactionType(transactionType === "currency_buy" ? "currency_sell" : "currency_buy");
   };
 
-  const isAMLRequired = parseFloat(fromAmount) > 1000 || parseFloat(calculatedToAmount) > 1000;
+  const isComplianceRequired = parseFloat(fromAmount) > 1000 || parseFloat(calculatedToAmount) > 1000;
 
   if (!transaction) {
     return (
@@ -337,11 +337,11 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
                   </div>
                 </div>
 
-                {isAMLRequired && (
+                {isComplianceRequired && (
                   <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <div className="flex items-center gap-2 text-yellow-800">
                       <AlertTriangle className="h-4 w-4" />
-                      <span className="font-medium">AML Compliance Required</span>
+                      <span className="font-medium">Compliance Required</span>
                     </div>
                     <p className="text-sm text-yellow-700 mt-1">
                       This transaction exceeds $1,000 and requires customer identification.
@@ -357,7 +357,7 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
                   Customer Information
-                  {isAMLRequired && <Badge variant="destructive">Required</Badge>}
+                  {isComplianceRequired && <Badge variant="destructive">Required</Badge>}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -380,7 +380,7 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
                     }
                   }}
                   allowWalkIn={true}
-                  required={isAMLRequired}
+                  required={isComplianceRequired}
                 />
 
                 {!selectedCustomer && (
@@ -392,7 +392,7 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
                         placeholder="Customer full name"
                         value={customerName}
                         onChange={(e) => setCustomerName(e.target.value)}
-                        required={isAMLRequired}
+                        required={isComplianceRequired}
                       />
                     </div>
 

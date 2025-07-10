@@ -220,12 +220,12 @@ export function CustomerForm({ editingId, onClose, isOpen }: CustomerFormProps) 
         <AlertTriangle className="h-3 w-3" />
         Flagged
       </Badge>
-    ) : existingCustomer.amlStatus === "approved" && existingCustomer.sanctionsScreeningStatus === "clear" ? (
+    ) : existingCustomer.complianceStatus === "approved" && existingCustomer.sanctionsScreeningStatus === "clear" ? (
       <Badge variant="default" className="flex items-center gap-1 bg-green-100 text-green-800">
         <CheckCircle className="h-3 w-3" />
         Verified
       </Badge>
-    ) : existingCustomer.amlStatus === "pending" || existingCustomer.sanctionsScreeningStatus === "pending" ? (
+    ) : existingCustomer.complianceStatus === "pending" || existingCustomer.sanctionsScreeningStatus === "pending" ? (
       <Badge variant="secondary" className="flex items-center gap-1">
         <Clock className="h-3 w-3" />
         Pending Review

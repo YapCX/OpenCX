@@ -228,7 +228,7 @@
       "priority": 20
     }
   ],
-  "amlSettings": {
+  "complianceSettings": {
     "autoScreeningEnabled": true,
     "enabledSanctionLists": ["OFAC", "UN", "EU", "OSFI"],
     "riskThresholds": {

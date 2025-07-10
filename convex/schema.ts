@@ -87,7 +87,7 @@ const applicationTables = {
     customerPhone: v.optional(v.string()),
 
     // Compliance and notes
-    requiresAML: v.boolean(),
+    requiresCompliance: v.boolean(),
     notes: v.optional(v.string()),
 
     // Timestamps
@@ -161,7 +161,7 @@ const applicationTables = {
       v.literal("high")
     ),
 
-    amlStatus: v.union(
+    complianceStatus: v.union(
       v.literal("pending"),
       v.literal("approved"),
       v.literal("rejected"),
@@ -188,7 +188,7 @@ const applicationTables = {
     .index("by_type", ["type"])
     .index("by_status", ["status"])
     .index("by_risk_level", ["riskLevel"])
-    .index("by_aml_status", ["amlStatus"])
+    .index("by_compliance_status", ["complianceStatus"])
     .index("by_user", ["userId"])
     .index("by_full_name", ["fullName"])
     .index("by_business_name", ["businessName"])
@@ -415,10 +415,10 @@ const applicationTables = {
     .index("by_category", ["category"]),
 
   // AML and Compliance Settings
-  amlSettings: defineTable({
+  complianceSettings: defineTable({
     // Screening configuration
     autoScreeningEnabled: v.boolean(),
-    enabledSanctionLists: v.array(v.string()), // ["OFAC", "UN", "EU", "UK", "CANADA"]
+    enabledSanctionLists: v.array(v.string()), // ["OFAC_SDN", "OSFI", "SEMA", "NZ", "UK", "UN", "AUSTRAC", "EU"]
 
     // Risk thresholds
     riskThresholds: v.object({

@@ -56,12 +56,12 @@ export default function CustomersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [riskFilter, setRiskFilter] = useState<string>("");
 
-  const customers = useQuery(api.customers.list, {
+  const customersQuery = useQuery(api.customers.list, {
     searchTerm: searchTerm || undefined,
     type: typeFilter && typeFilter !== "all" ? typeFilter as "individual" | "corporate" : undefined,
     status: statusFilter && statusFilter !== "all" ? statusFilter as "active" | "inactive" | "pending" | "suspended" | "flagged" : undefined,
     riskLevel: riskFilter && riskFilter !== "all" ? riskFilter as "low" | "medium" | "high" : undefined,
-  }) || [];
+  });
 
   const stats = useQuery(api.customers.getStats, {}) || {
     total: 0,
@@ -149,18 +149,12 @@ export default function CustomersPage() {
     }
   };
 
-  const getCustomerName = (customer: typeof customers[0]) => {
-    if (customer.type === "individual") {
-      return customer.fullName || `${customer.firstName || ""} ${customer.lastName || ""}`.trim();
-    }
-    return customer.businessName || "Unnamed Business";
-  };
 
-  const getAMLStatus = (customer: typeof customers[0]) => {
-    if (customer.amlStatus === "approved" && customer.sanctionsScreeningStatus === "clear") {
+  const getComplianceStatus = (customer: typeof customers[0]) => {
+    if (customer.complianceStatus === "approved" && customer.sanctionsScreeningStatus === "clear") {
       return { label: "Verified", color: "bg-green-100 text-green-800", icon: <Shield className="h-3 w-3" /> };
     }
-    if (customer.amlStatus === "pending" || customer.sanctionsScreeningStatus === "pending") {
+    if (customer.complianceStatus === "pending" || customer.sanctionsScreeningStatus === "pending") {
       return { label: "Pending", color: "bg-yellow-100 text-yellow-800", icon: <Clock className="h-3 w-3" /> };
     }
     if (customer.sanctionsScreeningStatus === "match") {
@@ -171,6 +165,14 @@ export default function CustomersPage() {
 
   // Sort customers - memoized to prevent unnecessary re-renders
   const sortedCustomers = useMemo(() => {
+    const customers = customersQuery || [];
+    const getCustomerName = (customer: typeof customers[0]) => {
+      if (customer.type === "individual") {
+        return customer.fullName || `${customer.firstName || ""} ${customer.lastName || ""}`.trim();
+      }
+      return customer.businessName || "Unnamed Business";
+    };
+    
     return [...customers].sort((a, b) => {
       let aValue: string | number | undefined = a[sortField];
       let bValue: string | number | undefined = b[sortField];
@@ -193,7 +195,7 @@ export default function CustomersPage() {
       if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
-  }, [customers, sortField, sortDirection]);
+  }, [customersQuery, sortField, sortDirection]);
 
   if (showForm) {
     return (
@@ -375,7 +377,7 @@ export default function CustomersPage() {
                 >
                   Status
                 </TableHead>
-                <TableHead>AML Status</TableHead>
+                <TableHead>Compliance Status</TableHead>
                 <TableHead>Risk Level</TableHead>
                 <TableHead
                   className="cursor-pointer hover:bg-muted/50"
@@ -388,7 +390,7 @@ export default function CustomersPage() {
             </TableHeader>
             <TableBody>
               {sortedCustomers.map((customer) => {
-                const amlStatus = getAMLStatus(customer);
+                const complianceStatus = getComplianceStatus(customer);
                 return (
                   <TableRow key={customer._id}>
                     <TableCell className="font-mono text-sm">
@@ -401,7 +403,7 @@ export default function CustomersPage() {
                         ) : (
                           <Building2 className="h-4 w-4 text-muted-foreground" />
                         )}
-                        <span className="font-medium">{getCustomerName(customer)}</span>
+                        <span className="font-medium">{customer.type === "individual" ? customer.fullName || `${customer.firstName || ""} ${customer.lastName || ""}`.trim() : customer.businessName || "Unnamed Business"}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -434,10 +436,10 @@ export default function CustomersPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={amlStatus.color}>
+                      <Badge className={complianceStatus.color}>
                         <div className="flex items-center gap-1">
-                          {amlStatus.icon}
-                          {amlStatus.label}
+                          {complianceStatus.icon}
+                          {complianceStatus.label}
                         </div>
                       </Badge>
                     </TableCell>

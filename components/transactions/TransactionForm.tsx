@@ -135,7 +135,7 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
     setToCurrency(tempCurrency);
   };
 
-  const isAMLRequired = parseFloat(fromAmount) > 1000 || parseFloat(calculatedToAmount) > 1000;
+  const isComplianceRequired = parseFloat(fromAmount) > 1000 || parseFloat(calculatedToAmount) > 1000;
 
   if (!isOpen) return null;
 
@@ -272,11 +272,11 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
                 </div>
               </div>
 
-              {isAMLRequired && (
+              {isComplianceRequired && (
                 <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <div className="flex items-center gap-2 text-yellow-800">
                     <AlertTriangle className="h-4 w-4" />
-                    <span className="font-medium">AML Compliance Required</span>
+                    <span className="font-medium">Compliance Required</span>
                   </div>
                   <p className="text-sm text-yellow-700 mt-1">
                     This transaction exceeds $1,000 and requires customer identification.
@@ -292,7 +292,7 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
                 Customer Information
-                {isAMLRequired && <Badge variant="destructive">Required</Badge>}
+                {isComplianceRequired && <Badge variant="destructive">Required</Badge>}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -317,7 +317,7 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
                   }
                 }}
                 allowWalkIn={true}
-                required={isAMLRequired}
+                required={isComplianceRequired}
               />
 
               {/* Manual customer info fields (for walk-in customers or when editing existing customer info) */}
@@ -330,7 +330,7 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
                       placeholder="Customer full name"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      required={isAMLRequired}
+                      required={isComplianceRequired}
                     />
                   </div>
 
