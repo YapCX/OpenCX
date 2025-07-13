@@ -3,6 +3,7 @@
 import { UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -30,6 +31,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           </div>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
+          <ThemeToggle />
           <UserButton />
         </div>
       </div>
