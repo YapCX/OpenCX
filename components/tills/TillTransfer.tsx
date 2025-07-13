@@ -247,15 +247,33 @@ export function TillTransfer() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {transfers.map((transfer) => {
+              {(() => {
+                const availableTransfers = transfers.filter(transfer => 
+                  getSourceBalance(transfer.currencyCode) > 0
+                );
+                
+                if (availableTransfers.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p className="text-sm">No funds available to transfer from the selected source till.</p>
+                      <p className="text-xs mt-1">Select a different source till with available balances.</p>
+                    </div>
+                  );
+                }
+                
+                return transfers.map((transfer, index) => {
                 const sourceBalance = getSourceBalance(transfer.currencyCode);
                 const destinationBalance = getDestinationBalance(transfer.currencyCode);
                 const newSourceBalance = getNewSourceBalance(transfer.currencyCode);
                 const newDestinationBalance = getNewDestinationBalance(transfer.currencyCode);
                 const isInvalid = transfer.amount > 0 && sourceBalance < transfer.amount;
 
+                if (sourceBalance <= 0) {
+                  return null;
+                }
+
                 return (
-                  <div key={transfer.currencyCode} className="space-y-3">
+                  <div key={`${transfer.currencyCode}-${index}`} className="space-y-3">
                     <div className="flex items-center justify-between">
                       <Label className="text-base font-medium">
                         {transfer.currencyCode}
@@ -336,7 +354,8 @@ export function TillTransfer() {
                     <Separator />
                   </div>
                 );
-              })}
+              });
+              })()}
             </CardContent>
           </Card>
         )}
