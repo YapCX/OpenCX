@@ -249,7 +249,7 @@ export default function OrdersPage() {
                     Signed into Till: {currentTill.tillName} ({currentTill.tillId})
                   </div>
                   <div className="text-sm text-green-600">
-                    Session started: {new Date(currentTill.session.signInTime).toLocaleString()}
+                    Session started: {new Date(currentTill.tillSession.signInTime).toLocaleString()}
                   </div>
                 </div>
               ) : (

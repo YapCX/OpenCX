@@ -416,9 +416,31 @@ const applicationTables = {
 
   // AML and Compliance Settings
   complianceSettings: defineTable({
+    // Compliance master switch and core settings
+    performComplianceChecks: v.boolean(),
+    requireProfileThreshold: v.number(),
+    lctThreshold: v.number(),
+    requireSinThreshold: v.number(),
+    requirePepThreshold: v.number(),
+    
     // Screening configuration
     autoScreeningEnabled: v.boolean(),
     enabledSanctionLists: v.array(v.string()), // ["OFAC_SDN", "OSFI", "SEMA", "NZ", "UK", "UN", "AUSTRAC", "EU"]
+
+    // KYC and customer warnings
+    warnIncompleteKyc: v.boolean(),
+    warnRepeatTransactionsDays: v.optional(v.number()),
+    autoCheckCustomerBeforeInvoice: v.boolean(),
+    customerProfileReviewDays: v.optional(v.number()),
+
+    // Transaction warnings and overrides
+    denominationRequestThreshold: v.number(),
+    maxRateChangeAllowance: v.number(),
+    forceRegisterForChequeOrWire: v.boolean(),
+    warnNegativeCashBalance: v.boolean(),
+
+    // Global warning tolerance level
+    warningToleranceLevel: v.union(v.literal("relax"), v.literal("normal"), v.literal("severe")),
 
     // Risk thresholds
     riskThresholds: v.object({

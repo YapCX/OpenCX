@@ -229,8 +229,22 @@
     }
   ],
   "complianceSettings": {
+    "performComplianceChecks": true,
+    "requireProfileThreshold": 1000,
+    "lctThreshold": 10000,
+    "requireSinThreshold": 3000,
+    "requirePepThreshold": 1000,
     "autoScreeningEnabled": true,
-    "enabledSanctionLists": ["OFAC", "UN", "EU", "OSFI"],
+    "enabledSanctionLists": ["OFAC_SDN", "UN", "EU", "OSFI"],
+    "warnIncompleteKyc": true,
+    "warnRepeatTransactionsDays": 7,
+    "autoCheckCustomerBeforeInvoice": false,
+    "customerProfileReviewDays": 365,
+    "denominationRequestThreshold": 5000,
+    "maxRateChangeAllowance": 5,
+    "forceRegisterForChequeOrWire": true,
+    "warnNegativeCashBalance": true,
+    "warningToleranceLevel": "normal",
     "riskThresholds": {
       "low": 30,
       "medium": 70,

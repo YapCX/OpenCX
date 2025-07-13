@@ -244,6 +244,7 @@ export const updateBasicComplianceSettings = mutation({
         ...defaults.complianceSettings,
         defaultServiceFee: DEFAULT_SERVICE_FEE,
         serviceFeeType: "flat" as const,
+        warningToleranceLevel: defaults.complianceSettings.warningToleranceLevel as "relax" | "normal" | "severe",
         ...updateData,
       };
 
@@ -256,19 +257,29 @@ export const updateBasicComplianceSettings = mutation({
 // Comprehensive compliance settings mutation - handles all settings from the spec
 export const updateComplianceSettings = mutation({
   args: {
-    // General settings (stored in settings table)
+    // Core compliance settings (stored in complianceSettings table)
     performComplianceChecks: v.optional(v.boolean()),
-    activateRuleBasedCompliance: v.optional(v.boolean()),
     requireProfileThreshold: v.optional(v.number()),
     lctThreshold: v.optional(v.number()),
     requireSinThreshold: v.optional(v.number()),
     requirePepThreshold: v.optional(v.number()),
+    
+    // KYC and customer warnings
     warnIncompleteKyc: v.optional(v.boolean()),
     warnRepeatTransactionsDays: v.optional(v.number()),
     autoCheckCustomerBeforeInvoice: v.optional(v.boolean()),
     customerProfileReviewDays: v.optional(v.number()),
     
-    // Compliance settings (stored in complianceSettings table)
+    // Transaction warnings and overrides
+    denominationRequestThreshold: v.optional(v.number()),
+    maxRateChangeAllowance: v.optional(v.number()),
+    forceRegisterForChequeOrWire: v.optional(v.boolean()),
+    warnNegativeCashBalance: v.optional(v.boolean()),
+    
+    // Global warning tolerance level
+    warningToleranceLevel: v.optional(v.union(v.literal("relax"), v.literal("normal"), v.literal("severe"))),
+    
+    // Sanctions and screening
     enabledSanctionLists: v.optional(v.array(v.string())),
     autoScreeningEnabled: v.optional(v.boolean()),
     pepScreeningEnabled: v.optional(v.boolean()),
@@ -298,49 +309,22 @@ export const updateComplianceSettings = mutation({
     const user = await requireManagerOrCompliance(ctx);
     const now = Date.now();
 
-    // Settings for the settings table
-    const generalSettings = [
-      { key: "performComplianceChecks", value: args.performComplianceChecks, category: "compliance" },
-      { key: "activateRuleBasedCompliance", value: args.activateRuleBasedCompliance, category: "compliance" },
-      { key: "requireProfileThreshold", value: args.requireProfileThreshold, category: "compliance" },
-      { key: "lctThreshold", value: args.lctThreshold, category: "compliance" },
-      { key: "requireSinThreshold", value: args.requireSinThreshold, category: "compliance" },
-      { key: "requirePepThreshold", value: args.requirePepThreshold, category: "compliance" },
-      { key: "warnIncompleteKyc", value: args.warnIncompleteKyc, category: "warnings" },
-      { key: "warnRepeatTransactionsDays", value: args.warnRepeatTransactionsDays, category: "warnings" },
-      { key: "autoCheckCustomerBeforeInvoice", value: args.autoCheckCustomerBeforeInvoice, category: "compliance" },
-      { key: "customerProfileReviewDays", value: args.customerProfileReviewDays, category: "compliance" },
-    ];
-
-    // Update settings table
-    for (const setting of generalSettings) {
-      if (setting.value !== undefined) {
-        const existingSetting = await ctx.db
-          .query("settings")
-          .withIndex("by_key", (q) => q.eq("key", setting.key))
-          .first();
-
-        if (existingSetting) {
-          await ctx.db.patch(existingSetting._id, {
-            value: setting.value,
-            category: setting.category,
-            lastUpdated: now,
-            updatedBy: user.clerkUserId,
-          });
-        } else {
-          await ctx.db.insert("settings", {
-            key: setting.key,
-            value: setting.value,
-            category: setting.category,
-            lastUpdated: now,
-            updatedBy: user.clerkUserId,
-          });
-        }
-      }
-    }
-
-    // Update compliance settings table
-    const amlFields = {
+    // All settings go to complianceSettings table based on updated schema
+    const complianceFields = {
+      performComplianceChecks: args.performComplianceChecks,
+      requireProfileThreshold: args.requireProfileThreshold,
+      lctThreshold: args.lctThreshold,
+      requireSinThreshold: args.requireSinThreshold,
+      requirePepThreshold: args.requirePepThreshold,
+      warnIncompleteKyc: args.warnIncompleteKyc,
+      warnRepeatTransactionsDays: args.warnRepeatTransactionsDays,
+      autoCheckCustomerBeforeInvoice: args.autoCheckCustomerBeforeInvoice,
+      customerProfileReviewDays: args.customerProfileReviewDays,
+      denominationRequestThreshold: args.denominationRequestThreshold,
+      maxRateChangeAllowance: args.maxRateChangeAllowance,
+      forceRegisterForChequeOrWire: args.forceRegisterForChequeOrWire,
+      warnNegativeCashBalance: args.warnNegativeCashBalance,
+      warningToleranceLevel: args.warningToleranceLevel,
       enabledSanctionLists: args.enabledSanctionLists,
       autoScreeningEnabled: args.autoScreeningEnabled,
       pepScreeningEnabled: args.pepScreeningEnabled,
@@ -355,16 +339,16 @@ export const updateComplianceSettings = mutation({
     };
 
     // Filter out undefined values
-    const amlUpdateData = Object.fromEntries(
-      Object.entries(amlFields).filter(([_, value]) => value !== undefined)
+    const updateData = Object.fromEntries(
+      Object.entries(complianceFields).filter(([_, value]) => value !== undefined)
     );
 
-    if (Object.keys(amlUpdateData).length > 0) {
+    if (Object.keys(updateData).length > 0) {
       const existingComplianceSettings = await ctx.db.query("complianceSettings").first();
       
       if (existingComplianceSettings) {
         await ctx.db.patch(existingComplianceSettings._id, {
-          ...amlUpdateData,
+          ...updateData,
           lastUpdated: now,
           updatedBy: user.clerkUserId,
         });
@@ -374,7 +358,8 @@ export const updateComplianceSettings = mutation({
           ...defaults.complianceSettings,
           defaultServiceFee: DEFAULT_SERVICE_FEE,
           serviceFeeType: "flat" as const,
-          ...amlUpdateData,
+          warningToleranceLevel: defaults.complianceSettings.warningToleranceLevel as "relax" | "normal" | "severe",
+          ...updateData,
           lastUpdated: now,
           updatedBy: user.clerkUserId,
         };
@@ -392,49 +377,51 @@ export const getComplianceSettings = query({
   handler: async (ctx) => {
     await requireManagerOrCompliance(ctx);
 
-    // Get general settings
-    const generalSettings = await ctx.db.query("settings").collect();
-    const settingsMap = Object.fromEntries(
-      generalSettings.map(s => [s.key, s.value])
-    );
-
-    // Get compliance settings
+    // Get compliance settings from complianceSettings table
     const complianceSettings = await ctx.db.query("complianceSettings").first();
 
-    return {
-      // General compliance settings
-      performComplianceChecks: settingsMap.performComplianceChecks ?? true,
-      activateRuleBasedCompliance: settingsMap.activateRuleBasedCompliance ?? false,
-      requireProfileThreshold: settingsMap.requireProfileThreshold ?? 1000,
-      lctThreshold: settingsMap.lctThreshold ?? 10000,
-      requireSinThreshold: settingsMap.requireSinThreshold ?? 3000,
-      requirePepThreshold: settingsMap.requirePepThreshold ?? 1000,
-      warnIncompleteKyc: settingsMap.warnIncompleteKyc ?? true,
-      warnRepeatTransactionsDays: settingsMap.warnRepeatTransactionsDays ?? 7,
-      autoCheckCustomerBeforeInvoice: settingsMap.autoCheckCustomerBeforeInvoice ?? false,
-      customerProfileReviewDays: settingsMap.customerProfileReviewDays ?? 365,
+    if (!complianceSettings) {
+      // Return defaults from config
+      return defaults.complianceSettings;
+    }
 
-      // Compliance settings
-      enabledSanctionLists: complianceSettings?.enabledSanctionLists ?? [],
-      autoScreeningEnabled: complianceSettings?.autoScreeningEnabled ?? false,
-      pepScreeningEnabled: complianceSettings?.pepScreeningEnabled ?? false,
-      adverseMediaScreeningEnabled: complianceSettings?.adverseMediaScreeningEnabled ?? false,
-      autoHoldOnMatch: complianceSettings?.autoHoldOnMatch ?? false,
-      requireOverrideReason: complianceSettings?.requireOverrideReason ?? true,
-      autoReportSuspicious: complianceSettings?.autoReportSuspicious ?? false,
-      retentionPeriodDays: complianceSettings?.retentionPeriodDays ?? 2555, // 7 years
-      requireTwoPersonApproval: complianceSettings?.requireTwoPersonApproval ?? false,
-      transactionLimits: complianceSettings?.transactionLimits ?? {
-        individualDaily: 10000,
-        individualTransaction: 5000,
-        corporateDaily: 50000,
-        corporateTransaction: 25000,
-      },
-      riskThresholds: complianceSettings?.riskThresholds ?? {
-        low: 30,
-        medium: 70,
-        high: 100,
-      },
+    return {
+      // Core compliance settings
+      performComplianceChecks: complianceSettings.performComplianceChecks ?? defaults.complianceSettings.performComplianceChecks,
+      requireProfileThreshold: complianceSettings.requireProfileThreshold ?? defaults.complianceSettings.requireProfileThreshold,
+      lctThreshold: complianceSettings.lctThreshold ?? defaults.complianceSettings.lctThreshold,
+      requireSinThreshold: complianceSettings.requireSinThreshold ?? defaults.complianceSettings.requireSinThreshold,
+      requirePepThreshold: complianceSettings.requirePepThreshold ?? defaults.complianceSettings.requirePepThreshold,
+      
+      // KYC and customer warnings
+      warnIncompleteKyc: complianceSettings.warnIncompleteKyc ?? defaults.complianceSettings.warnIncompleteKyc,
+      warnRepeatTransactionsDays: complianceSettings.warnRepeatTransactionsDays ?? defaults.complianceSettings.warnRepeatTransactionsDays,
+      autoCheckCustomerBeforeInvoice: complianceSettings.autoCheckCustomerBeforeInvoice ?? defaults.complianceSettings.autoCheckCustomerBeforeInvoice,
+      customerProfileReviewDays: complianceSettings.customerProfileReviewDays ?? defaults.complianceSettings.customerProfileReviewDays,
+      
+      // Transaction warnings and overrides
+      denominationRequestThreshold: complianceSettings.denominationRequestThreshold ?? defaults.complianceSettings.denominationRequestThreshold,
+      maxRateChangeAllowance: complianceSettings.maxRateChangeAllowance ?? defaults.complianceSettings.maxRateChangeAllowance,
+      forceRegisterForChequeOrWire: complianceSettings.forceRegisterForChequeOrWire ?? defaults.complianceSettings.forceRegisterForChequeOrWire,
+      warnNegativeCashBalance: complianceSettings.warnNegativeCashBalance ?? defaults.complianceSettings.warnNegativeCashBalance,
+      
+      // Global warning tolerance level
+      warningToleranceLevel: complianceSettings.warningToleranceLevel ?? defaults.complianceSettings.warningToleranceLevel,
+
+      // Sanctions and screening
+      enabledSanctionLists: complianceSettings.enabledSanctionLists ?? defaults.complianceSettings.enabledSanctionLists,
+      autoScreeningEnabled: complianceSettings.autoScreeningEnabled ?? defaults.complianceSettings.autoScreeningEnabled,
+      pepScreeningEnabled: complianceSettings.pepScreeningEnabled ?? defaults.complianceSettings.pepScreeningEnabled,
+      adverseMediaScreeningEnabled: complianceSettings.adverseMediaScreeningEnabled ?? defaults.complianceSettings.adverseMediaScreeningEnabled,
+      autoHoldOnMatch: complianceSettings.autoHoldOnMatch ?? defaults.complianceSettings.autoHoldOnMatch,
+      requireOverrideReason: complianceSettings.requireOverrideReason ?? defaults.complianceSettings.requireOverrideReason,
+      autoReportSuspicious: complianceSettings.autoReportSuspicious ?? defaults.complianceSettings.autoReportSuspicious,
+      retentionPeriodDays: complianceSettings.retentionPeriodDays ?? defaults.complianceSettings.retentionPeriodDays,
+      requireTwoPersonApproval: complianceSettings.requireTwoPersonApproval ?? defaults.complianceSettings.requireTwoPersonApproval,
+      
+      // Transaction limits and risk thresholds
+      transactionLimits: complianceSettings.transactionLimits ?? defaults.complianceSettings.transactionLimits,
+      riskThresholds: complianceSettings.riskThresholds ?? defaults.complianceSettings.riskThresholds,
     };
   },
 });

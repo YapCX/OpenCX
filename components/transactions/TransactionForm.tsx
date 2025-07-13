@@ -40,7 +40,7 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
   const [fromCurrency, setFromCurrency] = useState("");
   const [fromAmount, setFromAmount] = useState("");
   const [toCurrency, setToCurrency] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
   const [selectedCustomer, setSelectedCustomer] = useState<{
     _id: Id<"customers">;
     customerId: string;
@@ -324,35 +324,41 @@ export function TransactionForm({ onClose, isOpen }: TransactionFormProps) {
               {!selectedCustomer && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="customer-name">Full Name</Label>
+                    <Label htmlFor="customer-name" className="text-muted-foreground">Full Name</Label>
                     <Input
                       id="customer-name"
-                      placeholder="Customer full name"
+                      placeholder="Not required for walk-in customer"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       required={isComplianceRequired}
+                      disabled
+                      className="bg-muted text-muted-foreground cursor-not-allowed"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="customer-email">Email</Label>
+                    <Label htmlFor="customer-email" className="text-muted-foreground">Email</Label>
                     <Input
                       id="customer-email"
                       type="email"
-                      placeholder="customer@example.com"
+                      placeholder="Not required for walk-in customer"
                       value={customerEmail}
                       onChange={(e) => setCustomerEmail(e.target.value)}
+                      disabled
+                      className="bg-muted text-muted-foreground cursor-not-allowed"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="customer-phone">Phone</Label>
+                    <Label htmlFor="customer-phone" className="text-muted-foreground">Phone</Label>
                     <Input
                       id="customer-phone"
                       type="tel"
-                      placeholder="+1 (555) 123-4567"
+                      placeholder="Not required for walk-in customer"
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)}
+                      disabled
+                      className="bg-muted text-muted-foreground cursor-not-allowed"
                     />
                   </div>
                 </>

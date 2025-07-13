@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -78,6 +78,7 @@ export function CustomerSelector({
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
+  const [isWalkInSelected, setIsWalkInSelected] = useState(false);
   const customersQuery = useQuery(api.customers.list, {
     searchTerm: searchTerm || undefined,
     limit: 50,
@@ -92,13 +93,28 @@ export function CustomerSelector({
       : null;
   }, [selectedCustomerId, customersQuery]);
 
+  // Reset walk-in state when selectedCustomerId changes
+  useEffect(() => {
+    if (selectedCustomerId) {
+      setIsWalkInSelected(false);
+    } else {
+      // If no customer ID is set but we had a customer before, reset walk-in state
+      // This handles external changes to selectedCustomerId
+      if (!selectedCustomer) {
+        setIsWalkInSelected(false);
+      }
+    }
+  }, [selectedCustomerId, selectedCustomer]);
+
   const handleSelectCustomer = (customer: Customer | null) => {
     onSelectCustomer(customer);
+    setIsWalkInSelected(false);
     setOpen(false);
   };
 
   const handleWalkIn = () => {
     onSelectCustomer(null);
+    setIsWalkInSelected(true);
     setOpen(false);
   };
 
@@ -194,6 +210,16 @@ export function CustomerSelector({
                         {getCustomerSubtext(selectedCustomer)}
                       </span>
                     )}
+                  </div>
+                </div>
+              ) : isWalkInSelected ? (
+                <div className="flex items-center gap-2 text-left">
+                  <UserPlus className="h-4 w-4" />
+                  <div className="flex flex-col">
+                    <span className="font-medium">Walk-in Customer</span>
+                    <span className="text-xs text-muted-foreground">
+                      No customer profile required
+                    </span>
                   </div>
                 </div>
               ) : (

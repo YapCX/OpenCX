@@ -61,7 +61,7 @@ export function EditTransactionForm({ transactionId, isOpen, onClose, onSave }: 
   const [fromCurrency, setFromCurrency] = useState(transaction?.fromCurrency ?? "");
   const [fromAmount, setFromAmount] = useState(transaction?.fromAmount.toString() ?? "");
   const [toCurrency, setToCurrency] = useState(transaction?.toCurrency ?? "");
-  const [paymentMethod, setPaymentMethod] = useState(transaction?.paymentMethod ?? "");
+  const [paymentMethod, setPaymentMethod] = useState(transaction?.paymentMethod ?? "cash");
   const [selectedCustomer, setSelectedCustomer] = useState<{
     _id: Id<"customers">;
     customerId: string;

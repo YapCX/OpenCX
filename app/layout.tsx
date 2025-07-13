@@ -33,7 +33,27 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ClerkProvider dynamic>
+        <ClerkProvider 
+          dynamic
+          appearance={{
+            elements: {
+              formFooter: { display: "none" },
+              footerAction: { display: "none" },
+              footerActionLink: { display: "none" },
+              footer: { display: "none" },
+              socialButtonsBlockButton: { display: "none" },
+              dividerRow: { display: "none" },
+              formButtonPrimary: "bg-primary hover:bg-primary/90",
+              card: "shadow-none border",
+              headerTitle: "text-2xl font-bold",
+              headerSubtitle: "text-muted-foreground"
+            },
+            layout: {
+              socialButtonsPlacement: "bottom",
+              showOptionalFields: false,
+            }
+          }}
+        >
           <ConvexClientProvider>{children}</ConvexClientProvider>
           <Toaster />
         </ClerkProvider>

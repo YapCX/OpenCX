@@ -150,7 +150,7 @@ export default function CustomersPage() {
   };
 
 
-  const getComplianceStatus = (customer: typeof customers[0]) => {
+  const getComplianceStatus = (customer: NonNullable<typeof customersQuery>[0]) => {
     if (customer.complianceStatus === "approved" && customer.sanctionsScreeningStatus === "clear") {
       return { label: "Verified", color: "bg-green-100 text-green-800", icon: <Shield className="h-3 w-3" /> };
     }

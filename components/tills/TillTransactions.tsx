@@ -145,29 +145,36 @@ export function TillTransactions() {
 
   return (
     <div className="space-y-6">
-      {/* Current Till Status */}
+      {/* Current Till Balances */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5" />
-            Current Till: {currentTill.tillName}
+            {currentTill.tillName} Balances
           </CardTitle>
-          <CardDescription>
-            Cash balances and transaction management
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {tillBalances.map((balance) => (
-              <div key={balance.currencyCode} className="text-center">
-                <div className="text-2xl font-bold">
-                  {formatCurrency(balance.balance, balance.currencyCode)}
+            {tillBalances
+              .filter((balance, index, self) => 
+                balance.balance > 0 && 
+                self.findIndex(b => b.currencyCode === balance.currencyCode) === index
+              )
+              .map((balance, index) => (
+                <div key={`${balance.currencyCode}-${index}`} className="text-center">
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(balance.balance, balance.currencyCode)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {balance.currencyCode}
+                  </div>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  {balance.currencyCode}
-                </div>
+              ))}
+            {tillBalances.filter(balance => balance.balance > 0).length === 0 && (
+              <div className="col-span-full text-center text-muted-foreground">
+                No cash balances available
               </div>
-            ))}
+            )}
           </div>
         </CardContent>
       </Card>

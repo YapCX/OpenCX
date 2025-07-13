@@ -44,52 +44,43 @@ export default function ComplianceSettingsPage() {
   // Get current compliance settings
   const complianceSettings = useQuery(api.settings.getComplianceSettings);
   
-  // Form state
-  const [formData, setFormData] = useState({
-    // Master switches
-    performComplianceChecks: true,
-    activateRuleBasedCompliance: false,
-    
-    // Thresholds
-    requireProfileThreshold: 1000,
-    lctThreshold: 10000,
-    requireSinThreshold: 3000,
-    requirePepThreshold: 1000,
-    
-    // Sanctions lists
-    enabledSanctionLists: [] as string[],
-    
-    // Warnings
-    warnIncompleteKyc: true,
-    warnRepeatTransactionsDays: 7,
-    autoCheckCustomerBeforeInvoice: false,
-    customerProfileReviewDays: 365,
-    
-    // AML settings
-    autoScreeningEnabled: false,
-    pepScreeningEnabled: false,
-    adverseMediaScreeningEnabled: false,
-    autoHoldOnMatch: false,
-    requireOverrideReason: true,
-    autoReportSuspicious: false,
-    retentionPeriodDays: 2555,
-    requireTwoPersonApproval: false,
-    
-    // Transaction limits
+  // Form state - will be populated from backend data
+  const [formData, setFormData] = useState<{
+    performComplianceChecks: boolean;
+    requireProfileThreshold: number;
+    lctThreshold: number;
+    requireSinThreshold: number;
+    requirePepThreshold: number;
+    enabledSanctionLists: string[];
+    warnIncompleteKyc: boolean;
+    warnRepeatTransactionsDays: number;
+    autoCheckCustomerBeforeInvoice: boolean;
+    customerProfileReviewDays: number;
+    denominationRequestThreshold: number;
+    maxRateChangeAllowance: number;
+    forceRegisterForChequeOrWire: boolean;
+    warnNegativeCashBalance: boolean;
+    warningToleranceLevel: "relax" | "normal" | "severe";
+    autoScreeningEnabled: boolean;
+    pepScreeningEnabled: boolean;
+    adverseMediaScreeningEnabled: boolean;
+    autoHoldOnMatch: boolean;
+    requireOverrideReason: boolean;
+    autoReportSuspicious: boolean;
+    retentionPeriodDays: number;
+    requireTwoPersonApproval: boolean;
     transactionLimits: {
-      individualDaily: 10000,
-      individualTransaction: 5000,
-      corporateDaily: 50000,
-      corporateTransaction: 25000,
-    },
-    
-    // Risk thresholds
+      individualDaily: number;
+      individualTransaction: number;
+      corporateDaily: number;
+      corporateTransaction: number;
+    };
     riskThresholds: {
-      low: 30,
-      medium: 70,
-      high: 100,
-    },
-  });
+      low: number;
+      medium: number;
+      high: number;
+    };
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Mutations
@@ -100,7 +91,6 @@ export default function ComplianceSettingsPage() {
     if (complianceSettings) {
       setFormData({
         performComplianceChecks: complianceSettings.performComplianceChecks as boolean,
-        activateRuleBasedCompliance: complianceSettings.activateRuleBasedCompliance as boolean,
         requireProfileThreshold: complianceSettings.requireProfileThreshold as number,
         lctThreshold: complianceSettings.lctThreshold as number,
         requireSinThreshold: complianceSettings.requireSinThreshold as number,
@@ -110,6 +100,11 @@ export default function ComplianceSettingsPage() {
         warnRepeatTransactionsDays: complianceSettings.warnRepeatTransactionsDays as number,
         autoCheckCustomerBeforeInvoice: complianceSettings.autoCheckCustomerBeforeInvoice as boolean,
         customerProfileReviewDays: complianceSettings.customerProfileReviewDays as number,
+        denominationRequestThreshold: complianceSettings.denominationRequestThreshold as number,
+        maxRateChangeAllowance: complianceSettings.maxRateChangeAllowance as number,
+        forceRegisterForChequeOrWire: complianceSettings.forceRegisterForChequeOrWire as boolean,
+        warnNegativeCashBalance: complianceSettings.warnNegativeCashBalance as boolean,
+        warningToleranceLevel: complianceSettings.warningToleranceLevel as "relax" | "normal" | "severe",
         autoScreeningEnabled: complianceSettings.autoScreeningEnabled as boolean,
         pepScreeningEnabled: complianceSettings.pepScreeningEnabled as boolean,
         adverseMediaScreeningEnabled: complianceSettings.adverseMediaScreeningEnabled as boolean,
@@ -133,14 +128,14 @@ export default function ComplianceSettingsPage() {
     }
   }, [complianceSettings]);
 
-  // Permission check
-  if (currentUserPermissions === null) {
+  // Loading states
+  if (currentUserPermissions === null || complianceSettings === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h1 className="text-xl font-semibold text-gray-900 mb-2">Loading...</h1>
-          <p className="text-gray-600">Checking permissions...</p>
+          <p className="text-gray-600">Loading compliance settings...</p>
         </div>
       </div>
     );
@@ -164,6 +159,19 @@ export default function ComplianceSettingsPage() {
     );
   }
 
+  // Wait for form data to be populated from backend
+  if (!formData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 text-gray-400 mx-auto mb-4 animate-spin" />
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">Loading Form</h1>
+          <p className="text-gray-600">Preparing compliance settings...</p>
+        </div>
+      </div>
+    );
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -179,12 +187,15 @@ export default function ComplianceSettingsPage() {
   };
 
   const handleSanctionListToggle = (listId: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      enabledSanctionLists: checked 
-        ? [...prev.enabledSanctionLists, listId]
-        : prev.enabledSanctionLists.filter(id => id !== listId)
-    }));
+    setFormData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        enabledSanctionLists: checked 
+          ? [...prev.enabledSanctionLists, listId]
+          : prev.enabledSanctionLists.filter(id => id !== listId)
+      };
+    });
   };
 
   const getRiskLevelColor = (level: string) => {
@@ -220,9 +231,6 @@ export default function ComplianceSettingsPage() {
               <Shield className="h-5 w-5 text-red-600" />
               Master Compliance Controls
             </CardTitle>
-            <CardDescription>
-              Primary switches that control all compliance features
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
@@ -237,24 +245,7 @@ export default function ComplianceSettingsPage() {
               <Switch
                 id="performComplianceChecks"
                 checked={formData.performComplianceChecks}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, performComplianceChecks: checked }))}
-              />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <Label htmlFor="activateRuleBasedCompliance" className="text-base font-medium">
-                  Activate Rule Based AML Policies
-                </Label>
-                <p className="text-sm text-gray-600 mt-1">
-                  Enable automated rule-based AML screening and enforcement
-                </p>
-              </div>
-              <Switch
-                id="activateRuleBasedCompliance"
-                checked={formData.activateRuleBasedCompliance}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, activateRuleBasedCompliance: checked }))}
-                disabled={!formData.performComplianceChecks}
+                onCheckedChange={(checked) => setFormData(prev => prev ? ({ ...prev, performComplianceChecks: checked }) : prev)}
               />
             </div>
           </CardContent>
@@ -279,7 +270,7 @@ export default function ComplianceSettingsPage() {
                   id="requireProfileThreshold"
                   type="number"
                   value={formData.requireProfileThreshold}
-                  onChange={(e) => setFormData(prev => ({ ...prev, requireProfileThreshold: Number(e.target.value) }))}
+                  onChange={(e) => setFormData(prev => prev ? ({ ...prev, requireProfileThreshold: Number(e.target.value) }) : prev)}
                   disabled={!formData.performComplianceChecks}
                 />
                 <p className="text-xs text-gray-500">Require customer profile when local amount exceeds this threshold</p>
@@ -291,7 +282,7 @@ export default function ComplianceSettingsPage() {
                   id="lctThreshold"
                   type="number"
                   value={formData.lctThreshold}
-                  onChange={(e) => setFormData(prev => ({ ...prev, lctThreshold: Number(e.target.value) }))}
+                  onChange={(e) => setFormData(prev => prev ? ({ ...prev, lctThreshold: Number(e.target.value) }) : prev)}
                   disabled={!formData.performComplianceChecks}
                 />
                 <p className="text-xs text-gray-500">Threshold for large cash transaction reporting</p>
@@ -303,7 +294,7 @@ export default function ComplianceSettingsPage() {
                   id="requireSinThreshold"
                   type="number"
                   value={formData.requireSinThreshold}
-                  onChange={(e) => setFormData(prev => ({ ...prev, requireSinThreshold: Number(e.target.value) }))}
+                  onChange={(e) => setFormData(prev => prev ? ({ ...prev, requireSinThreshold: Number(e.target.value) }) : prev)}
                   disabled={!formData.performComplianceChecks}
                 />
                 <p className="text-xs text-gray-500">Require SSN/SIN for transactions exceeding this amount</p>
@@ -315,7 +306,7 @@ export default function ComplianceSettingsPage() {
                   id="requirePepThreshold"
                   type="number"
                   value={formData.requirePepThreshold}
-                  onChange={(e) => setFormData(prev => ({ ...prev, requirePepThreshold: Number(e.target.value) }))}
+                  onChange={(e) => setFormData(prev => prev ? ({ ...prev, requirePepThreshold: Number(e.target.value) }) : prev)}
                   disabled={!formData.performComplianceChecks}
                 />
                 <p className="text-xs text-gray-500">Require additional documentation (e.g., PEP) above this amount</p>
@@ -345,7 +336,7 @@ export default function ComplianceSettingsPage() {
                     onCheckedChange={(checked) => 
                       handleSanctionListToggle(list.id, checked as boolean)
                     }
-                    disabled={!formData.performComplianceChecks || !formData.activateRuleBasedCompliance}
+                    disabled={!formData.performComplianceChecks}
                   />
                   <div className="flex-1">
                     <Label htmlFor={list.id} className="text-sm font-medium">
@@ -395,7 +386,7 @@ export default function ComplianceSettingsPage() {
               <Switch
                 id="warnIncompleteKyc"
                 checked={formData.warnIncompleteKyc}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, warnIncompleteKyc: checked }))}
+                onCheckedChange={(checked) => setFormData(prev => prev ? ({ ...prev, warnIncompleteKyc: checked }) : prev)}
                 disabled={!formData.performComplianceChecks}
               />
             </div>
@@ -408,7 +399,7 @@ export default function ComplianceSettingsPage() {
                 id="warnRepeatTransactionsDays"
                 type="number"
                 value={formData.warnRepeatTransactionsDays}
-                onChange={(e) => setFormData(prev => ({ ...prev, warnRepeatTransactionsDays: Number(e.target.value) }))}
+                onChange={(e) => setFormData(prev => prev ? ({ ...prev, warnRepeatTransactionsDays: Number(e.target.value) }) : prev)}
                 disabled={!formData.performComplianceChecks}
               />
               <p className="text-xs text-gray-500">
@@ -428,7 +419,7 @@ export default function ComplianceSettingsPage() {
               <Switch
                 id="autoCheckCustomerBeforeInvoice"
                 checked={formData.autoCheckCustomerBeforeInvoice}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, autoCheckCustomerBeforeInvoice: checked }))}
+                onCheckedChange={(checked) => setFormData(prev => prev ? ({ ...prev, autoCheckCustomerBeforeInvoice: checked }) : prev)}
                 disabled={!formData.performComplianceChecks}
               />
             </div>
@@ -441,12 +432,120 @@ export default function ComplianceSettingsPage() {
                 id="customerProfileReviewDays"
                 type="number"
                 value={formData.customerProfileReviewDays}
-                onChange={(e) => setFormData(prev => ({ ...prev, customerProfileReviewDays: Number(e.target.value) }))}
+                onChange={(e) => setFormData(prev => prev ? ({ ...prev, customerProfileReviewDays: Number(e.target.value) }) : prev)}
                 disabled={!formData.performComplianceChecks}
               />
               <p className="text-xs text-gray-500">
                 Request review of customer profile after this many days
               </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Transaction Warnings & Overrides */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-orange-600" />
+              Transaction Warnings & Overrides
+            </CardTitle>
+            <CardDescription>
+              Configure additional transaction controls and warnings
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="denominationRequestThreshold">Denomination Request Threshold</Label>
+                <Input
+                  id="denominationRequestThreshold"
+                  type="number"
+                  value={formData.denominationRequestThreshold}
+                  onChange={(e) => setFormData(prev => prev ? ({ ...prev, denominationRequestThreshold: Number(e.target.value) }) : prev)}
+                  disabled={!formData.performComplianceChecks}
+                />
+                <p className="text-xs text-gray-500">Ask for denominations when cash transaction exceeds this amount</p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="maxRateChangeAllowance">Maximum Rate Change Allowance (%)</Label>
+                <Input
+                  id="maxRateChangeAllowance"
+                  type="number"
+                  value={formData.maxRateChangeAllowance}
+                  onChange={(e) => setFormData(prev => prev ? ({ ...prev, maxRateChangeAllowance: Number(e.target.value) }) : prev)}
+                  disabled={!formData.performComplianceChecks}
+                />
+                <p className="text-xs text-gray-500">Maximum allowance for rate change from market rate</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <Label htmlFor="forceRegisterForChequeOrWire" className="text-base font-medium">
+                  Force Registration for Cheque or Wire
+                </Label>
+                <p className="text-sm text-gray-600 mt-1">
+                  Force users to register customers when dealing with Cheque or Wire transfers
+                </p>
+              </div>
+              <Switch
+                id="forceRegisterForChequeOrWire"
+                checked={formData.forceRegisterForChequeOrWire}
+                onCheckedChange={(checked) => setFormData(prev => prev ? ({ ...prev, forceRegisterForChequeOrWire: checked }) : prev)}
+                disabled={!formData.performComplianceChecks}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <Label htmlFor="warnNegativeCashBalance" className="text-base font-medium">
+                  Warn on Negative Cash Balance
+                </Label>
+                <p className="text-sm text-gray-600 mt-1">
+                  Warn users when cash balance becomes negative
+                </p>
+              </div>
+              <Switch
+                id="warnNegativeCashBalance"
+                checked={formData.warnNegativeCashBalance}
+                onCheckedChange={(checked) => setFormData(prev => prev ? ({ ...prev, warnNegativeCashBalance: checked }) : prev)}
+                disabled={!formData.performComplianceChecks}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Global Warning Mode */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              Global Warning Mode
+            </CardTitle>
+            <CardDescription>
+              Set the overall warning tolerance level for the system
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Label htmlFor="warningToleranceLevel">Warning Tolerance Level</Label>
+              <select
+                id="warningToleranceLevel"
+                value={formData.warningToleranceLevel}
+                onChange={(e) => setFormData(prev => prev ? ({ ...prev, warningToleranceLevel: e.target.value as "relax" | "normal" | "severe" }) : prev)}
+                disabled={!formData.performComplianceChecks}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="relax">Relax - Rules not enforced, no warnings</option>
+                <option value="normal">Normal - Warnings shown, transactions can proceed</option>
+                <option value="severe">Severe - Rule violations cause transaction failure</option>
+              </select>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p><strong>Relax:</strong> Compliance rules are not enforced, no warnings are returned</p>
+                <p><strong>Normal:</strong> Rule violations show warnings but transactions can proceed</p>
+                <p><strong>Severe:</strong> Rule violations cause transactions to fail</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -474,8 +573,8 @@ export default function ComplianceSettingsPage() {
                 <Switch
                   id="autoScreeningEnabled"
                   checked={formData.autoScreeningEnabled}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, autoScreeningEnabled: checked }))}
-                  disabled={!formData.performComplianceChecks || !formData.activateRuleBasedCompliance}
+                  onCheckedChange={(checked) => setFormData(prev => prev ? ({ ...prev, autoScreeningEnabled: checked }) : prev)}
+                  disabled={!formData.performComplianceChecks}
                 />
               </div>
               
@@ -489,8 +588,8 @@ export default function ComplianceSettingsPage() {
                 <Switch
                   id="pepScreeningEnabled"
                   checked={formData.pepScreeningEnabled}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, pepScreeningEnabled: checked }))}
-                  disabled={!formData.performComplianceChecks || !formData.activateRuleBasedCompliance}
+                  onCheckedChange={(checked) => setFormData(prev => prev ? ({ ...prev, pepScreeningEnabled: checked }) : prev)}
+                  disabled={!formData.performComplianceChecks}
                 />
               </div>
               
@@ -504,8 +603,8 @@ export default function ComplianceSettingsPage() {
                 <Switch
                   id="adverseMediaScreeningEnabled"
                   checked={formData.adverseMediaScreeningEnabled}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, adverseMediaScreeningEnabled: checked }))}
-                  disabled={!formData.performComplianceChecks || !formData.activateRuleBasedCompliance}
+                  onCheckedChange={(checked) => setFormData(prev => prev ? ({ ...prev, adverseMediaScreeningEnabled: checked }) : prev)}
+                  disabled={!formData.performComplianceChecks}
                 />
               </div>
               
@@ -519,8 +618,8 @@ export default function ComplianceSettingsPage() {
                 <Switch
                   id="autoHoldOnMatch"
                   checked={formData.autoHoldOnMatch}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, autoHoldOnMatch: checked }))}
-                  disabled={!formData.performComplianceChecks || !formData.activateRuleBasedCompliance}
+                  onCheckedChange={(checked) => setFormData(prev => prev ? ({ ...prev, autoHoldOnMatch: checked }) : prev)}
+                  disabled={!formData.performComplianceChecks}
                 />
               </div>
               
@@ -534,7 +633,7 @@ export default function ComplianceSettingsPage() {
                 <Switch
                   id="requireOverrideReason"
                   checked={formData.requireOverrideReason}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, requireOverrideReason: checked }))}
+                  onCheckedChange={(checked) => setFormData(prev => prev ? ({ ...prev, requireOverrideReason: checked }) : prev)}
                   disabled={!formData.performComplianceChecks}
                 />
               </div>
@@ -549,7 +648,7 @@ export default function ComplianceSettingsPage() {
                 <Switch
                   id="requireTwoPersonApproval"
                   checked={formData.requireTwoPersonApproval}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, requireTwoPersonApproval: checked }))}
+                  onCheckedChange={(checked) => setFormData(prev => prev ? ({ ...prev, requireTwoPersonApproval: checked }) : prev)}
                   disabled={!formData.performComplianceChecks}
                 />
               </div>
@@ -563,7 +662,7 @@ export default function ComplianceSettingsPage() {
                 id="retentionPeriodDays"
                 type="number"
                 value={formData.retentionPeriodDays}
-                onChange={(e) => setFormData(prev => ({ ...prev, retentionPeriodDays: Number(e.target.value) }))}
+                onChange={(e) => setFormData(prev => prev ? ({ ...prev, retentionPeriodDays: Number(e.target.value) }) : prev)}
                 disabled={!formData.performComplianceChecks}
               />
               <p className="text-xs text-gray-500">

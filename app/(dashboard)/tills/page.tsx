@@ -7,6 +7,7 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { TillForm } from "@/components/tills/TillForm";
 import { TillTransactions } from "@/components/tills/TillTransactions";
+import { TillTransfer } from "@/components/tills/TillTransfer";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -154,7 +155,7 @@ export default function TillsPage() {
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   <span className="text-sm">
-                    Signed in: {new Date(currentTill.session.signInTime).toLocaleString()}
+                    Signed in: {new Date(currentTill.tillSession.signInTime).toLocaleString()}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -174,13 +175,23 @@ export default function TillsPage() {
                   <span className="text-sm font-medium">Cash Balances:</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {tillBalances.map((balance) => (
-                    <div key={balance.currencyCode} className="text-sm">
-                      <span className="font-mono">
-                        {formatCurrency(balance.balance, balance.currencyCode)}
-                      </span>
+                  {tillBalances
+                    .filter((balance, index, self) => 
+                      balance.balance > 0 && 
+                      self.findIndex(b => b.currencyCode === balance.currencyCode) === index
+                    )
+                    .map((balance, index) => (
+                      <div key={`${balance.currencyCode}-${index}`} className="text-sm">
+                        <span className="font-mono">
+                          {formatCurrency(balance.balance, balance.currencyCode)}
+                        </span>
+                      </div>
+                    ))}
+                  {tillBalances.filter(balance => balance.balance > 0).length === 0 && (
+                    <div className="col-span-2 text-sm text-muted-foreground text-center">
+                      No cash balances
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
@@ -198,7 +209,7 @@ export default function TillsPage() {
       <Tabs defaultValue="tills" className="space-y-4">
         <TabsList>
           <TabsTrigger value="tills">Till Management</TabsTrigger>
-          <TabsTrigger value="transactions">Transactions</TabsTrigger>
+          <TabsTrigger value="operations">Till Operations</TabsTrigger>
         </TabsList>
 
         <TabsContent value="tills" className="space-y-4">
@@ -386,8 +397,40 @@ export default function TillsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="transactions" className="space-y-4">
-          <TillTransactions />
+        <TabsContent value="operations" className="space-y-4">
+          <div className="space-y-6">
+            {/* Till Transfer Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Share2 className="h-5 w-5" />
+                  Till Transfer
+                </CardTitle>
+                <CardDescription>
+                  Transfer cash between tills for opening floats and top-ups
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TillTransfer />
+              </CardContent>
+            </Card>
+
+            {/* Till Transactions Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Till Transactions & Balances
+                </CardTitle>
+                <CardDescription>
+                  Manage cash in/out, adjustments, and view transaction history
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TillTransactions />
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

@@ -124,15 +124,15 @@ export const remove = mutation({
       throw new Error("Cannot delete till that is currently in use");
     }
 
-    // Check if till has any active sessions
-    const activeSessions = await ctx.db
+    // Check if till has any active till sessions
+    const activeTillSessions = await ctx.db
       .query("tillSessions")
       .withIndex("by_till_id", (q) => q.eq("tillId", till.tillId))
       .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
 
-    if (activeSessions.length > 0) {
-      throw new Error("Cannot delete till with active sessions");
+    if (activeTillSessions.length > 0) {
+      throw new Error("Cannot delete till with active till sessions");
     }
 
     // Remove associated cash ledger accounts
@@ -190,6 +190,20 @@ export const signIn = mutation({
 
     const now = Date.now();
 
+    // Deactivate any existing active till sessions for this user
+    const existingActiveTillSessions = await ctx.db
+      .query("tillSessions")
+      .withIndex("by_user_id", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    for (const tillSession of existingActiveTillSessions) {
+      await ctx.db.patch(tillSession._id, {
+        isActive: false,
+        signOutTime: now,
+      });
+    }
+
     // Create session record
     await ctx.db.insert("tillSessions", {
       tillId: args.tillId,
@@ -216,31 +230,31 @@ export const signOut = mutation({
   handler: async (ctx) => {
     const userId = await requireAuth(ctx);
 
-    // Find user's current active session
-    const activeSession = await ctx.db
+    // Find user's current active till session
+    const activeTillSession = await ctx.db
       .query("tillSessions")
       .withIndex("by_user_id", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("isActive"), true))
       .unique();
 
-    if (!activeSession) {
+    if (!activeTillSession) {
       throw new Error("No active till session found");
     }
 
     const now = Date.now();
-    const sessionDuration = now - activeSession.signInTime;
+    const tillSessionDuration = now - activeTillSession.signInTime;
 
-    // Close the session
-    await ctx.db.patch(activeSession._id, {
+    // Close the till session
+    await ctx.db.patch(activeTillSession._id, {
       signOutTime: now,
-      sessionDuration: sessionDuration,
+      sessionDuration: tillSessionDuration,
       isActive: false,
     });
 
     // Update till to remove current user
     const till = await ctx.db
       .query("tills")
-      .withIndex("by_till_id", (q) => q.eq("tillId", activeSession.tillId))
+      .withIndex("by_till_id", (q) => q.eq("tillId", activeTillSession.tillId))
       .unique();
 
     if (till && till.currentUserId === userId) {
@@ -251,7 +265,7 @@ export const signOut = mutation({
       });
     }
 
-    return { success: true, tillId: activeSession.tillId };
+    return { success: true, tillId: activeTillSession.tillId };
   },
 });
 
@@ -260,22 +274,22 @@ export const getCurrentUserTill = query({
   handler: async (ctx) => {
     const userId = await requireAuth(ctx);
 
-    const activeSession = await ctx.db
+    const activeTillSession = await ctx.db
       .query("tillSessions")
       .withIndex("by_user_id", (q) => q.eq("userId", userId))
       .filter((q) => q.eq(q.field("isActive"), true))
       .unique();
 
-    if (!activeSession) {
+    if (!activeTillSession) {
       return null;
     }
 
     const till = await ctx.db
       .query("tills")
-      .withIndex("by_till_id", (q) => q.eq("tillId", activeSession.tillId))
+      .withIndex("by_till_id", (q) => q.eq("tillId", activeTillSession.tillId))
       .unique();
 
-    return till ? { ...till, session: activeSession } : null;
+    return till ? { ...till, tillSession: activeTillSession } : null;
   },
 });
 
@@ -319,7 +333,7 @@ export const cleanupInactiveSessions = mutation({
     // Find sessions that are still active but older than 24 hours
     const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
     
-    const staleSessions = await ctx.db
+    const staleTillSessions = await ctx.db
       .query("tillSessions")
       .withIndex("by_active", (q) => q.eq("isActive", true))
       .filter((q) => q.lt(q.field("signInTime"), twentyFourHoursAgo))
@@ -327,23 +341,23 @@ export const cleanupInactiveSessions = mutation({
 
     let cleanedCount = 0;
     
-    for (const session of staleSessions) {
-      const sessionDuration = Date.now() - session.signInTime;
+    for (const staleTillSession of staleTillSessions) {
+      const tillSessionDuration = Date.now() - staleTillSession.signInTime;
       
-      // Close the session
-      await ctx.db.patch(session._id, {
+      // Close the stale till session
+      await ctx.db.patch(staleTillSession._id, {
         signOutTime: Date.now(),
-        sessionDuration: sessionDuration,
+        sessionDuration: tillSessionDuration,
         isActive: false,
       });
       
       // Clear till's current user if it matches
       const till = await ctx.db
         .query("tills")
-        .withIndex("by_till_id", (q) => q.eq("tillId", session.tillId))
+        .withIndex("by_till_id", (q) => q.eq("tillId", staleTillSession.tillId))
         .unique();
       
-      if (till && till.currentUserId === session.userId) {
+      if (till && till.currentUserId === staleTillSession.userId) {
         await ctx.db.patch(till._id, {
           currentUserId: undefined,
           signInTime: undefined,

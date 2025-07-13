@@ -18,24 +18,30 @@ function generateTransactionId(): string {
 async function checkComplianceRequirements(ctx: any, args: any) {
   const warnings: string[] = [];
   
-  // Get compliance settings
-  const generalSettings = await ctx.db.query("settings").collect();
-  const settingsMap = Object.fromEntries(generalSettings.map((s: any) => [s.key, s.value]));
+  // Get compliance settings from complianceSettings table
   const complianceSettings = await ctx.db.query("complianceSettings").first();
   
+  if (!complianceSettings) {
+    // No compliance settings found, return no warnings
+    return { warnings, requiresCompliance: false };
+  }
+  
   // Check if compliance checks are enabled
-  const performComplianceChecks = settingsMap.performComplianceChecks ?? true;
+  const performComplianceChecks = complianceSettings.performComplianceChecks ?? true;
   if (!performComplianceChecks) {
     return { warnings, requiresCompliance: false };
   }
   
-  const activateRuleBasedAml = settingsMap.activateRuleBasedAml ?? false;
-  const requireProfileThreshold = settingsMap.requireProfileThreshold ?? 1000;
-  const lctThreshold = settingsMap.lctThreshold ?? 10000;
-  const requireSinThreshold = settingsMap.requireSinThreshold ?? 3000;
-  const requirePepThreshold = settingsMap.requirePepThreshold ?? 1000;
-  const warnIncompleteKyc = settingsMap.warnIncompleteKyc ?? true;
-  const warnRepeatTransactionsDays = settingsMap.warnRepeatTransactionsDays ?? 7;
+  // Get thresholds from compliance settings
+  const requireProfileThreshold = complianceSettings.requireProfileThreshold ?? 1000;
+  const lctThreshold = complianceSettings.lctThreshold ?? 10000;
+  const requireSinThreshold = complianceSettings.requireSinThreshold ?? 3000;
+  const requirePepThreshold = complianceSettings.requirePepThreshold ?? 1000;
+  const warnIncompleteKyc = complianceSettings.warnIncompleteKyc ?? true;
+  const warnRepeatTransactionsDays = complianceSettings.warnRepeatTransactionsDays ?? 7;
+  const denominationRequestThreshold = complianceSettings.denominationRequestThreshold ?? 5000;
+  const forceRegisterForChequeOrWire = complianceSettings.forceRegisterForChequeOrWire ?? true;
+  const warnNegativeCashBalance = complianceSettings.warnNegativeCashBalance ?? true;
   
   const transactionAmount = Math.max(args.fromAmount, args.toAmount);
   
@@ -66,6 +72,26 @@ async function checkComplianceRequirements(ctx: any, args: any) {
   if (transactionAmount > requirePepThreshold) {
     requiresCompliance = true;
     warnings.push("PEP_DOCUMENTATION_REQUIRED");
+  }
+  
+  // Denomination request threshold check
+  if (transactionAmount > denominationRequestThreshold) {
+    warnings.push("DENOMINATION_REQUEST_REQUIRED");
+  }
+  
+  // Force registration for cheque or wire
+  if (forceRegisterForChequeOrWire && (args.paymentMethod === "cheque" || args.paymentMethod === "wire") && !args.customerId) {
+    warnings.push("REGISTRATION_REQUIRED_FOR_PAYMENT_METHOD");
+    requiresCompliance = true;
+  }
+  
+  // Check rate change allowance (if we have market rate data)
+  // This would require market rate comparison logic
+  
+  // Negative cash balance warning (would need till balance data)
+  if (warnNegativeCashBalance) {
+    // This check would require till balance validation
+    // warnings.push("NEGATIVE_CASH_BALANCE_WARNING");
   }
   
   // Customer-specific checks
@@ -115,8 +141,8 @@ async function checkComplianceRequirements(ctx: any, args: any) {
     }
   }
   
-  // Rule-based compliance checks
-  if (activateRuleBasedAml && complianceSettings) {
+  // Rule-based compliance checks (always check if compliance settings exist)
+  if (complianceSettings) {
     // Auto screening checks
     if (complianceSettings.autoScreeningEnabled && args.customerId) {
       warnings.push("AUTO_SCREENING_REQUIRED");
@@ -186,29 +212,28 @@ export const create = mutation({
       throw new Error("User not found");
     }
     
-    // Check if warnings should block the transaction
+    // Check if warnings should block the transaction based on warning tolerance level
     if (complianceResult.warnings.length > 0 && !args.overrideWarnings) {
-      // Get warning tolerance level (we'll implement this later)
-      const warningToleranceLevel = "Normal" as "Severe" | "Normal" | "Relax"; // Default to Normal for now
+      // Get warning tolerance level from compliance settings
+      const complianceSettings = await ctx.db.query("complianceSettings").first();
+      const warningToleranceLevel = complianceSettings?.warningToleranceLevel ?? "normal";
       
-      if (warningToleranceLevel === "Severe") {
+      if (warningToleranceLevel === "severe") {
         // Block transaction on any warning
         throw new Error(`Transaction blocked due to compliance warnings: ${complianceResult.warnings.join(", ")}`);
-      } else if (warningToleranceLevel === "Normal") {
-        // Allow transaction but return warnings
-        // Continue to create transaction
+      } else if (warningToleranceLevel === "relax") {
+        // Allow transaction, no warnings returned
+        complianceResult.warnings = [];
       }
-      // "Relax" mode would skip warnings entirely
+      // For "normal" level, allow transaction but return warnings
     }
     
     // Check if override reason is required
     if (args.overrideWarnings) {
-      const requireOverrideReason = await ctx.db
-        .query("settings")
-        .withIndex("by_key", (q) => q.eq("key", "requireOverrideReason"))
-        .first();
+      const complianceSettings = await ctx.db.query("complianceSettings").first();
+      const requireOverrideReason = complianceSettings?.requireOverrideReason ?? true;
       
-      if (requireOverrideReason?.value && !args.overrideReason) {
+      if (requireOverrideReason && !args.overrideReason) {
         throw new Error("Override reason is required when bypassing compliance warnings");
       }
     }
@@ -764,5 +789,171 @@ export const calculateExchangeAmount = query({
       serviceFee,
       serviceFeeType: "flat" as const,
     };
+  },
+});
+
+export const createTillTransfer = mutation({
+  args: {
+    sourceTillId: v.string(),
+    destinationTillId: v.string(),
+    transfers: v.array(v.object({
+      currencyCode: v.string(),
+      amount: v.number(), // Positive = transfer to destination, Negative = transfer from destination
+    })),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+    
+    // Verify user has permission for transfers
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", userId))
+      .first();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    if (!user.isManager && !user.canTransferBetweenAccounts) {
+      throw new Error("Insufficient permissions to perform till transfers");
+    }
+    
+    // Verify both tills exist
+    const [sourceTill, destinationTill] = await Promise.all([
+      ctx.db.query("tills").withIndex("by_till_id", (q) => q.eq("tillId", args.sourceTillId)).first(),
+      ctx.db.query("tills").withIndex("by_till_id", (q) => q.eq("tillId", args.destinationTillId)).first()
+    ]);
+    
+    if (!sourceTill || !destinationTill) {
+      throw new Error("Source or destination till not found");
+    }
+    
+    if (!sourceTill.isActive || !destinationTill.isActive) {
+      throw new Error("Both tills must be active to perform transfers");
+    }
+    
+    // Validate all transfers and check balances
+    for (const transfer of args.transfers) {
+      if (transfer.amount <= 0) continue;
+      
+      // Get cash accounts for both tills
+      const [sourceAccount, destinationAccount] = await Promise.all([
+        ctx.db.query("cashLedgerAccounts")
+          .withIndex("by_till_and_currency", (q: any) => 
+            q.eq("tillId", args.sourceTillId).eq("currencyCode", transfer.currencyCode)
+          )
+          .first(),
+        ctx.db.query("cashLedgerAccounts")
+          .withIndex("by_till_and_currency", (q: any) => 
+            q.eq("tillId", args.destinationTillId).eq("currencyCode", transfer.currencyCode)
+          )
+          .first()
+      ]);
+      
+      if (!sourceAccount || !destinationAccount) {
+        throw new Error(`Cash account for ${transfer.currencyCode} not found in one of the tills`);
+      }
+      
+      // Check if source till has sufficient balance
+      if (sourceAccount.balance < transfer.amount) {
+        throw new Error(`Insufficient ${transfer.currencyCode} balance in source till ${args.sourceTillId}. Available: ${sourceAccount.balance}, Required: ${transfer.amount}`);
+      }
+    }
+    
+    const now = Date.now();
+    const transactionId = generateTransactionId();
+    
+    // Create the transfer transaction record
+    const transactionDocId = await ctx.db.insert("transactions", {
+      transactionId,
+      userId,
+      type: "transfer",
+      category: "internal",
+      fromCurrency: "MULTI", // Multi-currency transfer
+      fromAmount: args.transfers.reduce((sum, t) => sum + (t.amount > 0 ? t.amount : 0), 0),
+      toCurrency: "MULTI",
+      toAmount: args.transfers.reduce((sum, t) => sum + (t.amount > 0 ? t.amount : 0), 0),
+      exchangeRate: 1,
+      status: "completed",
+      requiresCompliance: false,
+      notes: `Till Transfer: ${args.sourceTillId} → ${args.destinationTillId}${args.notes ? `. ${args.notes}` : ""}`,
+      createdAt: now,
+      updatedAt: now,
+      completedAt: now,
+    });
+    
+    // Process all transfers
+    const transferResults = [];
+    
+    for (const transfer of args.transfers) {
+      if (transfer.amount <= 0) continue;
+      
+      const sourceAccount = await ctx.db.query("cashLedgerAccounts")
+        .withIndex("by_till_and_currency", (q: any) => 
+          q.eq("tillId", args.sourceTillId).eq("currencyCode", transfer.currencyCode)
+        )
+        .first();
+        
+      const destinationAccount = await ctx.db.query("cashLedgerAccounts")
+        .withIndex("by_till_and_currency", (q: any) => 
+          q.eq("tillId", args.destinationTillId).eq("currencyCode", transfer.currencyCode)
+        )
+        .first();
+      
+      if (!sourceAccount || !destinationAccount) {
+        throw new Error(`Cash account for ${transfer.currencyCode} not found`);
+      }
+      
+      // Transfer from source to destination
+      const sourceNewBalance = sourceAccount.balance - transfer.amount;
+      const destinationNewBalance = destinationAccount.balance + transfer.amount;
+      
+      // Update both accounts
+      await ctx.db.patch(sourceAccount._id, {
+        balance: sourceNewBalance,
+        lastUpdated: now,
+      });
+      
+      await ctx.db.patch(destinationAccount._id, {
+        balance: destinationNewBalance,
+        lastUpdated: now,
+      });
+      
+      transferResults.push({
+        currencyCode: transfer.currencyCode,
+        amount: transfer.amount,
+        sourceOldBalance: sourceAccount.balance,
+        sourceNewBalance,
+        destinationOldBalance: destinationAccount.balance,
+        destinationNewBalance,
+      });
+    }
+    
+    return {
+      success: true,
+      transactionId,
+      transactionDocId,
+      transferResults,
+    };
+  },
+});
+
+export const getTillBalances = query({
+  args: { tillId: v.string() },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+    
+    const cashAccounts = await ctx.db
+      .query("cashLedgerAccounts")
+      .withIndex("by_till_id", (q) => q.eq("tillId", args.tillId))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+    
+    return cashAccounts.map(account => ({
+      currencyCode: account.currencyCode,
+      balance: account.balance,
+      accountName: account.accountName,
+    }));
   },
 });
