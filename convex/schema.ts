@@ -238,4 +238,16 @@ export default defineSchema({
     updatedBy: v.optional(v.id("users")),
   })
     .index("by_key", ["key"]),
+
+  // Lookup data for dynamic dropdowns (Customer Groups, Payment Methods, Sources of Funds, etc.)
+  lookups: defineTable({
+    lookupKey: v.string(), // e.g., 'customer_group', 'payment_method', 'source_of_funds', 'id_type'
+    lookupValue: v.string(),
+    displayOrder: v.optional(v.number()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_key", ["lookupKey"])
+    .index("by_key_value", ["lookupKey", "lookupValue"]),
 })

@@ -114,7 +114,7 @@
       "Step 4: Enter a 'Lookup Value' (e.g., VIP or Tourist) and Save",
       "Step 5: Verify the new option appears in the relevant forms"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

@@ -16,9 +16,10 @@ import {
   AlertCircle,
   Save,
   Upload,
+  List,
 } from 'lucide-react'
 
-type SettingsTab = 'preferences' | 'company' | 'branches' | 'users'
+type SettingsTab = 'preferences' | 'company' | 'branches' | 'users' | 'lookups'
 
 interface Branch {
   _id: Id<"branches">
@@ -52,6 +53,7 @@ export function SettingsPage() {
     { id: 'company' as const, name: 'Company Profile', icon: Building2 },
     { id: 'branches' as const, name: 'Branches', icon: GitBranch },
     { id: 'users' as const, name: 'Users', icon: Users },
+    { id: 'lookups' as const, name: 'Lookups', icon: List },
   ]
 
   return (
@@ -85,6 +87,7 @@ export function SettingsPage() {
         {activeTab === 'company' && <CompanyProfileSection />}
         {activeTab === 'branches' && <BranchesSection />}
         {activeTab === 'users' && <UsersSection />}
+        {activeTab === 'lookups' && <LookupsSection />}
       </div>
     </div>
   )
@@ -1172,6 +1175,356 @@ function UsersSection() {
               <h3 className="text-lg font-semibold text-dark-50 mb-2">Delete User?</h3>
               <p className="text-dark-400 text-sm">
                 This action cannot be undone. Users with existing transactions cannot be deleted.
+              </p>
+            </div>
+            <div className="flex gap-3 p-4 border-t border-dark-700">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirm)}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface Lookup {
+  _id: Id<"lookups">
+  lookupKey: string
+  lookupValue: string
+  displayOrder?: number
+  isActive: boolean
+  createdAt: number
+  updatedAt: number
+}
+
+const LOOKUP_KEY_OPTIONS = [
+  { value: 'customer_group', label: 'Customer Group' },
+  { value: 'payment_method', label: 'Payment Method' },
+  { value: 'source_of_funds', label: 'Source of Funds' },
+  { value: 'id_type', label: 'ID Type' },
+  { value: 'transaction_purpose', label: 'Transaction Purpose' },
+]
+
+function LookupsSection() {
+  const lookups = useQuery(api.lookups.list)
+  const createLookup = useMutation(api.lookups.create)
+  const updateLookup = useMutation(api.lookups.update)
+  const deleteLookup = useMutation(api.lookups.remove)
+  const seedDefaults = useMutation(api.lookups.seedDefaults)
+
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [editingLookup, setEditingLookup] = useState<Lookup | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<Id<"lookups"> | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedKey, setSelectedKey] = useState<string>('customer_group')
+
+  const [formData, setFormData] = useState({
+    lookupKey: 'customer_group',
+    lookupValue: '',
+    displayOrder: '',
+  })
+
+  const resetForm = () => {
+    setFormData({
+      lookupKey: selectedKey,
+      lookupValue: '',
+      displayOrder: '',
+    })
+    setError(null)
+  }
+
+  const handleAdd = async () => {
+    if (!formData.lookupValue.trim()) {
+      setError('Lookup Value is required')
+      return
+    }
+
+    try {
+      await createLookup({
+        lookupKey: formData.lookupKey,
+        lookupValue: formData.lookupValue.trim(),
+        displayOrder: formData.displayOrder ? parseInt(formData.displayOrder) : undefined,
+      })
+      setShowAddModal(false)
+      resetForm()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create lookup')
+    }
+  }
+
+  const handleEdit = async () => {
+    if (!editingLookup || !formData.lookupValue.trim()) {
+      setError('Lookup Value is required')
+      return
+    }
+
+    try {
+      await updateLookup({
+        id: editingLookup._id,
+        lookupValue: formData.lookupValue.trim(),
+        displayOrder: formData.displayOrder ? parseInt(formData.displayOrder) : undefined,
+      })
+      setEditingLookup(null)
+      resetForm()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update lookup')
+    }
+  }
+
+  const handleDelete = async (id: Id<"lookups">) => {
+    try {
+      await deleteLookup({ id })
+      setDeleteConfirm(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete lookup')
+      setDeleteConfirm(null)
+    }
+  }
+
+  const handleToggleActive = async (lookup: Lookup) => {
+    await updateLookup({
+      id: lookup._id,
+      isActive: !lookup.isActive,
+    })
+  }
+
+  const openEditModal = (lookup: Lookup) => {
+    setFormData({
+      lookupKey: lookup.lookupKey,
+      lookupValue: lookup.lookupValue,
+      displayOrder: lookup.displayOrder?.toString() || '',
+    })
+    setEditingLookup(lookup)
+    setError(null)
+  }
+
+  const handleSeedDefaults = async () => {
+    await seedDefaults({})
+  }
+
+  const filteredLookups = lookups?.filter((l) => l.lookupKey === selectedKey) || []
+  const sortedLookups = [...filteredLookups].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <div className="bg-red-900/30 border border-red-800 rounded-lg p-4 flex items-center gap-3">
+          <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
+          <p className="text-red-300">{error}</p>
+          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-300">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-dark-100">Lookups</h2>
+        <div className="flex gap-2">
+          {(!lookups || lookups.length === 0) && (
+            <button
+              onClick={handleSeedDefaults}
+              className="btn-secondary"
+            >
+              Load Default Lookups
+            </button>
+          )}
+          <button
+            onClick={() => {
+              resetForm()
+              setFormData((prev) => ({ ...prev, lookupKey: selectedKey }))
+              setShowAddModal(true)
+            }}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Lookup
+          </button>
+        </div>
+      </div>
+
+      <div className="flex gap-4 items-center">
+        <label className="text-dark-300 text-sm">Lookup Key:</label>
+        <select
+          value={selectedKey}
+          onChange={(e) => setSelectedKey(e.target.value)}
+          className="input w-64"
+        >
+          {LOOKUP_KEY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="card p-0">
+        {!lookups ? (
+          <div className="p-8 text-center text-dark-400">Loading lookups...</div>
+        ) : sortedLookups.length === 0 ? (
+          <div className="p-8 text-center text-dark-400">
+            <List className="h-12 w-12 mx-auto mb-3 text-dark-600" />
+            <p>No values for "{LOOKUP_KEY_OPTIONS.find(o => o.value === selectedKey)?.label}".</p>
+            <p className="text-sm mt-1 text-dark-500">Click "Add Lookup" to add a new value or "Load Default Lookups" to populate common values.</p>
+          </div>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-dark-700">
+                <th className="text-left text-dark-400 font-medium py-3 px-4 text-sm">Order</th>
+                <th className="text-left text-dark-400 font-medium py-3 px-4 text-sm">Value</th>
+                <th className="text-center text-dark-400 font-medium py-3 px-4 text-sm">Status</th>
+                <th className="text-right text-dark-400 font-medium py-3 px-4 text-sm">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedLookups.map((lookup) => (
+                <tr key={lookup._id} className="border-b border-dark-800 hover:bg-dark-800/50">
+                  <td className="py-3 px-4">
+                    <span className="font-mono text-dark-400">{lookup.displayOrder ?? '-'}</span>
+                  </td>
+                  <td className="py-3 px-4 text-dark-100 font-medium">{lookup.lookupValue}</td>
+                  <td className="py-3 px-4 text-center">
+                    <button
+                      onClick={() => handleToggleActive(lookup)}
+                      className={`px-2 py-1 text-xs font-medium rounded ${
+                        lookup.isActive
+                          ? 'bg-green-900/30 text-green-400'
+                          : 'bg-dark-700 text-dark-400'
+                      }`}
+                    >
+                      {lookup.isActive ? 'Active' : 'Inactive'}
+                    </button>
+                  </td>
+                  <td className="py-3 px-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => openEditModal(lookup)}
+                        className="p-1.5 text-dark-400 hover:text-dark-200 hover:bg-dark-700 rounded"
+                        title="Edit"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm(lookup._id)}
+                        className="p-1.5 text-dark-400 hover:text-red-400 hover:bg-dark-700 rounded"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {(showAddModal || editingLookup) && (
+        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-dark-900 border border-dark-700 rounded-xl w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-dark-700">
+              <h3 className="text-lg font-semibold text-dark-50">
+                {editingLookup ? 'Edit Lookup' : 'Add Lookup'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowAddModal(false)
+                  setEditingLookup(null)
+                  resetForm()
+                }}
+                className="text-dark-400 hover:text-dark-200"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              {error && (
+                <div className="bg-red-900/30 border border-red-800 rounded p-3 text-sm text-red-300">
+                  {error}
+                </div>
+              )}
+              <div>
+                <label className="label">Lookup Key</label>
+                <select
+                  value={formData.lookupKey}
+                  onChange={(e) => setFormData({ ...formData, lookupKey: e.target.value })}
+                  className="input"
+                  disabled={!!editingLookup}
+                >
+                  {LOOKUP_KEY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Lookup Value</label>
+                <input
+                  type="text"
+                  value={formData.lookupValue}
+                  onChange={(e) => setFormData({ ...formData, lookupValue: e.target.value })}
+                  className="input"
+                  placeholder="e.g., VIP, Regular, Tourist"
+                />
+              </div>
+              <div>
+                <label className="label">Display Order (optional)</label>
+                <input
+                  type="number"
+                  value={formData.displayOrder}
+                  onChange={(e) => setFormData({ ...formData, displayOrder: e.target.value })}
+                  className="input"
+                  placeholder="1"
+                  min="1"
+                />
+                <p className="text-xs text-dark-500 mt-1">Items are sorted by this number (lowest first)</p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-4 border-t border-dark-700">
+              <button
+                onClick={() => {
+                  setShowAddModal(false)
+                  setEditingLookup(null)
+                  resetForm()
+                }}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={editingLookup ? handleEdit : handleAdd}
+                className="btn-primary"
+              >
+                {editingLookup ? 'Save Changes' : 'Add Lookup'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-dark-900 border border-dark-700 rounded-xl w-full max-w-sm">
+            <div className="p-6 text-center">
+              <div className="h-12 w-12 bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="h-6 w-6 text-red-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-dark-50 mb-2">Delete Lookup?</h3>
+              <p className="text-dark-400 text-sm">
+                This action cannot be undone. This lookup value will be permanently removed.
               </p>
             </div>
             <div className="flex gap-3 p-4 border-t border-dark-700">

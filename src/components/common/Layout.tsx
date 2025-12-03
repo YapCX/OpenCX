@@ -20,6 +20,7 @@ import {
   GitBranch,
   Cog,
   UserCog,
+  List,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -43,6 +44,7 @@ const adminSubItems = [
   { name: 'Company Profile', href: '/settings?tab=company', icon: Building2 },
   { name: 'Branches', href: '/settings?tab=branches', icon: GitBranch },
   { name: 'Users', href: '/settings?tab=users', icon: UserCog },
+  { name: 'Lookups', href: '/settings?tab=lookups', icon: List },
 ]
 
 export function Layout({ children }: LayoutProps) {
