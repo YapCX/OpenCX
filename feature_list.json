@@ -282,7 +282,7 @@
     "category": "functional",
     "description": "User can create a new currency sell transaction",
     "steps": ["Navigate to POS", "Select 'Sell' transaction type", "Enter currency and amount", "Complete transaction", "Verify transaction recorded"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -306,7 +306,7 @@
     "category": "functional",
     "description": "User can edit existing customer information",
     "steps": ["Navigate to customer management", "Select a customer", "Edit customer details", "Save changes", "Verify changes persisted"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -318,13 +318,13 @@
     "category": "functional",
     "description": "Customer profile shows complete transaction history",
     "steps": ["Navigate to customer profile", "View transaction history section", "Verify all customer transactions are listed"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Customer can be linked to transaction at POS",
     "steps": ["Navigate to POS", "Search and select customer", "Complete transaction", "Verify transaction linked to customer"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

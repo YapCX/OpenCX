@@ -6,7 +6,11 @@ import {
   Calculator,
   Check,
   RefreshCw,
+  User,
+  Search,
+  X,
 } from "lucide-react"
+import { Id } from "../../convex/_generated/dataModel"
 import clsx from "clsx"
 
 type TransactionType = "buy" | "sell"
@@ -23,6 +27,7 @@ export function POSPage() {
   const rates = useQuery(api.exchangeRates.getCurrentRates, { baseCurrency: "USD" }) || []
   const defaultBranch = useQuery(api.branches.getDefaultBranch)
   const recentTransactions = useQuery(api.transactions.getRecent, { limit: 5 }) || []
+  const customers = useQuery(api.customers.list, {}) || []
 
   const createTransaction = useMutation(api.transactions.create)
   const seedBranch = useMutation(api.branches.seedDefaultBranch)
@@ -37,6 +42,9 @@ export function POSPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [lastTransaction, setLastTransaction] = useState<{ number: string; type: string } | null>(null)
+  const [selectedCustomer, setSelectedCustomer] = useState<Id<"customers"> | null>(null)
+  const [customerSearch, setCustomerSearch] = useState("")
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
 
   useEffect(() => {
     if (defaultBranch === null) {
@@ -135,6 +143,7 @@ export function POSPage() {
       const result = await createTransaction({
         transactionType,
         branchId: defaultBranch._id,
+        customerId: selectedCustomer || undefined,
         sourceCurrency: fromCurrency,
         targetCurrency: toCurrency,
         sourceAmount: parseFloat(fromAmount),
@@ -149,6 +158,8 @@ export function POSPage() {
       setShowSuccess(true)
       setFromAmount("")
       setToAmount("")
+      setSelectedCustomer(null)
+      setCustomerSearch("")
 
       setTimeout(() => {
         setShowSuccess(false)
@@ -212,6 +223,88 @@ export function POSPage() {
               >
                 We Sell (Customer Buys)
               </button>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-dark-300 mb-2">
+                Customer (Optional)
+              </label>
+              <div className="relative">
+                {selectedCustomer ? (
+                  <div className="flex items-center justify-between p-3 bg-dark-800 rounded-lg border border-dark-600">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-dark-400" />
+                      <span className="text-dark-200">
+                        {customers.find(c => c._id === selectedCustomer)?.firstName}{" "}
+                        {customers.find(c => c._id === selectedCustomer)?.lastName}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedCustomer(null)
+                        setCustomerSearch("")
+                      }}
+                      className="p-1 text-dark-400 hover:text-dark-200"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-dark-400" />
+                    <input
+                      type="text"
+                      value={customerSearch}
+                      onChange={(e) => {
+                        setCustomerSearch(e.target.value)
+                        setShowCustomerDropdown(true)
+                      }}
+                      onFocus={() => setShowCustomerDropdown(true)}
+                      placeholder="Search for customer..."
+                      className="input pl-10 w-full"
+                    />
+                    {showCustomerDropdown && customerSearch && (
+                      <div className="absolute z-10 w-full mt-1 bg-dark-800 border border-dark-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {customers
+                          .filter(c =>
+                            c.firstName.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                            c.lastName.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                            c.email?.toLowerCase().includes(customerSearch.toLowerCase())
+                          )
+                          .slice(0, 5)
+                          .map(customer => (
+                            <button
+                              key={customer._id}
+                              onClick={() => {
+                                setSelectedCustomer(customer._id)
+                                setCustomerSearch("")
+                                setShowCustomerDropdown(false)
+                              }}
+                              className="w-full p-3 text-left hover:bg-dark-700 flex items-center gap-2"
+                            >
+                              <User className="h-4 w-4 text-dark-400" />
+                              <div>
+                                <p className="text-dark-200 text-sm">
+                                  {customer.firstName} {customer.lastName}
+                                </p>
+                                {customer.email && (
+                                  <p className="text-dark-500 text-xs">{customer.email}</p>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        {customers.filter(c =>
+                          c.firstName.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                          c.lastName.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                          c.email?.toLowerCase().includes(customerSearch.toLowerCase())
+                        ).length === 0 && (
+                          <p className="p-3 text-dark-400 text-sm">No customers found</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-4">

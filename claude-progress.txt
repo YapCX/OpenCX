@@ -587,3 +587,57 @@ Priority features for next session:
 - Compliance backend supports filtering by status, severity, and alertType
 - POS uses exchangeRates table for current rates, supports custom rate override
 - Customer search is client-side filtering on firstName, lastName, email, phone
+
+---
+
+## Session 12 - Dec 4, 2025
+
+### Completed This Session
+1. **Verified POS Sell Transaction**
+   - Tested Sell transaction: 50 USD -> 56.95 EUR at rate 1.1390 - SUCCESS
+   - Transaction appeared in Recent Transactions with "SELL" badge
+
+2. **Verified Customer Edit Functionality**
+   - Tested editing existing customer "John"
+   - Added email "john.doe@example.com" and phone "+1-555-123-4567"
+   - Changes persisted correctly after save
+
+3. **Implemented Customer Transaction History Tab**
+   - Added "Transactions" tab to CustomerDetailPanel
+   - Created TransactionsTab component with:
+     - Transaction History header
+     - List of transactions linked to customer
+     - BUY/SELL badges with color coding
+     - Transaction number, currencies, exchange rate, amounts, timestamp
+     - Empty state when no transactions linked
+
+4. **Implemented Customer Linking at POS**
+   - Added customer search field to POS page
+   - Search with dropdown showing matching customers
+   - Selected customer displayed with option to clear
+   - Customer ID passed to transaction on submit
+   - Customer cleared after transaction completes
+
+### Tests Marked as Passing (4 new, 37 total)
+- "User can create a new currency sell transaction" - Sell transaction verified
+- "User can edit existing customer information" - Customer edit and save verified
+- "Customer profile shows complete transaction history" - Transactions tab with history verified
+- "Customer can be linked to transaction at POS" - Customer search/select and transaction link verified
+
+### Current Status
+- **37/82 tests passing** (up from 33)
+- POS fully functional with customer linking
+- Customer management enhanced with transaction history
+
+### What's Next
+Priority features for next session:
+1. Role-based access control
+2. Transaction search with filters
+3. Treasury management (currency inventory)
+4. Suspicious transaction detection
+
+### Technical Notes
+- TransactionsTab uses api.transactions.getByCustomer query with customerId index
+- POS passes customerId to createTransaction mutation
+- Customer search filters on firstName, lastName, email
+- Selected customer shown as badge with X to clear

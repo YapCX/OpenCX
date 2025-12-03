@@ -27,11 +27,14 @@ import {
   Flag,
   UserCheck,
   Save,
+  Receipt,
+  ArrowDownLeft,
+  ArrowUpRight,
 } from "lucide-react"
 import clsx from "clsx"
 
 type KycStatus = "pending" | "verified" | "rejected"
-type TabType = "details" | "kyc_aml" | "documents" | "bank"
+type TabType = "details" | "kyc_aml" | "documents" | "bank" | "transactions"
 
 interface CustomerFormData {
   firstName: string
@@ -635,6 +638,20 @@ function CustomerDetailPanel({
               Bank Info
             </span>
           </button>
+          <button
+            onClick={() => setActiveTab("transactions")}
+            className={clsx(
+              "px-6 py-3 text-sm font-medium border-b-2 transition-colors",
+              activeTab === "transactions"
+                ? "border-primary-500 text-primary-400"
+                : "border-transparent text-dark-400 hover:text-dark-200"
+            )}
+          >
+            <span className="flex items-center gap-2">
+              <Receipt className="h-4 w-4" />
+              Transactions
+            </span>
+          </button>
         </div>
       </div>
 
@@ -643,6 +660,7 @@ function CustomerDetailPanel({
         {activeTab === "kyc_aml" && <KycAmlTab customer={customer} />}
         {activeTab === "documents" && <DocumentsTab customerId={customer._id} />}
         {activeTab === "bank" && <BankInfoTab customerId={customer._id} />}
+        {activeTab === "transactions" && <TransactionsTab customerId={customer._id} />}
       </div>
     </div>
   )
@@ -1417,6 +1435,95 @@ function BankInfoTab({ customerId }: { customerId: Id<"customers"> }) {
               >
                 <Trash2 className="h-4 w-4" />
               </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TransactionsTab({ customerId }: { customerId: Id<"customers"> }) {
+  const transactions = useQuery(api.transactions.getByCustomer, { customerId }) || []
+
+  const formatDate = (timestamp: number): string => {
+    return new Date(timestamp).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
+
+  const formatCurrency = (amount: number, currency: string): string => {
+    return `${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
+  }
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-sm font-medium text-dark-300">Transaction History</h3>
+
+      {transactions.length === 0 ? (
+        <div className="text-center py-8 text-dark-400">
+          <Receipt className="h-12 w-12 mx-auto mb-4 text-dark-600" />
+          <p>No transactions yet.</p>
+          <p className="text-sm mt-2 text-dark-500">
+            Transactions linked to this customer will appear here.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {transactions.map((tx) => (
+            <div
+              key={tx._id}
+              className="flex items-center justify-between p-4 bg-dark-800 rounded-lg"
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={clsx(
+                    "h-10 w-10 rounded-full flex items-center justify-center",
+                    tx.transactionType === "buy"
+                      ? "bg-green-900/50"
+                      : "bg-red-900/50"
+                  )}
+                >
+                  {tx.transactionType === "buy" ? (
+                    <ArrowDownLeft className="h-5 w-5 text-green-400" />
+                  ) : (
+                    <ArrowUpRight className="h-5 w-5 text-red-400" />
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={clsx(
+                        "px-2 py-0.5 rounded text-xs font-medium",
+                        tx.transactionType === "buy"
+                          ? "bg-green-900/50 text-green-400"
+                          : "bg-red-900/50 text-red-400"
+                      )}
+                    >
+                      {tx.transactionType.toUpperCase()}
+                    </span>
+                    <span className="text-dark-200 font-mono text-sm">
+                      {tx.transactionNumber}
+                    </span>
+                  </div>
+                  <p className="text-sm text-dark-400 mt-1">
+                    {tx.sourceCurrency} → {tx.targetCurrency} @ {tx.exchangeRate.toFixed(4)}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-dark-200 font-medium">
+                  {formatCurrency(tx.sourceAmount, tx.sourceCurrency)}
+                </p>
+                <p className="text-sm text-dark-400">
+                  → {formatCurrency(tx.targetAmount, tx.targetCurrency)}
+                </p>
+                <p className="text-xs text-dark-500 mt-1">{formatDate(tx.createdAt)}</p>
+              </div>
             </div>
           ))}
         </div>
