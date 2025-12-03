@@ -16,10 +16,18 @@ OpenCX is a free and open-source currency exchange operation management system d
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React + TypeScript, TailwindCSS, Vite |
+| Frontend | React + TypeScript, TailwindCSS, shadcn/ui, Vite |
 | Backend | Convex (serverless functions, real-time sync) |
 | Database | Convex (built-in, ACID-compliant, real-time) |
 | Authentication | Convex Auth with JWT, optional 2FA |
 | Rate API | Integration with open exchange rate providers (e.g., Open Exchange Rates, exchangerate.host) |
 | Reporting | PDF generation via PDFKit or jsPDF |
 | Deployment | Convex Cloud (managed), frontend on Vercel/Netlify |
+
+## Design Guidelines
+
+- **Theme**: Dark theme only, consistent with professional financial platforms (e.g., Bloomberg Terminal aesthetic)
+- **Aesthetics**: Beautiful, clean design as if built by top-tier Airbnb engineers—polished UI, thoughtful spacing, elegant typography
+- **User Experience**: Easy on the eyes for operators who use the system for extended periods; reduce eye strain with carefully chosen contrast ratios and muted accent colors
+- **Component Library**: Use shadcn/ui components as the foundation for consistent, accessible, and modern UI elements
+- **Visual Hierarchy**: Clear information hierarchy with proper use of color, weight, and spacing to guide user attention

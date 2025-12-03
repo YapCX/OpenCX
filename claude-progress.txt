@@ -25,20 +25,106 @@
 - "App has consistent color scheme throughout" - Dark theme applied consistently
 - "Empty states have helpful messaging" - Dashboard shows empty states with guidance text
 
+---
+
+## Session 2 - Dec 3, 2025
+
+### Completed This Session
+1. **Implemented Settings Page with Admin Sections**
+   - Created SettingsPage.tsx with tabbed navigation
+   - Added tabs for Preferences, Company Profile, Branches, Users
+   - URL query parameter support for tab navigation (/settings?tab=branches)
+
+2. **Implemented System Preferences Configuration**
+   - Date Format (MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD)
+   - Time Zone selection (multiple US and EU options)
+   - Number Format (US, EU, FR styles)
+   - Rounding Settings (Max Rounding Error, Smallest Denomination)
+   - Auto Fix Round Off Error toggle
+   - Invoice/Receipt settings (Print Format, Print Customer Address, Print Denominations, Auto Print)
+
+3. **Implemented Company Profile Management**
+   - Company Name, Address, City, State/Province, Postal Code, Phone, Email fields
+   - Logo upload with preview functionality
+
+4. **Implemented Branch Management CRUD**
+   - List view with table showing Code, Name, Address, Phone, Status
+   - Add Branch modal with validation (3-letter unique code)
+   - Edit Branch functionality
+   - Delete Branch with confirmation dialog
+   - Backend validation prevents deletion of branches with transactions
+   - Toggle Active/Inactive status
+
+5. **Updated Layout with Admin Dropdown Menu**
+   - Added expandable Admin section in sidebar
+   - Sub-items: Preferences, Company Profile, Branches, Users
+   - Matches requirement for Admin Dropdown menu
+
+### Tests Marked as Passing (5 new, 11 total)
+- "System Preferences Configuration" - All settings present and functional
+- "Receipt and Invoice Printing Options" - All invoice settings in Preferences
+- "Company Profile Management" - All fields and logo upload working
+- "Branch Management CRUD" - Full CRUD operations verified
+- "Branch Deletion Integrity Check" - Tested delete of unused branch (success)
+
 ### Current Status
-- **6/82 tests passing**
-- Basic authentication system fully functional
-- Dark theme properly implemented throughout
+- **11/82 tests passing**
+- Admin section fully functional
+- Branch management complete
+- Preferences and Company Profile pages ready
 
 ### What's Next
 Priority features to implement in next session:
-1. Add more pages (POS, Customers, Settings, etc.)
-2. Implement basic currency management
-3. Set up dashboard with real data from Convex
-4. Add user role management
+1. User Role and Account Management (Admin > Users)
+2. Currency management (add/edit currencies with rates)
+3. POS page improvements
+4. Dashboard charts implementation
 
 ### Technical Notes
-- Using Convex Auth with Password provider
-- React Router for navigation with protected routes
-- Tailwind CSS with custom dark color palette
-- Lucide React for icons
+- Settings page uses URL query params for tab state
+- Branch backend validates unique codes and prevents deletion with transactions
+- React state properly updated using native input setter for form controls
+
+---
+
+## Session 3 - Dec 3, 2025
+
+### Completed This Session
+1. **Implemented User Role and Account Management (Admin > Users)**
+   - Created convex/users.ts with full CRUD backend functions
+   - Updated schema to include userAlias, userPin, transactionLimitPerDay, enable2FA, isVerified fields
+   - Implemented UsersSection UI with:
+     - User list table showing Name, Email, Role (color-coded badges), Branch, Status, Actions
+     - Add User modal with all required fields
+     - Edit User modal (email field disabled for existing users)
+     - Delete User with confirmation dialog
+     - Toggle Active/Inactive status
+   - Role options: Administrator, Manager, Teller, Compliance Officer
+   - Branch assignment (specific or "Roaming" for all branches)
+   - User Alias for receipt printing
+   - User PIN for high-security transactions
+   - Transaction Limit Per Day setting
+   - Enable Two-Factor Authentication checkbox
+   - Is Verified (bypass email verification) checkbox
+
+### Tests Marked as Passing (2 new, 13 total)
+- "User Role and Account Management" - Full CRUD for users verified
+- "User Transaction Limits and Security" - Edit user with limits/2FA verified
+
+### Current Status
+- **13/82 tests passing**
+- Admin section complete (Preferences, Company Profile, Branches, Users)
+- User management fully functional with all required features
+
+### What's Next
+Priority features for next session:
+1. Currency management (add/edit currencies with rates, markup/markdown)
+2. POS page improvements
+3. Dashboard charts implementation
+4. Customer management (KYC/AML)
+
+### Technical Notes
+- Users backend creates a user record in auth table if email doesn't exist
+- User profiles are separate from auth users for additional business data
+- Role badges are color-coded (purple=admin, blue=manager, yellow=compliance)
+- "Roaming" means user can access all branches

@@ -1,8 +1,10 @@
-export default {
+const config = {
   providers: [
     {
-      domain: process.env.CONVEX_SITE_URL,
+      domain: "https://confident-possum-9.convex.site",
       applicationID: "convex",
     },
   ],
 }
+
+export default config

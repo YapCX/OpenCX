@@ -12,6 +12,11 @@ export default defineSchema({
     lastName: v.string(),
     role: v.string(), // admin, manager, teller, compliance
     branchId: v.optional(v.id("branches")),
+    userAlias: v.optional(v.string()),
+    userPin: v.optional(v.string()),
+    transactionLimitPerDay: v.optional(v.number()),
+    enable2FA: v.optional(v.boolean()),
+    isVerified: v.optional(v.boolean()),
     isActive: v.boolean(),
     createdAt: v.number(),
     updatedAt: v.number(),

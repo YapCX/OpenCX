@@ -91,6 +91,19 @@ body {
   .table-cell {
     @apply px-4 py-3 text-dark-200;
   }
+
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50;
+  }
+
+  .modal {
+    @apply bg-dark-900 rounded-xl border border-dark-700 p-6 w-full max-w-md mx-4
+           shadow-2xl;
+  }
+
+  .modal-lg {
+    @apply max-w-2xl;
+  }
 }
 
 /* Print styles */

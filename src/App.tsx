@@ -2,6 +2,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useConvexAuth } from "convex/react"
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { CurrenciesPage } from './pages/CurrenciesPage'
+import { POSPage } from './pages/POSPage'
+import { CustomersPage } from './pages/CustomersPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { Layout } from './components/common/Layout'
 import { LoadingSpinner } from './components/common/LoadingSpinner'
 
@@ -32,7 +36,10 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
-                  {/* Additional routes will be added here */}
+                  <Route path="/pos" element={<POSPage />} />
+                  <Route path="/currencies" element={<CurrenciesPage />} />
+                  <Route path="/customers" element={<CustomersPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
                 </Routes>
               </Layout>
             </ProtectedRoute>

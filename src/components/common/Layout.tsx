@@ -14,6 +14,12 @@ import {
   Menu,
   X,
   DollarSign,
+  Coins,
+  ChevronDown,
+  Building2,
+  GitBranch,
+  Cog,
+  UserCog,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -21,25 +27,35 @@ interface LayoutProps {
   children: ReactNode
 }
 
-const navigation = [
+const mainNavigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'POS', href: '/pos', icon: Receipt },
+  { name: 'Currencies', href: '/currencies', icon: Coins },
   { name: 'Customers', href: '/customers', icon: Users },
   { name: 'Compliance', href: '/compliance', icon: Shield },
   { name: 'Treasury', href: '/treasury', icon: Vault },
   { name: 'Accounting', href: '/accounting', icon: BookOpen },
   { name: 'Reports', href: '/reports', icon: FileText },
-  { name: 'Settings', href: '/settings', icon: Settings },
+]
+
+const adminSubItems = [
+  { name: 'Preferences', href: '/settings?tab=preferences', icon: Cog },
+  { name: 'Company Profile', href: '/settings?tab=company', icon: Building2 },
+  { name: 'Branches', href: '/settings?tab=branches', icon: GitBranch },
+  { name: 'Users', href: '/settings?tab=users', icon: UserCog },
 ]
 
 export function Layout({ children }: LayoutProps) {
   const location = useLocation()
   const { signOut } = useAuthActions()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [adminExpanded, setAdminExpanded] = useState(location.pathname.startsWith('/settings'))
 
   const handleSignOut = () => {
     void signOut()
   }
+
+  const isAdminActive = location.pathname.startsWith('/settings')
 
   return (
     <div className="min-h-screen bg-dark-950">
@@ -52,7 +68,7 @@ export function Layout({ children }: LayoutProps) {
 
       <aside
         className={clsx(
-          'fixed inset-y-0 left-0 z-30 w-64 bg-dark-900 border-r border-dark-700 transform transition-transform duration-200 ease-in-out lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-30 w-64 bg-dark-900 border-r border-dark-700 transform transition-transform duration-200 ease-in-out lg:translate-x-0 flex flex-col',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -71,9 +87,10 @@ export function Layout({ children }: LayoutProps) {
           </button>
         </div>
 
-        <nav className="flex-1 px-2 py-4 space-y-1">
-          {navigation.map((item) => {
-            const isActive = location.pathname.startsWith(item.href)
+        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+          {mainNavigation.map((item) => {
+            const isActive = location.pathname === item.href ||
+              (item.href !== '/dashboard' && location.pathname.startsWith(item.href))
             return (
               <Link
                 key={item.name}
@@ -91,6 +108,53 @@ export function Layout({ children }: LayoutProps) {
               </Link>
             )
           })}
+
+          <div className="pt-2">
+            <button
+              onClick={() => setAdminExpanded(!adminExpanded)}
+              className={clsx(
+                'flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                isAdminActive
+                  ? 'bg-primary-600/20 text-primary-400'
+                  : 'text-dark-300 hover:bg-dark-800 hover:text-dark-100'
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <Settings className="h-5 w-5" />
+                Admin
+              </div>
+              <ChevronDown className={clsx(
+                'h-4 w-4 transition-transform',
+                adminExpanded && 'rotate-180'
+              )} />
+            </button>
+
+            {adminExpanded && (
+              <div className="mt-1 ml-4 pl-4 border-l border-dark-700 space-y-1">
+                {adminSubItems.map((item) => {
+                  const isActive = location.pathname === '/settings' &&
+                    (location.search.includes(item.href.split('?tab=')[1]) ||
+                     (!location.search && item.href.includes('branches')))
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className={clsx(
+                        'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                        isActive
+                          ? 'text-primary-400'
+                          : 'text-dark-400 hover:bg-dark-800 hover:text-dark-200'
+                      )}
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.name}
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </nav>
 
         <div className="border-t border-dark-700 p-4">

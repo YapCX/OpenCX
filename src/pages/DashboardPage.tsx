@@ -1,6 +1,16 @@
+import { useQuery } from 'convex/react'
+import { api } from '../../convex/_generated/api'
 import { TrendingUp, TrendingDown, DollarSign, Users, AlertTriangle, ArrowUpRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 export function DashboardPage() {
+  const currentRates = useQuery(api.exchangeRates.getCurrentRates, { baseCurrency: "USD" })
+  const currencies = useQuery(api.currencies.list)
+
+  const getCurrencyName = (code: string) => {
+    return currencies?.find(c => c.code === code)?.name || code
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -73,14 +83,64 @@ export function DashboardPage() {
       <div className="card">
         <div className="card-header flex items-center justify-between">
           <span>Current Exchange Rates</span>
-          <button className="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1">
+          <Link to="/currencies" className="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1">
             View All <ArrowUpRight className="h-4 w-4" />
-          </button>
+          </Link>
         </div>
-        <div className="text-center py-8 text-dark-400">
-          <p>Exchange rates will be displayed here once configured.</p>
-          <p className="text-sm mt-2 text-dark-500">Configure rate sources in Settings.</p>
-        </div>
+
+        {!currentRates ? (
+          <div className="text-center py-8 text-dark-400">
+            <p>Loading exchange rates...</p>
+          </div>
+        ) : currentRates.length === 0 ? (
+          <div className="text-center py-8 text-dark-400">
+            <p>Exchange rates will be displayed here once configured.</p>
+            <p className="text-sm mt-2 text-dark-500">
+              Go to <Link to="/currencies" className="text-primary-400 hover:text-primary-300">Currencies</Link> to configure rates.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-dark-700">
+                  <th className="text-left text-dark-400 font-medium py-3 px-4 text-sm">Currency</th>
+                  <th className="text-right text-dark-400 font-medium py-3 px-4 text-sm">We Buy</th>
+                  <th className="text-right text-dark-400 font-medium py-3 px-4 text-sm">We Sell</th>
+                  <th className="text-right text-dark-400 font-medium py-3 px-4 text-sm">Spread</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentRates.slice(0, 5).map((rate) => (
+                  <tr key={rate._id} className="border-b border-dark-800 hover:bg-dark-800/50">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-white font-medium">{rate.targetCurrency}</span>
+                        <span className="text-dark-400 text-sm">{getCurrencyName(rate.targetCurrency)}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <span className="text-green-400 font-mono">{rate.buyRate.toFixed(4)}</span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <span className="text-red-400 font-mono">{rate.sellRate.toFixed(4)}</span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <span className="text-dark-400 font-mono text-sm">{rate.spread.toFixed(2)}%</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {currentRates.length > 5 && (
+              <div className="text-center py-3 border-t border-dark-800">
+                <Link to="/currencies" className="text-sm text-primary-400 hover:text-primary-300">
+                  View all {currentRates.length} rates →
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
