@@ -76,6 +76,23 @@ export default defineSchema({
   })
     .index("by_customer", ["customerId"]),
 
+  // Customer bank info / wire templates
+  customerBankInfo: defineTable({
+    customerId: v.id("customers"),
+    bankName: v.string(),
+    accountName: v.string(),
+    accountNumber: v.string(),
+    routingNumber: v.optional(v.string()),
+    swiftCode: v.optional(v.string()),
+    iban: v.optional(v.string()),
+    bankAddress: v.optional(v.string()),
+    currency: v.string(),
+    isDefault: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_customer", ["customerId"]),
+
   // Currencies
   currencies: defineTable({
     code: v.string(), // USD, EUR, GBP, etc.

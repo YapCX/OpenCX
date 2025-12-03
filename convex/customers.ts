@@ -1,6 +1,25 @@
 import { v } from "convex/values"
-import { mutation, query } from "./_generated/server"
+import { mutation, query, internalMutation } from "./_generated/server"
 import { getAuthUserId } from "@convex-dev/auth/server"
+import { internal } from "./_generated/api"
+
+const SANCTION_LIST_NAMES = [
+  "kim jong un", "vladimir putin", "bashar al-assad", "nicolás maduro",
+  "ali khamenei", "osama bin laden", "abu bakr al-baghdadi"
+]
+
+function checkSanctionList(firstName: string, lastName: string): {
+  status: "clear" | "flagged" | "pending";
+  matchedName?: string
+} {
+  const fullName = `${firstName} ${lastName}`.toLowerCase()
+  for (const sanctionName of SANCTION_LIST_NAMES) {
+    if (fullName.includes(sanctionName) || sanctionName.includes(fullName)) {
+      return { status: "flagged", matchedName: sanctionName }
+    }
+  }
+  return { status: "clear" }
+}
 
 export const list = query({
   args: {
@@ -79,6 +98,8 @@ export const create = mutation({
 
     const now = Date.now()
 
+    const sanctionResult = checkSanctionList(args.firstName, args.lastName)
+
     const customerId = await ctx.db.insert("customers", {
       firstName: args.firstName,
       lastName: args.lastName,
@@ -93,13 +114,25 @@ export const create = mutation({
       occupation: args.occupation,
       notes: args.notes,
       kycStatus: "pending",
-      sanctionScreeningStatus: "pending",
+      sanctionScreeningStatus: sanctionResult.status,
+      sanctionScreeningDate: now,
       createdAt: now,
       updatedAt: now,
       createdBy: userId,
     })
 
-    return customerId
+    if (sanctionResult.status === "flagged") {
+      await ctx.db.insert("complianceAlerts", {
+        alertType: "sanction_match",
+        severity: "critical",
+        customerId,
+        description: `Customer "${args.firstName} ${args.lastName}" matched sanction list entry: ${sanctionResult.matchedName}`,
+        status: "pending",
+        createdAt: now,
+      })
+    }
+
+    return { customerId, sanctionStatus: sanctionResult.status }
   },
 })
 
@@ -155,6 +188,50 @@ export const remove = mutation({
     }
 
     await ctx.db.delete(args.id)
+  },
+})
+
+export const rescreenSanctions = mutation({
+  args: { id: v.id("customers") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx)
+    if (!userId) throw new Error("Unauthorized")
+
+    const customer = await ctx.db.get(args.id)
+    if (!customer) throw new Error("Customer not found")
+
+    const now = Date.now()
+    const sanctionResult = checkSanctionList(customer.firstName, customer.lastName)
+
+    await ctx.db.patch(args.id, {
+      sanctionScreeningStatus: sanctionResult.status,
+      sanctionScreeningDate: now,
+      updatedAt: now,
+    })
+
+    if (sanctionResult.status === "flagged") {
+      const existingAlert = await ctx.db
+        .query("complianceAlerts")
+        .withIndex("by_customer", (q) => q.eq("customerId", args.id))
+        .filter((q) => q.and(
+          q.eq(q.field("alertType"), "sanction_match"),
+          q.eq(q.field("status"), "pending")
+        ))
+        .first()
+
+      if (!existingAlert) {
+        await ctx.db.insert("complianceAlerts", {
+          alertType: "sanction_match",
+          severity: "critical",
+          customerId: args.id,
+          description: `Customer "${customer.firstName} ${customer.lastName}" matched sanction list entry: ${sanctionResult.matchedName}`,
+          status: "pending",
+          createdAt: now,
+        })
+      }
+    }
+
+    return { status: sanctionResult.status }
   },
 })
 

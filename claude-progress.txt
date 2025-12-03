@@ -271,3 +271,68 @@ Priority features for next session:
 - Sell rate = midRate * (1 + markupPercent/100)
 - Rates stored in exchangeRates table via applyLiveRate action
 - Currency flags mapped via CURRENCY_FLAGS constant (50+ currencies supported)
+
+---
+
+## Session 7 - Dec 3, 2025
+
+### Completed This Session
+1. **Implemented Dashboard Charts (Volume by Currency, Top Selling Currencies)**
+   - Installed recharts library for React charting
+   - Added "Volume by Currency" bar chart showing trading volume per currency
+   - Added "Top Selling Currencies" donut/pie chart with legend
+   - Charts use consistent dark theme styling with chart colors
+   - Empty state messaging when no data available
+   - Fixed transaction field names to match schema (transactionType, totalAmount, createdAt)
+
+2. **Implemented Individual Customer Onboarding (KYC/AML)**
+   - Updated convex/schema.ts:
+     - Added `customerBankInfo` table for wire transfer templates
+     - Added `customerDocuments` table for supporting documents
+   - Created convex/customerDocuments.ts:
+     - generateUploadUrl, create, remove, getUrl functions
+     - Full document upload workflow via Convex storage
+   - Created convex/customerBankInfo.ts:
+     - listByCustomer, create, update, remove functions
+     - Manages wire transfer templates per customer
+   - Updated convex/customers.ts:
+     - Added SANCTION_LIST_NAMES constant with known sanctioned individuals
+     - Added checkSanctionList() function for automatic screening
+     - Modified create mutation to auto-screen new customers
+     - Added rescreenSanctions mutation for manual re-screening
+     - Creates compliance alerts when sanctions match detected
+   - Completely rewrote src/pages/CustomersPage.tsx:
+     - Customer list with search and KYC status filter
+     - "Add Individual" modal with Personal Details form
+     - CustomerDetailPanel with tabbed interface:
+       - Personal Details tab showing customer info, sanction screening status, rescreen button
+       - Supporting Documents tab with file upload functionality
+       - Bank Info tab with wire template form (bank name, account #, routing #, SWIFT, IBAN)
+     - Automatic sanction list screening on customer creation
+     - Visual badge showing "Sanctions: clear/flagged/pending" status
+
+3. **Verified All New Features via Browser Automation**
+   - Dashboard displays correctly with bar chart and pie chart
+   - Exchange rates table visible on dashboard
+   - Customer creation with automatic sanction screening (shows "Sanctions: clear")
+   - Customer detail panel with all three tabs accessible
+   - Document upload UI functional
+   - Bank info form functional
+
+### Tests Marked as Passing (3 new, 19 total)
+- "Visual Dashboard and Menu Layout" - Dashboard with charts and sidebar menu verified
+- "Individual Customer Onboarding (KYC/AML)" - Full onboarding flow with sanction screening verified
+- "Dashboard shows current exchange rates" - Exchange rates table displayed on dashboard
+
+### Current Status
+- **19/82 tests passing**
+- Dashboard fully functional with charts and exchange rates
+- Customer onboarding complete with KYC/AML compliance features
+- Sanction screening automated on customer creation
+
+### Technical Notes
+- Recharts library used for dashboard visualizations
+- Sanction screening checks against hardcoded list (Kim Jong Un, Vladimir Putin, etc.)
+- Customer documents stored via Convex storage with generateUploadUrl workflow
+- Bank info supports international formats (SWIFT, IBAN) and domestic (routing number)
+- Compliance alerts auto-created when sanction match detected

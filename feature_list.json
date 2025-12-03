@@ -102,7 +102,7 @@
       "Step 3: Verify the Admin Dropdown menu contains sub-items: Preferences, Company Profile, Roles, Branches, Users",
       "Step 4: Verify Dashboard charts (Volume by Currency, Top Selling, etc.) are visible"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -161,7 +161,7 @@
       "Step 4: Navigate to 'Supporting Documents' tab and upload an ID image",
       "Step 5: Navigate to 'Bank Info' tab and add a wire template"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -270,7 +270,7 @@
     "category": "functional",
     "description": "Dashboard shows current exchange rates",
     "steps": ["Log in to the app", "View dashboard", "Verify exchange rates panel is displayed with rates"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
