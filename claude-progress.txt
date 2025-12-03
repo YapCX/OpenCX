@@ -525,3 +525,65 @@ Priority features for next session:
 - Tills track signed-in user with signedInUserId and signedInAt
 - createCashAccounts creates accounts with pattern: TILL001-USD, TILL001-EUR, etc.
 - Cash accounts auto-linked to Assets main account with isCash and displayInInvoice flags
+
+---
+
+## Session 11 - Dec 4, 2025
+
+### Completed This Session
+1. **Verified POS Functionality (Already Implemented)**
+   - Tested Buy transaction: 100 USD -> 87.80 EUR at rate 0.8780 - SUCCESS
+   - Verified real-time exchange rates display in Current Rates panel
+   - Verified amount calculations update correctly when entering amounts
+   - Tested custom rate feature: enabled checkbox, entered 1.20, calculation updated to 60.00 EUR
+   - POS shows Recent Transactions panel with transaction history
+
+2. **Implemented Compliance Alerts Dashboard**
+   - Created convex/compliance.ts backend with:
+     - list query with filters (status, severity, alertType)
+     - getPending query for pending alerts
+     - getStats query for dashboard statistics
+     - get, updateStatus, create, remove mutations
+   - Created src/pages/CompliancePage.tsx with:
+     - Stats cards: Pending, Critical Alerts, Resolved, Escalated counts
+     - Filters: Status, Severity, Type dropdowns with Clear Filters option
+     - Alerts table with columns: Severity, Type, Description, Customer, Status, Created, Actions
+     - Detail modal for reviewing alerts with resolution workflow
+     - Action buttons: Mark as Reviewed, Resolve, Escalate, Reopen
+     - Resolution notes textarea for documenting decisions
+   - Added /compliance route in App.tsx
+   - Navigation already existed in Layout.tsx
+
+3. **Verified Customer Search Functionality**
+   - Search bar "Search customers by name, email, or phone..." already implemented
+   - Tested search for "John" - correctly showed customer John
+   - Tested search for "JohnXYZ123" - correctly showed "No customers match your search."
+   - Real-time filtering works as user types
+
+### Tests Marked as Passing (6 new, 33 total)
+- "User can create a new currency buy transaction" - Buy transaction completed and recorded
+- "POS displays real-time exchange rates" - Current Rates panel shows live rates
+- "POS calculates correct amounts based on exchange rate" - Calculations verified correct
+- "POS allows applying custom rate/spread" - Custom rate checkbox and input working
+- "User can search for customers" - Search filters customers by name/email/phone
+- "Compliance alerts dashboard shows pending reviews" - Full dashboard with filters and stats
+
+### Current Status
+- **33/82 tests passing** (up from 27)
+- POS fully functional with buy/sell, rate display, calculations, and custom rates
+- Compliance Dashboard implemented with full alert review workflow
+- Customer search working correctly
+
+### What's Next
+Priority features for next session:
+1. Role-based access control
+2. Transaction search with filters
+3. Customer linked to transaction at POS
+4. Customer edit functionality verification
+
+### Technical Notes
+- Compliance alerts are auto-created by customers.ts when sanction matches or suspicious flags detected
+- Alert workflow: pending -> reviewed -> resolved/escalated
+- Compliance backend supports filtering by status, severity, and alertType
+- POS uses exchangeRates table for current rates, supports custom rate override
+- Customer search is client-side filtering on firstName, lastName, email, phone

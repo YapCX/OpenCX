@@ -276,7 +276,7 @@
     "category": "functional",
     "description": "User can create a new currency buy transaction",
     "steps": ["Navigate to POS", "Select 'Buy' transaction type", "Enter currency and amount", "Complete transaction", "Verify transaction recorded"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -288,19 +288,19 @@
     "category": "functional",
     "description": "POS displays real-time exchange rates",
     "steps": ["Navigate to POS", "View rate display", "Verify rates update in real-time"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "POS calculates correct amounts based on exchange rate",
     "steps": ["Navigate to POS", "Enter amount in source currency", "Verify calculated amount in target currency matches rate"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "POS allows applying custom rate/spread",
     "steps": ["Navigate to POS", "Modify exchange rate/spread", "Verify calculated amounts update accordingly"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -312,7 +312,7 @@
     "category": "functional",
     "description": "User can search for customers",
     "steps": ["Navigate to customer management", "Enter search term", "Verify matching customers displayed"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -360,7 +360,7 @@
     "category": "functional",
     "description": "Compliance alerts dashboard shows pending reviews",
     "steps": ["Navigate to compliance section", "View alerts dashboard", "Verify pending alerts are displayed"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
