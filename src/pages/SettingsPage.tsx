@@ -19,9 +19,12 @@ import {
   List,
   Coins,
   RefreshCw,
+  Monitor,
+  Copy,
+  ExternalLink,
 } from 'lucide-react'
 
-type SettingsTab = 'preferences' | 'company' | 'branches' | 'users' | 'lookups' | 'denominations'
+type SettingsTab = 'preferences' | 'company' | 'branches' | 'users' | 'lookups' | 'denominations' | 'rateboard'
 
 interface Branch {
   _id: Id<"branches">
@@ -57,6 +60,7 @@ export function SettingsPage() {
     { id: 'users' as const, name: 'Users', icon: Users },
     { id: 'lookups' as const, name: 'Lookups', icon: List },
     { id: 'denominations' as const, name: 'Denominations', icon: Coins },
+    { id: 'rateboard' as const, name: 'Rate Board', icon: Monitor },
   ]
 
   return (
@@ -92,6 +96,7 @@ export function SettingsPage() {
         {activeTab === 'users' && <UsersSection />}
         {activeTab === 'lookups' && <LookupsSection />}
         {activeTab === 'denominations' && <DenominationsSection />}
+        {activeTab === 'rateboard' && <RateBoardSection />}
       </div>
     </div>
   )
@@ -1951,6 +1956,104 @@ function DenominationsSection() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function RateBoardSection() {
+  const [copied, setCopied] = useState(false)
+  const rateBoardUrl = `${window.location.origin}/rate-board`
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(rateBoardUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleOpen = () => {
+    window.open(rateBoardUrl, '_blank')
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="card">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-blue-500/20 rounded-lg">
+            <Monitor className="h-5 w-5 text-blue-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-dark-50">Digital Rate Board</h3>
+            <p className="text-dark-400 text-sm">Public display for customer-facing rate information</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="label">Rate Board URL</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={rateBoardUrl}
+                readOnly
+                className="input flex-1 font-mono text-sm"
+              />
+              <button
+                onClick={handleCopy}
+                className="btn-secondary flex items-center gap-2"
+              >
+                <Copy className="h-4 w-4" />
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+              <button
+                onClick={handleOpen}
+                className="btn-primary flex items-center gap-2"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Open
+              </button>
+            </div>
+            <p className="text-xs text-dark-500 mt-2">
+              Share this URL to display live exchange rates on customer-facing displays, websites, or digital signage.
+            </p>
+          </div>
+
+          <div className="border-t border-dark-700 pt-4">
+            <h4 className="text-sm font-medium text-dark-200 mb-3">Features</h4>
+            <ul className="space-y-2 text-sm text-dark-400">
+              <li className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-green-400" />
+                Real-time exchange rates updated automatically
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-green-400" />
+                Country flags for easy currency identification
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-green-400" />
+                VIP/Tiered rates displayed separately
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-green-400" />
+                Professional dark theme design
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-green-400" />
+                No login required for viewers
+              </li>
+            </ul>
+          </div>
+
+          <div className="border-t border-dark-700 pt-4">
+            <h4 className="text-sm font-medium text-dark-200 mb-3">Usage Tips</h4>
+            <ul className="space-y-2 text-sm text-dark-400">
+              <li>• Display on TVs or monitors in your exchange office</li>
+              <li>• Embed in your website using an iframe</li>
+              <li>• Share the direct link with customers</li>
+              <li>• Use full-screen mode (F11) for digital signage</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

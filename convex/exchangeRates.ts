@@ -48,6 +48,36 @@ export const getCurrentRates = query({
   },
 })
 
+export const getCurrentRatesPublic = query({
+  args: { baseCurrency: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const base = args.baseCurrency || "USD"
+    const now = Date.now()
+
+    const allRates = await ctx.db
+      .query("exchangeRates")
+      .withIndex("by_currencies")
+      .collect()
+
+    const currentRates = allRates.filter(
+      (rate) =>
+        rate.baseCurrency === base &&
+        rate.effectiveFrom <= now &&
+        (!rate.effectiveTo || rate.effectiveTo > now)
+    )
+
+    const latestRates = new Map()
+    for (const rate of currentRates) {
+      const existing = latestRates.get(rate.targetCurrency)
+      if (!existing || rate.effectiveFrom > existing.effectiveFrom) {
+        latestRates.set(rate.targetCurrency, rate)
+      }
+    }
+
+    return Array.from(latestRates.values())
+  },
+})
+
 export const getRate = query({
   args: {
     baseCurrency: v.string(),

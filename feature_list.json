@@ -149,7 +149,7 @@
       "Step 3: Set more competitive margins than the standard rate",
       "Step 4: Save and verify the alias appears as a distinct entry on the Rate Board"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -172,7 +172,7 @@
       "Step 3: Verify the page displays a table with Flag, Currency Code, Buy Rate, and Sell Rate",
       "Step 4: Confirm 'VIP' tiered rates appear separately if configured"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

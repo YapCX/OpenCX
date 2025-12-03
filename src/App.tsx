@@ -6,6 +6,7 @@ import { CurrenciesPage } from './pages/CurrenciesPage'
 import { POSPage } from './pages/POSPage'
 import { CustomersPage } from './pages/CustomersPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { RateBoardPage } from './pages/RateBoardPage'
 import { Layout } from './components/common/Layout'
 import { LoadingSpinner } from './components/common/LoadingSpinner'
 
@@ -28,6 +29,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/rate-board" element={<RateBoardPage />} />
         <Route
           path="/*"
           element={

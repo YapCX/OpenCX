@@ -29,6 +29,16 @@ export const getActive = query({
   },
 })
 
+export const getActivePublic = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("currencies")
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect()
+  },
+})
+
 export const getByCode = query({
   args: { code: v.string() },
   handler: async (ctx, args) => {
@@ -255,15 +265,16 @@ export const applyLiveRate = action({
     targetCurrency: v.string(),
     markupPercent: v.optional(v.number()),
     markdownPercent: v.optional(v.number()),
+    alias: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<LiveRateResult> => {
-    const { baseCurrency, targetCurrency, markupPercent = 0, markdownPercent = 0 } = args
+    const { baseCurrency, targetCurrency, markupPercent = 0, markdownPercent = 0, alias } = args
 
     const liveRate = await fetchLiveRateInternal(baseCurrency, targetCurrency, markupPercent, markdownPercent)
 
     await ctx.runMutation(api.exchangeRates.setRate, {
       baseCurrency,
-      targetCurrency,
+      targetCurrency: alias || targetCurrency,
       buyRate: liveRate.buyRate,
       sellRate: liveRate.sellRate,
       source: "api",

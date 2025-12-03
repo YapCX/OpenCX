@@ -157,7 +157,8 @@ export function CurrenciesPage() {
   }
 
   const handleFetchLiveRate = async (currency: NonNullable<typeof currencies>[0]) => {
-    setFetchingRate(currency.code)
+    const displayName = currency.alias || currency.code
+    setFetchingRate(displayName)
     setError(null)
     try {
       const result = await applyLiveRate({
@@ -165,8 +166,9 @@ export function CurrenciesPage() {
         targetCurrency: currency.code,
         markupPercent: currency.markupPercent || 2,
         markdownPercent: currency.markdownPercent || 2,
+        alias: currency.alias,
       })
-      setSuccess(`Live rate applied for ${currency.code}: Buy ${result.buyRate.toFixed(4)}, Sell ${result.sellRate.toFixed(4)}`)
+      setSuccess(`Live rate applied for ${displayName}: Buy ${result.buyRate.toFixed(4)}, Sell ${result.sellRate.toFixed(4)}`)
       setTimeout(() => setSuccess(null), 5000)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to fetch live rate')
@@ -296,8 +298,9 @@ export function CurrenciesPage() {
     }))
   }
 
-  const getRateForCurrency = (code: string) => {
-    return currentRates?.find(r => r.targetCurrency === code)
+  const getRateForCurrency = (currency: NonNullable<typeof currencies>[0]) => {
+    const targetKey = currency.alias || currency.code
+    return currentRates?.find(r => r.targetCurrency === targetKey)
   }
 
   const getBranchNames = (branchIds: Id<"branches">[] | undefined) => {
@@ -401,7 +404,7 @@ export function CurrenciesPage() {
               </thead>
               <tbody>
                 {currencies.map((currency) => {
-                  const rate = getRateForCurrency(currency.code)
+                  const rate = getRateForCurrency(currency)
                   return (
                     <tr key={currency._id} className="border-b border-slate-800 hover:bg-slate-800/50">
                       <td className="py-3 px-4">
@@ -413,8 +416,14 @@ export function CurrenciesPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-slate-300">
-                        {currency.alias || '-'}
+                      <td className="py-3 px-4">
+                        {currency.alias ? (
+                          <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-sm font-medium">
+                            {currency.alias}
+                          </span>
+                        ) : (
+                          <span className="text-slate-500">-</span>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span className="text-amber-400 font-mono">{currency.markupPercent || 0}%</span>
