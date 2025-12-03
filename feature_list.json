@@ -183,7 +183,7 @@
       "Step 3: Toggle 'Suspicious' and provide a reason",
       "Step 4: Check 'PEP Status' if applicable and save"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -194,7 +194,7 @@
       "Step 3: Check 'White Listed' and select an expiry date for the whitelist status",
       "Step 4: Save and verify the customer is no longer flagged on the dashboard"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

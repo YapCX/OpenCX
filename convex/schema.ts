@@ -53,6 +53,18 @@ export default defineSchema({
     sanctionScreeningStatus: v.optional(v.string()), // clear, flagged, pending
     sanctionScreeningDate: v.optional(v.number()),
     notes: v.optional(v.string()),
+    // Advanced KYC/AML fields
+    estimatedAssetWorth: v.optional(v.string()),
+    sourceOfFunds: v.optional(v.string()),
+    isSuspicious: v.optional(v.boolean()),
+    suspiciousReason: v.optional(v.string()),
+    isPEP: v.optional(v.boolean()), // Politically Exposed Person
+    pepDetails: v.optional(v.string()),
+    // Sanction whitelist fields
+    sanctionFalsePositive: v.optional(v.boolean()),
+    falsePositiveBasis: v.optional(v.string()),
+    isWhitelisted: v.optional(v.boolean()),
+    whitelistExpiryDate: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
     createdBy: v.id("users"),

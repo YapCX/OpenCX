@@ -172,6 +172,97 @@ export const update = mutation({
   },
 })
 
+export const updateKycAml = mutation({
+  args: {
+    id: v.id("customers"),
+    estimatedAssetWorth: v.optional(v.string()),
+    sourceOfFunds: v.optional(v.string()),
+    isSuspicious: v.optional(v.boolean()),
+    suspiciousReason: v.optional(v.string()),
+    isPEP: v.optional(v.boolean()),
+    pepDetails: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx)
+    if (!userId) throw new Error("Unauthorized")
+
+    const { id, ...updates } = args
+    const customer = await ctx.db.get(id)
+    if (!customer) throw new Error("Customer not found")
+
+    const now = Date.now()
+
+    if (args.isSuspicious && !customer.isSuspicious) {
+      await ctx.db.insert("complianceAlerts", {
+        alertType: "suspicious_activity",
+        severity: "high",
+        customerId: id,
+        description: `Customer "${customer.firstName} ${customer.lastName}" marked as suspicious: ${args.suspiciousReason || "No reason provided"}`,
+        status: "pending",
+        createdAt: now,
+      })
+    }
+
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, v]) => v !== undefined)
+    )
+
+    return await ctx.db.patch(id, {
+      ...filteredUpdates,
+      updatedAt: now,
+    })
+  },
+})
+
+export const updateSanctionWhitelist = mutation({
+  args: {
+    id: v.id("customers"),
+    sanctionFalsePositive: v.optional(v.boolean()),
+    falsePositiveBasis: v.optional(v.string()),
+    isWhitelisted: v.optional(v.boolean()),
+    whitelistExpiryDate: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx)
+    if (!userId) throw new Error("Unauthorized")
+
+    const { id, ...updates } = args
+    const customer = await ctx.db.get(id)
+    if (!customer) throw new Error("Customer not found")
+
+    const now = Date.now()
+
+    if (args.sanctionFalsePositive && args.isWhitelisted) {
+      const pendingAlert = await ctx.db
+        .query("complianceAlerts")
+        .withIndex("by_customer", (q) => q.eq("customerId", id))
+        .filter((q) => q.and(
+          q.eq(q.field("alertType"), "sanction_match"),
+          q.eq(q.field("status"), "pending")
+        ))
+        .first()
+
+      if (pendingAlert) {
+        await ctx.db.patch(pendingAlert._id, {
+          status: "resolved",
+          reviewedAt: now,
+          reviewedBy: userId,
+          resolutionNotes: `False positive - ${args.falsePositiveBasis}. Customer whitelisted until ${args.whitelistExpiryDate || "indefinitely"}`,
+        })
+      }
+    }
+
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, v]) => v !== undefined)
+    )
+
+    return await ctx.db.patch(id, {
+      ...filteredUpdates,
+      updatedAt: now,
+    })
+  },
+})
+
 export const remove = mutation({
   args: { id: v.id("customers") },
   handler: async (ctx, args) => {

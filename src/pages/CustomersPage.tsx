@@ -23,11 +23,15 @@ import {
   CheckCircle,
   AlertTriangle,
   RefreshCw,
+  DollarSign,
+  Flag,
+  UserCheck,
+  Save,
 } from "lucide-react"
 import clsx from "clsx"
 
 type KycStatus = "pending" | "verified" | "rejected"
-type TabType = "details" | "documents" | "bank"
+type TabType = "details" | "kyc_aml" | "documents" | "bank"
 
 interface CustomerFormData {
   firstName: string
@@ -590,6 +594,20 @@ function CustomerDetailPanel({
             </span>
           </button>
           <button
+            onClick={() => setActiveTab("kyc_aml")}
+            className={clsx(
+              "px-6 py-3 text-sm font-medium border-b-2 transition-colors",
+              activeTab === "kyc_aml"
+                ? "border-primary-500 text-primary-400"
+                : "border-transparent text-dark-400 hover:text-dark-200"
+            )}
+          >
+            <span className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              KYC/AML
+            </span>
+          </button>
+          <button
             onClick={() => setActiveTab("documents")}
             className={clsx(
               "px-6 py-3 text-sm font-medium border-b-2 transition-colors",
@@ -622,6 +640,7 @@ function CustomerDetailPanel({
 
       <div className="p-6">
         {activeTab === "details" && <PersonalDetailsTab customer={customer} />}
+        {activeTab === "kyc_aml" && <KycAmlTab customer={customer} />}
         {activeTab === "documents" && <DocumentsTab customerId={customer._id} />}
         {activeTab === "bank" && <BankInfoTab customerId={customer._id} />}
       </div>
@@ -741,6 +760,295 @@ function PersonalDetailsTab({ customer }: { customer: any }) {
           })}
         </p>
       </div>
+    </div>
+  )
+}
+
+function KycAmlTab({ customer }: { customer: any }) {
+  const updateKycAml = useMutation(api.customers.updateKycAml)
+  const updateSanctionWhitelist = useMutation(api.customers.updateSanctionWhitelist)
+  const lookups = useQuery(api.lookups.listActiveByKey, { lookupKey: "source_of_funds" }) || []
+
+  const [formData, setFormData] = useState({
+    estimatedAssetWorth: customer.estimatedAssetWorth || "",
+    sourceOfFunds: customer.sourceOfFunds || "",
+    isSuspicious: customer.isSuspicious || false,
+    suspiciousReason: customer.suspiciousReason || "",
+    isPEP: customer.isPEP || false,
+    pepDetails: customer.pepDetails || "",
+  })
+
+  const [whitelistData, setWhitelistData] = useState({
+    sanctionFalsePositive: customer.sanctionFalsePositive || false,
+    falsePositiveBasis: customer.falsePositiveBasis || "",
+    isWhitelisted: customer.isWhitelisted || false,
+    whitelistExpiryDate: customer.whitelistExpiryDate || "",
+  })
+
+  const [isSaving, setIsSaving] = useState(false)
+  const [isSavingWhitelist, setIsSavingWhitelist] = useState(false)
+
+  const handleSaveKycAml = async () => {
+    setIsSaving(true)
+    try {
+      await updateKycAml({
+        id: customer._id,
+        ...formData,
+      })
+    } catch (error) {
+      console.error("Error saving KYC/AML:", error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSaveWhitelist = async () => {
+    setIsSavingWhitelist(true)
+    try {
+      await updateSanctionWhitelist({
+        id: customer._id,
+        ...whitelistData,
+      })
+    } catch (error) {
+      console.error("Error saving whitelist:", error)
+    } finally {
+      setIsSavingWhitelist(false)
+    }
+  }
+
+  const assetWorthOptions = [
+    "Under $10,000",
+    "$10,000 - $50,000",
+    "$50,000 - $100,000",
+    "$100,000 - $500,000",
+    "$500,000 - $1,000,000",
+    "Over $1,000,000",
+  ]
+
+  return (
+    <div className="space-y-8">
+      <div className="space-y-4">
+        <h3 className="text-sm font-semibold text-dark-200 flex items-center gap-2">
+          <DollarSign className="h-4 w-4" />
+          Enhanced Due Diligence
+        </h3>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-dark-400 mb-2">
+              Estimated Asset Worth
+            </label>
+            <select
+              value={formData.estimatedAssetWorth}
+              onChange={(e) => setFormData({ ...formData, estimatedAssetWorth: e.target.value })}
+              className="input w-full"
+            >
+              <option value="">Select range</option>
+              {assetWorthOptions.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-dark-400 mb-2">
+              Source of Funds
+            </label>
+            <select
+              value={formData.sourceOfFunds}
+              onChange={(e) => setFormData({ ...formData, sourceOfFunds: e.target.value })}
+              className="input w-full"
+            >
+              <option value="">Select source</option>
+              {lookups.map((lookup) => (
+                <option key={lookup._id} value={lookup.lookupValue}>{lookup.lookupValue}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="space-y-3 pt-4 border-t border-dark-700">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="isSuspicious"
+              checked={formData.isSuspicious}
+              onChange={(e) => setFormData({ ...formData, isSuspicious: e.target.checked })}
+              className="rounded border-dark-600 bg-dark-700 text-red-500"
+            />
+            <label htmlFor="isSuspicious" className="text-sm text-dark-300 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+              Mark as Suspicious
+            </label>
+          </div>
+
+          {formData.isSuspicious && (
+            <div>
+              <label className="block text-sm font-medium text-dark-400 mb-2">
+                Reason for Suspicion *
+              </label>
+              <textarea
+                value={formData.suspiciousReason}
+                onChange={(e) => setFormData({ ...formData, suspiciousReason: e.target.value })}
+                className="input w-full"
+                rows={2}
+                placeholder="Describe the reason for marking this customer as suspicious..."
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-3 pt-4 border-t border-dark-700">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="isPEP"
+              checked={formData.isPEP}
+              onChange={(e) => setFormData({ ...formData, isPEP: e.target.checked })}
+              className="rounded border-dark-600 bg-dark-700 text-yellow-500"
+            />
+            <label htmlFor="isPEP" className="text-sm text-dark-300 flex items-center gap-2">
+              <Flag className="h-4 w-4 text-yellow-500" />
+              Politically Exposed Person (PEP)
+            </label>
+          </div>
+
+          {formData.isPEP && (
+            <div>
+              <label className="block text-sm font-medium text-dark-400 mb-2">
+                PEP Details
+              </label>
+              <textarea
+                value={formData.pepDetails}
+                onChange={(e) => setFormData({ ...formData, pepDetails: e.target.value })}
+                className="input w-full"
+                rows={2}
+                placeholder="Position, relationship to PEP, etc..."
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end pt-4">
+          <button
+            onClick={handleSaveKycAml}
+            disabled={isSaving}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Save className="h-4 w-4" />
+            {isSaving ? "Saving..." : "Save KYC/AML Data"}
+          </button>
+        </div>
+      </div>
+
+      {customer.sanctionScreeningStatus === "flagged" && (
+        <div className="space-y-4 pt-6 border-t border-dark-700">
+          <h3 className="text-sm font-semibold text-dark-200 flex items-center gap-2">
+            <UserCheck className="h-4 w-4" />
+            Sanction List Whitelisting
+          </h3>
+
+          <div className="bg-red-900/20 border border-red-800/50 rounded-lg p-4 mb-4">
+            <div className="flex items-center gap-2 text-red-400 mb-2">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="font-medium">Sanction Match Detected</span>
+            </div>
+            <p className="text-sm text-dark-400">
+              This customer has been flagged for matching a sanction list entry.
+              Review the match and determine if it is a false positive.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="sanctionFalsePositive"
+                checked={whitelistData.sanctionFalsePositive}
+                onChange={(e) => setWhitelistData({ ...whitelistData, sanctionFalsePositive: e.target.checked })}
+                className="rounded border-dark-600 bg-dark-700 text-green-500"
+              />
+              <label htmlFor="sanctionFalsePositive" className="text-sm text-dark-300">
+                Match is a False Positive
+              </label>
+            </div>
+
+            {whitelistData.sanctionFalsePositive && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-dark-400 mb-2">
+                    Basis of Determination *
+                  </label>
+                  <textarea
+                    value={whitelistData.falsePositiveBasis}
+                    onChange={(e) => setWhitelistData({ ...whitelistData, falsePositiveBasis: e.target.value })}
+                    className="input w-full"
+                    rows={2}
+                    placeholder="Explain why this is a false positive..."
+                  />
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="isWhitelisted"
+                    checked={whitelistData.isWhitelisted}
+                    onChange={(e) => setWhitelistData({ ...whitelistData, isWhitelisted: e.target.checked })}
+                    className="rounded border-dark-600 bg-dark-700 text-green-500"
+                  />
+                  <label htmlFor="isWhitelisted" className="text-sm text-dark-300">
+                    Whitelist this Customer
+                  </label>
+                </div>
+
+                {whitelistData.isWhitelisted && (
+                  <div>
+                    <label className="block text-sm font-medium text-dark-400 mb-2">
+                      Whitelist Expiry Date
+                    </label>
+                    <input
+                      type="date"
+                      value={whitelistData.whitelistExpiryDate}
+                      onChange={(e) => setWhitelistData({ ...whitelistData, whitelistExpiryDate: e.target.value })}
+                      className="input w-full max-w-xs"
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="flex justify-end pt-4">
+            <button
+              onClick={handleSaveWhitelist}
+              disabled={isSavingWhitelist || !whitelistData.sanctionFalsePositive}
+              className="btn-primary flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" />
+              {isSavingWhitelist ? "Saving..." : "Save Whitelist Settings"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {customer.isWhitelisted && (
+        <div className="bg-green-900/20 border border-green-800/50 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-green-400 mb-2">
+            <CheckCircle className="h-4 w-4" />
+            <span className="font-medium">Customer Whitelisted</span>
+          </div>
+          <p className="text-sm text-dark-400">
+            This customer has been whitelisted.
+            {customer.whitelistExpiryDate && (
+              <> Expires on {customer.whitelistExpiryDate}.</>
+            )}
+          </p>
+          {customer.falsePositiveBasis && (
+            <p className="text-sm text-dark-500 mt-2">
+              Basis: {customer.falsePositiveBasis}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
