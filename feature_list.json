@@ -1,38 +1,269 @@
 [
   {
     "category": "functional",
+    "description": "User Registration with Multi-factor and SSO support. Verifies that a new user can register using either a standard form with detailed business info (Base Currency, Time Zone) or via SSO providers (Google, Microsoft, etc.).",
+    "steps": [
+      "Step 1: Navigate to the Sign Up page",
+      "Step 2: Enter Company Name, User Name, Email, Country, Base Currency, and Time Zone",
+      "Step 3: Alternatively, select an SSO provider (e.g., Google) to register",
+      "Step 4: Verify email confirmation is received and account is created"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "System Preferences Configuration. Verifies that an administrator can configure global application settings including Date/Time formats and Invoice rounding rules.",
+    "steps": [
+      "Step 1: Log in as Administrator",
+      "Step 2: Navigate to Admin > Preferences",
+      "Step 3: Set 'Date Format', 'Time Zone', and 'Number Format'",
+      "Step 4: Configure 'Max Rounding Error' and 'Smallest Denomination for Rounding' (e.g., 0.05)",
+      "Step 5: Toggle 'Auto Fix Round Of Error during Invoice' and save"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Receipt and Invoice Printing Options. Verifies that the system allows customization of receipt outputs, including print formats and content visibility.",
+    "steps": [
+      "Step 1: Navigate to Admin > Preferences > Invoice Section",
+      "Step 2: Select 'Default Print Format' (e.g., Thermal 80mm)",
+      "Step 3: Toggle 'Print Customer Address on Receipt' and 'Print Denominations entries on the receipt'",
+      "Step 4: Enable 'Automatically print Invoice after saving'",
+      "Step 5: Save and verify settings persist"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Company Profile Management. Verifies that the admin can update company details and upload a logo which appears on receipts.",
+    "steps": [
+      "Step 1: Navigate to Admin > Company Profile",
+      "Step 2: Enter Company Name, Address, City, State/Province, and Postal Code",
+      "Step 3: Upload a Company Logo image file",
+      "Step 4: Save and verify the logo preview is updated"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Branch Management CRUD. Verifies ability to create, update, and manage multiple business branches, including a Head Office.",
+    "steps": [
+      "Step 1: Navigate to Admin > Branches",
+      "Step 2: Click 'Add Branch' (or + icon)",
+      "Step 3: Input a unique 3-letter Branch Code (e.g., HOF), Name, and Address",
+      "Step 4: Set Status to 'Active' and save",
+      "Step 5: Verify the new branch appears in the list view"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Branch Deletion Integrity Check. Verifies that branches with existing transaction history cannot be deleted, while unused branches can be.",
+    "steps": [
+      "Step 1: Navigate to Admin > Branches",
+      "Step 2: Attempt to delete a branch that has associated transactions (Verify error/blocking)",
+      "Step 3: Create a dummy branch with no history",
+      "Step 4: Delete the dummy branch (Verify success)"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User Role and Account Management. Verifies the creation of user accounts with specific roles (Teller, Manager, Compliance) and security settings.",
+    "steps": [
+      "Step 1: Navigate to Admin > Users",
+      "Step 2: Click 'Add User'",
+      "Step 3: Enter Name, Email, Password, and select a Role (e.g., Teller)",
+      "Step 4: Define a 'User Alias' for receipt printing",
+      "Step 5: Set a 'User PIN' for high-security transactions",
+      "Step 6: Assign to a specific Branch (or leave blank for roaming) and Save"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User Transaction Limits and Security. Verifies that specific limits can be enforced per user and 2FA can be enabled.",
+    "steps": [
+      "Step 1: Edit an existing User profile",
+      "Step 2: Input a value for 'Transaction Limit Per Day' (e.g., 10000)",
+      "Step 3: Check 'Enable Two-Factor Authentication'",
+      "Step 4: Check 'Is Verified' to bypass email verification for testing",
+      "Step 5: Save and verify the user list reflects these settings"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Visual Dashboard and Menu Layout. Verifies the application layout matches the reference material's sidebar navigation and dashboard widgets.",
+    "steps": [
+      "Step 1: Log in to the main Dashboard",
+      "Step 2: Verify Top Navigation Bar contains module shortcuts (Contacts, Currencies, Bookings, etc.)",
+      "Step 3: Verify the Admin Dropdown menu contains sub-items: Preferences, Company Profile, Roles, Branches, Users",
+      "Step 4: Verify Dashboard charts (Volume by Currency, Top Selling, etc.) are visible"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Lookup Data Management. Verifies that an administrator can configure dynamic system dropdown menus (e.g., Customer Groups, Payment Methods, Sources of Funds) to standardize data entry across the application.",
+    "steps": [
+      "Step 1: Navigate to Admin > Lookups",
+      "Step 2: Click 'Add Lookup' (or + icon)",
+      "Step 3: Select a 'Lookup Key' (e.g., Group Type)",
+      "Step 4: Enter a 'Lookup Value' (e.g., VIP or Tourist) and Save",
+      "Step 5: Verify the new option appears in the relevant forms"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Currency Denomination Configuration. Verifies the ability to define specific banknote and coin values for inventory tracking, including the ability to view visual references of banknotes.",
+    "steps": [
+      "Step 1: Navigate to Admin > Denominations",
+      "Step 2: Click 'Add Denomination'",
+      "Step 3: Select a Currency (e.g., CAD) and enter a Value (e.g., 50)",
+      "Step 4: Click 'View Bank Notes' to visualize the bill",
+      "Step 5: Save and verify the denomination is added to the list"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Currency Inventory and Rate Setup. Verifies adding a new tradeable currency, configuring buy/sell margins (markup/markdown), and fetching live market rates.",
+    "steps": [
+      "Step 1: Navigate to Currencies > Currency Grid",
+      "Step 2: Click 'Add Currency' and select a currency code (e.g., PLN)",
+      "Step 3: Configure 'Markup %' and 'Markdown %' for automatic rate calculation",
+      "Step 4: Toggle 'Active' and assign to specific Branches",
+      "Step 5: Click 'Get Rate' to test live market data connection and Save"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Tiered Rate Configuration (Currency Aliases). Verifies the creation of special rate tiers (e.g., VIP rates) using currency aliases to offer better margins for high-volume customers.",
+    "steps": [
+      "Step 1: Navigate to Currencies > Currency Grid > Add New",
+      "Step 2: Select an existing currency but define a 'Currency Alias' (e.g., EUR-VIP)",
+      "Step 3: Set more competitive margins than the standard rate",
+      "Step 4: Save and verify the alias appears as a distinct entry on the Rate Board"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Individual Customer Onboarding (KYC/AML). Verifies the creation of individual customer profiles, automatic sanction list screening, and document management.",
+    "steps": [
+      "Step 1: Navigate to Contacts > Individuals > Add New",
+      "Step 2: Enter Personal Details (Name, Nationality, DOB)",
+      "Step 3: Save and verify the system automatically performs a 'Check against Sanction List'",
+      "Step 4: Navigate to 'Supporting Documents' tab and upload an ID image",
+      "Step 5: Navigate to 'Bank Info' tab and add a wire template"
+    ],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Digital Rate Board Display. Verifies that the public-facing rate board correctly renders currencies, flags, and tiered rates based on the configuration.",
+    "steps": [
+      "Step 1: Navigate to Admin > Currencies Rate Board",
+      "Step 2: Generate/Click the Rate Board URL for a specific branch",
+      "Step 3: Verify the page displays a table with Flag, Currency Code, Buy Rate, and Sell Rate",
+      "Step 4: Confirm 'VIP' tiered rates appear separately if configured"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Advanced KYC/AML Profiling. Verifies the collection of enhanced due diligence data for customers, including source of funds, PEP (Politically Exposed Person) status, and custom AML risk flagging.",
+    "steps": [
+      "Step 1: Navigate to Contacts > Individuals > Edit Customer > KYC/AML Tab",
+      "Step 2: Enter 'Estimated Asset Worth' and 'Source of Funds'",
+      "Step 3: Toggle 'Suspicious' and provide a reason",
+      "Step 4: Check 'PEP Status' if applicable and save"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Sanction List Whitelisting. Verifies the ability to manually override false positive sanction matches and whitelist a customer for a specific duration.",
+    "steps": [
+      "Step 1: Navigate to Contacts > Individuals > KYC/AML Tab",
+      "Step 2: Check 'Match is false positive' and enter a 'Basis of Determination'",
+      "Step 3: Check 'White Listed' and select an expiry date for the whitelist status",
+      "Step 4: Save and verify the customer is no longer flagged on the dashboard"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "General Ledger Main Account Setup. Verifies the creation of high-level parent accounts (Assets, Liabilities, Equity, Revenue, Expenses) to structure the Chart of Accounts.",
+    "steps": [
+      "Step 1: Navigate to Modules > Main Accounts > Add",
+      "Step 2: Enter a 'Main Account Code' (e.g., 6000) and 'Name' (e.g., Operating Expenses)",
+      "Step 3: Select the 'Main Account Type' (e.g., Expenses) and save",
+      "Step 4: Verify the account appears in the Main Accounts grid"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Sub-Ledger Account Configuration. Verifies the creation of specific transactional accounts linked to Main Accounts, with functional flags for Banking, Inventory, and UI visibility.",
+    "steps": [
+      "Step 1: Navigate to Modules > Accounts > Add",
+      "Step 2: Select a 'Main Account ID' to link to (e.g., Accounts Payable)",
+      "Step 3: Define 'Currency' and 'Branch'",
+      "Step 4: Toggle functional flags: 'Is Bank?', 'Is Cash?', or 'Display as Dropdown in Invoices'",
+      "Step 5: Save and verify the sub-ledger is active"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Till (Cash Register) Management with Auto-Account Creation. Verifies the creation of physical/digital tills and the system's ability to automatically generate sub-ledger accounts for every currency for that till.",
+    "steps": [
+      "Step 1: Navigate to Teller > Tills > Add",
+      "Step 2: Enter 'Till ID' and 'Name', and assign to a Branch (or Head Office)",
+      "Step 3: Check 'Auto create cash accounts' and Save",
+      "Step 4: Click the 'Create Cash Accounts' button in the toolbar",
+      "Step 5: Navigate to Modules > Accounts and verify a Cash Account exists for every system currency linked to this Till ID"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Till Session Management (Sign-in/Sign-out). Verifies that tellers can secure a till by signing in to begin a shift and signing out to release it.",
+    "steps": [
+      "Step 1: Navigate to Teller > Tills",
+      "Step 2: Locate a specific Till and click the 'Sign In' button (or icon)",
+      "Step 3: Confirm the 'Signed in User' column updates to the current user",
+      "Step 4: Click 'Sign Out' and confirm the till is released"
+    ],
+    "passes": false
+  },
+  {
+    "category": "functional",
     "description": "User can log in with username and password",
     "steps": ["Navigate to login page", "Enter valid credentials", "Click login button", "Verify redirect to dashboard"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "User can log out",
     "steps": ["Log in to the app", "Click logout button", "Verify redirect to login page", "Verify session is cleared"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Invalid login credentials show error message",
     "steps": ["Navigate to login page", "Enter invalid credentials", "Click login button", "Verify error message displays"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Role-based access control restricts unauthorized pages",
     "steps": ["Log in as non-admin user", "Attempt to access admin-only page", "Verify access denied or redirect"],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Two-factor authentication can be enabled",
-    "steps": ["Navigate to security settings", "Enable 2FA", "Verify QR code or setup displayed", "Confirm 2FA is active"],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Dashboard displays summary of daily transactions",
-    "steps": ["Log in to the app", "View dashboard", "Verify transaction summary widgets are visible"],
     "passes": false
   },
   {
@@ -73,24 +304,6 @@
   },
   {
     "category": "functional",
-    "description": "Transaction receipt can be printed",
-    "steps": ["Complete a transaction", "Click print receipt", "Verify print dialog or receipt preview appears"],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Transaction receipt contains required details",
-    "steps": ["Complete a transaction", "View receipt", "Verify receipt shows date, amount, rate, customer info, transaction ID"],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "User can add a new customer",
-    "steps": ["Navigate to customer management", "Click add customer", "Fill in customer details", "Save customer", "Verify customer appears in list"],
-    "passes": false
-  },
-  {
-    "category": "functional",
     "description": "User can edit existing customer information",
     "steps": ["Navigate to customer management", "Select a customer", "Edit customer details", "Save changes", "Verify changes persisted"],
     "passes": false
@@ -103,12 +316,6 @@
   },
   {
     "category": "functional",
-    "description": "Customer KYC documents can be uploaded",
-    "steps": ["Navigate to customer profile", "Click upload document", "Select file", "Verify document uploaded and displayed"],
-    "passes": false
-  },
-  {
-    "category": "functional",
     "description": "Customer profile shows complete transaction history",
     "steps": ["Navigate to customer profile", "View transaction history section", "Verify all customer transactions are listed"],
     "passes": false
@@ -117,12 +324,6 @@
     "category": "functional",
     "description": "Customer can be linked to transaction at POS",
     "steps": ["Navigate to POS", "Search and select customer", "Complete transaction", "Verify transaction linked to customer"],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Sanction list screening runs on customer creation",
-    "steps": ["Add new customer", "Verify OFAC/sanction screening is triggered", "View screening result"],
     "passes": false
   },
   {
@@ -199,12 +400,6 @@
   },
   {
     "category": "functional",
-    "description": "General ledger displays account balances",
-    "steps": ["Navigate to accounting", "View general ledger", "Verify account balances are displayed"],
-    "passes": false
-  },
-  {
-    "category": "functional",
     "description": "Daily reconciliation report can be generated",
     "steps": ["Navigate to accounting", "Generate daily reconciliation", "Verify report shows transactions vs cash balance"],
     "passes": false
@@ -229,32 +424,8 @@
   },
   {
     "category": "functional",
-    "description": "Exchange rates can be manually set",
-    "steps": ["Navigate to rate management", "Set custom rate for currency pair", "Verify rate is applied"],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Exchange rates can be fetched from external API",
-    "steps": ["Navigate to rate management", "Click refresh/fetch rates", "Verify rates updated from API"],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Buy/sell spread can be configured per currency",
-    "steps": ["Navigate to rate management", "Set spread for currency", "Verify buy/sell rates reflect spread"],
-    "passes": false
-  },
-  {
-    "category": "functional",
     "description": "Rate history is tracked and viewable",
     "steps": ["Navigate to rate management", "View rate history", "Verify historical rates displayed"],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Multiple branches can be configured",
-    "steps": ["Navigate to branch settings", "Add new branch", "Verify branch appears in list"],
     "passes": false
   },
   {
@@ -267,18 +438,6 @@
     "category": "functional",
     "description": "Real-time data sync across branches",
     "steps": ["Update data in one branch", "View same data from another branch session", "Verify data is synchronized"],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "User roles can be created and assigned",
-    "steps": ["Navigate to user management", "Create new role", "Assign permissions", "Assign role to user"],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "User accounts can be created",
-    "steps": ["Navigate to user management", "Add new user", "Fill in details", "Verify user can log in"],
     "passes": false
   },
   {
@@ -325,18 +484,6 @@
   },
   {
     "category": "functional",
-    "description": "System settings can be configured",
-    "steps": ["Navigate to settings", "Modify system setting", "Save changes", "Verify setting persisted"],
-    "passes": false
-  },
-  {
-    "category": "functional",
-    "description": "Currency list can be managed",
-    "steps": ["Navigate to currency settings", "Add/remove currency", "Verify currency list updated"],
-    "passes": false
-  },
-  {
-    "category": "functional",
     "description": "Decimal precision is configurable per currency",
     "steps": ["Navigate to currency settings", "Set decimal precision", "Verify transactions use correct precision"],
     "passes": false
@@ -357,19 +504,13 @@
     "category": "style",
     "description": "Login page displays company branding",
     "steps": ["Navigate to login page", "Verify logo and brand colors are displayed"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
     "description": "App has consistent color scheme throughout",
     "steps": ["Navigate through multiple pages", "Verify consistent use of primary/secondary colors"],
-    "passes": false
-  },
-  {
-    "category": "style",
-    "description": "Dashboard layout is organized with clear sections",
-    "steps": ["View dashboard", "Verify widgets are clearly separated and organized"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -381,12 +522,6 @@
     "category": "style",
     "description": "App is responsive on tablet viewport",
     "steps": ["View app on tablet viewport (768px)", "Verify layout adapts appropriately"],
-    "passes": false
-  },
-  {
-    "category": "style",
-    "description": "Navigation menu is clearly visible and accessible",
-    "steps": ["View app", "Verify main navigation is prominent and functional"],
     "passes": false
   },
   {
@@ -459,7 +594,7 @@
     "category": "style",
     "description": "Empty states have helpful messaging",
     "steps": ["View page with no data", "Verify empty state message and guidance displayed"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",

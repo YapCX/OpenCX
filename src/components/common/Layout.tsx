@@ -42,29 +42,29 @@ export function Layout({ children }: LayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile sidebar backdrop */}
+    <div className="min-h-screen bg-dark-950">
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-gray-600 bg-opacity-75 z-20 lg:hidden"
+          className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-20 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={clsx(
-          'fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-30 w-64 bg-dark-900 border-r border-dark-700 transform transition-transform duration-200 ease-in-out lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-dark-700">
           <div className="flex items-center gap-2">
-            <DollarSign className="h-8 w-8 text-primary-600" />
-            <span className="text-xl font-bold text-gray-900">OpenCX</span>
+            <div className="h-9 w-9 bg-primary-600/20 rounded-lg flex items-center justify-center">
+              <DollarSign className="h-5 w-5 text-primary-500" />
+            </div>
+            <span className="text-xl font-bold text-dark-50">OpenCX</span>
           </div>
           <button
-            className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500"
+            className="lg:hidden p-2 rounded-md text-dark-400 hover:text-dark-300"
             onClick={() => setSidebarOpen(false)}
           >
             <X className="h-6 w-6" />
@@ -81,8 +81,8 @@ export function Layout({ children }: LayoutProps) {
                 className={clsx(
                   'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                   isActive
-                    ? 'bg-primary-50 text-primary-700'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-primary-600/20 text-primary-400'
+                    : 'text-dark-300 hover:bg-dark-800 hover:text-dark-100'
                 )}
                 onClick={() => setSidebarOpen(false)}
               >
@@ -93,10 +93,10 @@ export function Layout({ children }: LayoutProps) {
           })}
         </nav>
 
-        <div className="border-t border-gray-200 p-4">
+        <div className="border-t border-dark-700 p-4">
           <button
             onClick={handleSignOut}
-            className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-dark-300 hover:bg-dark-800 hover:text-dark-100 transition-colors"
           >
             <LogOut className="h-5 w-5" />
             Sign Out
@@ -104,23 +104,22 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </aside>
 
-      {/* Main content */}
       <div className="lg:pl-64">
-        {/* Top bar */}
-        <header className="sticky top-0 z-10 flex items-center h-16 px-4 bg-white border-b border-gray-200 lg:hidden">
+        <header className="sticky top-0 z-10 flex items-center h-16 px-4 bg-dark-900/95 backdrop-blur border-b border-dark-700 lg:hidden">
           <button
-            className="p-2 rounded-md text-gray-400 hover:text-gray-500"
+            className="p-2 rounded-md text-dark-400 hover:text-dark-300"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" />
           </button>
           <div className="flex items-center gap-2 ml-4">
-            <DollarSign className="h-6 w-6 text-primary-600" />
-            <span className="text-lg font-bold text-gray-900">OpenCX</span>
+            <div className="h-8 w-8 bg-primary-600/20 rounded-lg flex items-center justify-center">
+              <DollarSign className="h-5 w-5 text-primary-500" />
+            </div>
+            <span className="text-lg font-bold text-dark-50">OpenCX</span>
           </div>
         </header>
 
-        {/* Page content */}
         <main className="p-6">{children}</main>
       </div>
     </div>

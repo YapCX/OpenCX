@@ -12,11 +12,12 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSignUp, setIsSignUp] = useState(false)
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex items-center justify-center min-h-screen bg-dark-950">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
       </div>
     )
   }
@@ -31,33 +32,37 @@ export function LoginPage() {
     setIsSubmitting(true)
 
     try {
-      await signIn('password', { email, password, flow: 'signIn' })
+      await signIn('password', { email, password, flow: isSignUp ? 'signUp' : 'signIn' })
     } catch (err) {
-      setError('Invalid email or password')
+      setError(isSignUp ? 'Could not create account. Try a different email.' : 'Invalid email or password')
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-dark-950 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center">
-            <DollarSign className="h-16 w-16 text-primary-600" />
+            <div className="h-20 w-20 bg-primary-600/20 rounded-2xl flex items-center justify-center">
+              <DollarSign className="h-12 w-12 text-primary-500" />
+            </div>
           </div>
-          <h1 className="mt-4 text-3xl font-bold text-gray-900">OpenCX</h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <h1 className="mt-6 text-4xl font-bold text-dark-50">OpenCX</h1>
+          <p className="mt-2 text-sm text-dark-400">
             Currency Exchange Management System
           </p>
         </div>
 
         <div className="card">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Sign in to your account</h2>
+          <h2 className="text-xl font-semibold text-dark-100 mb-6">
+            {isSignUp ? 'Create your account' : 'Sign in to your account'}
+          </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <div className="bg-red-900/30 border border-red-700 text-red-400 px-4 py-3 rounded-lg text-sm">
                 {error}
               </div>
             )}
@@ -93,12 +98,12 @@ export function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="input pr-10"
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-500"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 hover:text-dark-300"
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -114,12 +119,29 @@ export function LoginPage() {
               disabled={isSubmitting}
               className="btn-primary w-full"
             >
-              {isSubmitting ? 'Signing in...' : 'Sign in'}
+              {isSubmitting
+                ? (isSignUp ? 'Creating account...' : 'Signing in...')
+                : (isSignUp ? 'Create account' : 'Sign in')}
             </button>
           </form>
+
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp)
+                setError('')
+              }}
+              className="text-sm text-primary-400 hover:text-primary-300"
+            >
+              {isSignUp
+                ? 'Already have an account? Sign in'
+                : "Don't have an account? Sign up"}
+            </button>
+          </div>
         </div>
 
-        <p className="text-center text-sm text-gray-500">
+        <p className="text-center text-sm text-dark-500">
           OpenCX - Open Source Currency Exchange Management
         </p>
       </div>
