@@ -336,3 +336,58 @@ Priority features for next session:
 - Customer documents stored via Convex storage with generateUploadUrl workflow
 - Bank info supports international formats (SWIFT, IBAN) and domestic (routing number)
 - Compliance alerts auto-created when sanction match detected
+
+---
+
+## Session 8 - Dec 3, 2025
+
+### Completed This Session
+1. **Implemented Tiered Rate Configuration (Currency Aliases)**
+   - Updated convex/currencies.ts:
+     - Added `alias` parameter to `applyLiveRate` action
+     - When alias is provided, rates are stored with alias as targetCurrency key
+   - Updated CurrenciesPage.tsx:
+     - Updated `handleFetchLiveRate` to pass alias when fetching rates
+     - Updated `getRateForCurrency` to lookup rates by alias when applicable
+   - Verified functionality:
+     - Created EUR-VIP alias with 1% markup/markdown (vs standard 0%)
+     - EUR-VIP shows different rates than standard EUR
+     - Standard EUR: Buy 0.8435, Sell 0.8780
+     - EUR-VIP: Buy 0.8521, Sell 0.8694 (better rates for VIP customers)
+
+2. **Implemented Digital Rate Board Display**
+   - Created src/pages/RateBoardPage.tsx:
+     - Public-facing rate board at /rate-board
+     - Professional dark theme with gradient background
+     - Standard Rates section for regular currencies
+     - VIP Rates section for aliased currencies (purple styling)
+     - Currency flags with code and name
+     - We Buy / We Sell columns with colored formatting
+     - Last updated timestamp with auto-refresh
+   - Updated convex/currencies.ts:
+     - Added `getActivePublic` query (no auth required)
+   - Updated convex/exchangeRates.ts:
+     - Added `getCurrentRatesPublic` query (no auth required)
+   - Updated src/App.tsx:
+     - Added `/rate-board` as public route
+   - Updated src/pages/SettingsPage.tsx:
+     - Added Rate Board tab with URL management
+     - Copy URL and Open URL buttons
+     - Usage tips and features documentation
+
+### Tests Marked as Passing (2 new, 21 total)
+- "Tiered Rate Configuration (Currency Aliases)" - Created EUR-VIP with better margins, verified distinct rates
+- "Digital Rate Board Display" - Public rate board with Standard and VIP sections verified
+
+### Current Status
+- **21/82 tests passing**
+- Currency tiered rates fully functional
+- Public rate board page accessible without authentication
+- Rate Board settings added to admin panel
+
+### Technical Notes
+- Aliased currencies store rates using alias as targetCurrency key in exchangeRates table
+- Public queries (getActivePublic, getCurrentRatesPublic) allow unauthenticated access for rate board
+- VIP rates displayed in separate section with purple styling
+- Rate board auto-refreshes timestamp every 60 seconds
+- Rate Board URL can be copied/opened from Settings > Rate Board tab
