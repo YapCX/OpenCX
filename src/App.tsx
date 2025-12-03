@@ -7,6 +7,7 @@ import { POSPage } from './pages/POSPage'
 import { CustomersPage } from './pages/CustomersPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { RateBoardPage } from './pages/RateBoardPage'
+import { ModulesPage } from './pages/ModulesPage'
 import { Layout } from './components/common/Layout'
 import { LoadingSpinner } from './components/common/LoadingSpinner'
 
@@ -41,6 +42,7 @@ function App() {
                   <Route path="/pos" element={<POSPage />} />
                   <Route path="/currencies" element={<CurrenciesPage />} />
                   <Route path="/customers" element={<CustomersPage />} />
+                  <Route path="/modules" element={<ModulesPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                 </Routes>
               </Layout>

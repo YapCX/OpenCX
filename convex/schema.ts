@@ -226,17 +226,55 @@ export default defineSchema({
     .index("by_entity", ["entityType", "entityId"])
     .index("by_date", ["createdAt"]),
 
-  // General ledger accounts
-  ledgerAccounts: defineTable({
-    accountCode: v.string(),
-    accountName: v.string(),
-    accountType: v.string(), // asset, liability, equity, revenue, expense
-    parentAccountId: v.optional(v.id("ledgerAccounts")),
+  // Main accounts (high-level parent accounts for Chart of Accounts)
+  mainAccounts: defineTable({
+    accountCode: v.string(), // e.g., 1000, 2000, 3000
+    accountName: v.string(), // e.g., Assets, Liabilities, Equity
+    accountType: v.string(), // assets, liabilities, equity, revenue, expenses
+    description: v.optional(v.string()),
     isActive: v.boolean(),
     createdAt: v.number(),
+    updatedAt: v.number(),
   })
     .index("by_code", ["accountCode"])
     .index("by_type", ["accountType"]),
+
+  // Sub-ledger accounts (linked to Main Accounts)
+  ledgerAccounts: defineTable({
+    accountCode: v.string(),
+    accountName: v.string(),
+    mainAccountId: v.id("mainAccounts"), // Link to parent main account
+    currency: v.string(), // Currency for this account
+    branchId: v.optional(v.id("branches")), // Branch-specific account
+    isBank: v.optional(v.boolean()), // Is this a bank account?
+    isCash: v.optional(v.boolean()), // Is this a cash account?
+    displayInInvoice: v.optional(v.boolean()), // Display as dropdown in invoices
+    tillId: v.optional(v.id("tills")), // Link to till if this is a till cash account
+    description: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_code", ["accountCode"])
+    .index("by_main_account", ["mainAccountId"])
+    .index("by_branch", ["branchId"])
+    .index("by_till", ["tillId"]),
+
+  // Tills (Cash Registers)
+  tills: defineTable({
+    tillId: v.string(), // User-defined ID (e.g., TILL001)
+    name: v.string(),
+    branchId: v.id("branches"),
+    autoCreateCashAccounts: v.boolean(), // Auto-create cash accounts for all currencies
+    signedInUserId: v.optional(v.id("users")), // Currently signed-in user
+    signedInAt: v.optional(v.number()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_tillId", ["tillId"])
+    .index("by_branch", ["branchId"])
+    .index("by_signed_in_user", ["signedInUserId"]),
 
   // Journal entries
   journalEntries: defineTable({

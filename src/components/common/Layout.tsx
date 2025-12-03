@@ -21,6 +21,7 @@ import {
   Cog,
   UserCog,
   List,
+  Layers,
 } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -37,6 +38,7 @@ const mainNavigation = [
   { name: 'Treasury', href: '/treasury', icon: Vault },
   { name: 'Accounting', href: '/accounting', icon: BookOpen },
   { name: 'Reports', href: '/reports', icon: FileText },
+  { name: 'Modules', href: '/modules', icon: Layers },
 ]
 
 const adminSubItems = [

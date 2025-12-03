@@ -205,7 +205,7 @@
       "Step 3: Select the 'Main Account Type' (e.g., Expenses) and save",
       "Step 4: Verify the account appears in the Main Accounts grid"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -217,7 +217,7 @@
       "Step 4: Toggle functional flags: 'Is Bank?', 'Is Cash?', or 'Display as Dropdown in Invoices'",
       "Step 5: Save and verify the sub-ledger is active"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -229,7 +229,7 @@
       "Step 4: Click the 'Create Cash Accounts' button in the toolbar",
       "Step 5: Navigate to Modules > Accounts and verify a Cash Account exists for every system currency linked to this Till ID"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -240,7 +240,7 @@
       "Step 3: Confirm the 'Signed in User' column updates to the current user",
       "Step 4: Click 'Sign Out' and confirm the till is released"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

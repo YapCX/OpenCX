@@ -451,3 +451,77 @@ Priority features for next session:
 - Sanction whitelisting section conditionally rendered based on sanctionScreeningStatus
 - Compliance alerts auto-created/resolved when customers flagged/whitelisted
 - Form state managed separately for KYC/AML and whitelist sections
+
+---
+
+## Session 10 - Dec 3, 2025
+
+### Completed This Session
+1. **Implemented General Ledger Main Account Setup (Modules > Main Accounts)**
+   - Updated convex/schema.ts with mainAccounts and tills tables
+   - Created convex/mainAccounts.ts backend with:
+     - CRUD operations (list, listActive, listByType, get, create, update, remove)
+     - seedDefaults mutation to create standard accounts (Assets, Liabilities, Equity, Revenue, COGS, Operating Expenses)
+   - Main Accounts UI features:
+     - Table showing Code, Name, Type (color-coded), Description, Status, Actions
+     - Add/Edit modal with account code, name, type dropdown, description
+     - "Load Defaults" button to seed standard Chart of Accounts structure
+     - Color-coded account type badges (green=assets, red=liabilities, blue=equity, purple=revenue, yellow=expenses)
+
+2. **Implemented Sub-Ledger Account Configuration (Modules > Accounts)**
+   - Created convex/accounts.ts backend with:
+     - CRUD operations with linked main account, currency, branch
+     - Support for functional flags (isBank, isCash, displayInInvoice)
+     - Till linkage for cash accounts
+   - Sub-Ledger Accounts UI features:
+     - Table showing Code, Name, Main Account, Currency, Branch, Flags, Status, Actions
+     - Add/Edit modal with all required fields
+     - Checkboxes for "Is Bank Account", "Is Cash Account", "Display in Invoice Dropdown"
+     - Dropdown selectors for Main Account, Currency, Branch, Till
+
+3. **Implemented Till (Cash Register) Management (Modules > Tills)**
+   - Created convex/tills.ts backend with:
+     - CRUD operations with branch assignment
+     - Sign In/Sign Out mutations for session management
+     - createCashAccounts mutation to auto-generate cash accounts for all active currencies
+   - Tills UI features:
+     - Table showing Till ID, Name, Branch, Signed In User, Status, Actions
+     - Add/Edit modal with Till ID, Name, Branch selection
+     - "Auto create cash accounts for all currencies" checkbox
+     - Sign In/Sign Out buttons with user email display
+     - "Create Cash Accounts" button (banknote icon) to generate accounts
+
+4. **Created ModulesPage.tsx with Three Tabs**
+   - Main Accounts tab
+   - Accounts (Sub-Ledger) tab
+   - Tills tab
+   - URL query parameter support for tab navigation (/modules?tab=tills)
+
+5. **Updated Navigation**
+   - Added "Modules" link to main sidebar navigation
+   - Added route in App.tsx
+
+### Tests Marked as Passing (4 new, 27 total)
+- "General Ledger Main Account Setup" - Full main account CRUD with seed defaults verified
+- "Sub-Ledger Account Configuration" - Account creation with flags and main account linking verified
+- "Till (Cash Register) Management with Auto-Account Creation" - Till creation and cash account auto-generation verified
+- "Till Session Management (Sign-in/Sign-out)" - Sign in shows user email, Sign Out button appears
+
+### Current Status
+- **27/82 tests passing** (up from 23)
+- Modules page fully functional with Chart of Accounts and Till management
+- Cash accounts auto-generated for 8 currencies (USD, EUR, GBP, CAD, JPY, CHF, AUD, MXN) per till
+
+### What's Next
+Priority features for next session:
+1. POS functionality improvements
+2. Role-based access control
+3. Transaction search with filters
+4. Compliance alerts dashboard
+
+### Technical Notes
+- Main accounts seeded with standard Chart of Accounts structure (1000-6000)
+- Sub-ledger accounts linked to main accounts via mainAccountId foreign key
+- Tills track signed-in user with signedInUserId and signedInAt
+- createCashAccounts creates accounts with pattern: TILL001-USD, TILL001-EUR, etc.
+- Cash accounts auto-linked to Assets main account with isCash and displayInInvoice flags
