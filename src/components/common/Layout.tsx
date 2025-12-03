@@ -24,21 +24,29 @@ import {
   Layers,
 } from 'lucide-react'
 import clsx from 'clsx'
+import { useCurrentUser } from '../../hooks/useCurrentUser'
 
 interface LayoutProps {
   children: ReactNode
 }
 
-const mainNavigation = [
+type NavItem = {
+  name: string
+  href: string
+  icon: typeof LayoutDashboard
+  roles?: ('admin' | 'manager' | 'teller' | 'compliance')[]
+}
+
+const mainNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'POS', href: '/pos', icon: Receipt },
   { name: 'Currencies', href: '/currencies', icon: Coins },
   { name: 'Customers', href: '/customers', icon: Users },
-  { name: 'Compliance', href: '/compliance', icon: Shield },
+  { name: 'Compliance', href: '/compliance', icon: Shield, roles: ['admin', 'compliance'] },
   { name: 'Treasury', href: '/treasury', icon: Vault },
   { name: 'Accounting', href: '/accounting', icon: BookOpen },
   { name: 'Reports', href: '/reports', icon: FileText },
-  { name: 'Modules', href: '/modules', icon: Layers },
+  { name: 'Modules', href: '/modules', icon: Layers, roles: ['admin', 'manager'] },
 ]
 
 const adminSubItems = [
@@ -55,12 +63,19 @@ export function Layout({ children }: LayoutProps) {
   const { signOut } = useAuthActions()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [adminExpanded, setAdminExpanded] = useState(location.pathname.startsWith('/settings'))
+  const { user, isAdmin } = useCurrentUser()
 
   const handleSignOut = () => {
     void signOut()
   }
 
   const isAdminActive = location.pathname.startsWith('/settings')
+
+  const filteredNavigation = mainNavigation.filter((item) => {
+    if (!item.roles) return true
+    if (!user) return false
+    return item.roles.includes(user.role)
+  })
 
   return (
     <div className="min-h-screen bg-dark-950">
@@ -93,7 +108,7 @@ export function Layout({ children }: LayoutProps) {
         </div>
 
         <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-          {mainNavigation.map((item) => {
+          {filteredNavigation.map((item) => {
             const isActive = location.pathname === item.href ||
               (item.href !== '/dashboard' && location.pathname.startsWith(item.href))
             return (
@@ -114,52 +129,54 @@ export function Layout({ children }: LayoutProps) {
             )
           })}
 
-          <div className="pt-2">
-            <button
-              onClick={() => setAdminExpanded(!adminExpanded)}
-              className={clsx(
-                'flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                isAdminActive
-                  ? 'bg-primary-600/20 text-primary-400'
-                  : 'text-dark-300 hover:bg-dark-800 hover:text-dark-100'
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <Settings className="h-5 w-5" />
-                Admin
-              </div>
-              <ChevronDown className={clsx(
-                'h-4 w-4 transition-transform',
-                adminExpanded && 'rotate-180'
-              )} />
-            </button>
+          {isAdmin && (
+            <div className="pt-2">
+              <button
+                onClick={() => setAdminExpanded(!adminExpanded)}
+                className={clsx(
+                  'flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                  isAdminActive
+                    ? 'bg-primary-600/20 text-primary-400'
+                    : 'text-dark-300 hover:bg-dark-800 hover:text-dark-100'
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <Settings className="h-5 w-5" />
+                  Admin
+                </div>
+                <ChevronDown className={clsx(
+                  'h-4 w-4 transition-transform',
+                  adminExpanded && 'rotate-180'
+                )} />
+              </button>
 
-            {adminExpanded && (
-              <div className="mt-1 ml-4 pl-4 border-l border-dark-700 space-y-1">
-                {adminSubItems.map((item) => {
-                  const isActive = location.pathname === '/settings' &&
-                    (location.search.includes(item.href.split('?tab=')[1]) ||
-                     (!location.search && item.href.includes('branches')))
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className={clsx(
-                        'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                        isActive
-                          ? 'text-primary-400'
-                          : 'text-dark-400 hover:bg-dark-800 hover:text-dark-200'
-                      )}
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {item.name}
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+              {adminExpanded && (
+                <div className="mt-1 ml-4 pl-4 border-l border-dark-700 space-y-1">
+                  {adminSubItems.map((item) => {
+                    const isActive = location.pathname === '/settings' &&
+                      (location.search.includes(item.href.split('?tab=')[1]) ||
+                       (!location.search && item.href.includes('branches')))
+                    return (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        className={clsx(
+                          'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                          isActive
+                            ? 'text-primary-400'
+                            : 'text-dark-400 hover:bg-dark-800 hover:text-dark-200'
+                        )}
+                        onClick={() => setSidebarOpen(false)}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {item.name}
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </nav>
 
         <div className="border-t border-dark-700 p-4">

@@ -11,6 +11,8 @@ import { ModulesPage } from './pages/ModulesPage'
 import { CompliancePage } from './pages/CompliancePage'
 import { Layout } from './components/common/Layout'
 import { LoadingSpinner } from './components/common/LoadingSpinner'
+import { RoleProtectedRoute } from './components/common/RoleProtectedRoute'
+import { UserProfileInitializer } from './components/common/UserProfileInitializer'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useConvexAuth()
@@ -36,18 +38,41 @@ function App() {
           path="/*"
           element={
             <ProtectedRoute>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/pos" element={<POSPage />} />
-                  <Route path="/currencies" element={<CurrenciesPage />} />
-                  <Route path="/customers" element={<CustomersPage />} />
-                  <Route path="/compliance" element={<CompliancePage />} />
-                  <Route path="/modules" element={<ModulesPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                </Routes>
-              </Layout>
+              <UserProfileInitializer>
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/pos" element={<POSPage />} />
+                    <Route path="/currencies" element={<CurrenciesPage />} />
+                    <Route path="/customers" element={<CustomersPage />} />
+                    <Route
+                      path="/compliance"
+                      element={
+                        <RoleProtectedRoute allowedRoles={["admin", "compliance"]}>
+                          <CompliancePage />
+                        </RoleProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/modules"
+                      element={
+                        <RoleProtectedRoute allowedRoles={["admin", "manager"]}>
+                          <ModulesPage />
+                        </RoleProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/settings"
+                      element={
+                        <RoleProtectedRoute allowedRoles={["admin"]}>
+                          <SettingsPage />
+                        </RoleProtectedRoute>
+                      }
+                    />
+                  </Routes>
+                </Layout>
+              </UserProfileInitializer>
             </ProtectedRoute>
           }
         />

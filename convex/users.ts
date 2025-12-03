@@ -243,12 +243,29 @@ export const seedCurrentUser = mutation({
       return { created: false, message: "Profile already exists", profileId: existingProfile._id }
     }
 
+    const currentUser = await ctx.db.get(userId)
+    if (!currentUser?.email) {
+      throw new Error("User email not found")
+    }
+
+    const allProfiles = await ctx.db.query("userProfiles").collect()
+    for (const profile of allProfiles) {
+      const user = await ctx.db.get(profile.userId)
+      if (user?.email === currentUser.email) {
+        await ctx.db.patch(profile._id, { userId })
+        return { created: false, message: "Profile linked to current user", profileId: profile._id }
+      }
+    }
+
+    const existingProfiles = await ctx.db.query("userProfiles").collect()
+    const isFirstUser = existingProfiles.length === 0
+
     const now = Date.now()
     const profileId = await ctx.db.insert("userProfiles", {
       userId,
       firstName: args.firstName,
       lastName: args.lastName,
-      role: "admin",
+      role: isFirstUser ? "admin" : "teller",
       isActive: true,
       createdAt: now,
       updatedAt: now,

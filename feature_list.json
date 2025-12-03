@@ -264,7 +264,7 @@
     "category": "functional",
     "description": "Role-based access control restricts unauthorized pages",
     "steps": ["Log in as non-admin user", "Attempt to access admin-only page", "Verify access denied or redirect"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
