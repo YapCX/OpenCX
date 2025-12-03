@@ -217,3 +217,57 @@ Priority features for next session:
 - Types are distinguished with color-coded badges (green=banknote, yellow=coin)
 - seedDefaults creates denominations specific to each currency (e.g., CAD has $100, $50, $20, $10, $5 bills and $2, $1, $0.25, $0.10, $0.05 coins)
 - Values are sorted in descending order (highest first)
+
+---
+
+## Session 6 - Dec 3, 2025
+
+### Completed This Session
+1. **Implemented Currency Inventory and Rate Setup (Currencies > Currency Grid)**
+   - Updated schema.ts with new currency fields:
+     - `alias` (optional) - For tiered rates (e.g., EUR-VIP)
+     - `markupPercent` (optional) - Markup % for sell rate calculation
+     - `markdownPercent` (optional) - Markdown % for buy rate calculation
+     - `branchIds` (optional) - Branches where currency is available
+     - `flagEmoji` (optional) - Country flag emoji for display
+   - Updated convex/currencies.ts backend:
+     - Added new fields to create/update mutations
+     - Added `fetchLiveRate` action to fetch live rates from open.er-api.com
+     - Added `applyLiveRate` action to fetch and automatically save rates with markup/markdown
+     - Created `LiveRateResult` interface and `fetchLiveRateInternal` helper for type safety
+   - Completely rewrote CurrenciesPage.tsx with:
+     - Currency Grid showing flags, codes, names, alias, markup/markdown %, buy/sell rates, branches, status
+     - Add/Edit Currency modal with all new fields
+     - Branch assignment checkboxes
+     - Get Live Rate button (Globe icon) per currency - fetches from open.er-api.com
+     - Success/error notification toasts
+     - Active/Inactive toggle per currency
+
+### Verified Functionality
+- ✅ Added PLN (Polish Zloty) with 2% markup and 2% markdown
+- ✅ Clicked "Get Live Rate" for PLN - successfully fetched rates from open.er-api.com
+- ✅ Rates calculated with markup/markdown: Buy 3.5717, Sell 3.7175
+- ✅ All currencies display with country flag emojis
+- ✅ Live rates fetched for EUR, GBP, CAD, JPY, CHF, AUD, MXN
+
+### Tests Marked as Passing (1 new, 16 total)
+- "Currency Inventory and Rate Setup" - Full currency management with live rate fetching verified
+
+### Current Status
+- **16/82 tests passing**
+- Currency Grid fully functional with live rate API integration
+- Markup/Markdown percentages properly applied to calculate buy/sell spreads
+
+### What's Next
+Priority features for next session:
+1. Tiered Rate Configuration (Currency Aliases) - add EUR-VIP example
+2. POS page improvements
+3. Dashboard charts implementation
+4. Customer management (KYC/AML)
+
+### Technical Notes
+- Live rates fetched from open.er-api.com (free, no API key required)
+- Buy rate = midRate * (1 - markdownPercent/100)
+- Sell rate = midRate * (1 + markupPercent/100)
+- Rates stored in exchangeRates table via applyLiveRate action
+- Currency flags mapped via CURRENCY_FLAGS constant (50+ currencies supported)

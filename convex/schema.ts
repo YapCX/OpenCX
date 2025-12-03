@@ -82,11 +82,17 @@ export default defineSchema({
     name: v.string(),
     symbol: v.string(),
     decimalPlaces: v.number(),
+    alias: v.optional(v.string()), // Currency alias for tiered rates (e.g., EUR-VIP)
+    markupPercent: v.optional(v.number()), // Markup % for sell rate calculation
+    markdownPercent: v.optional(v.number()), // Markdown % for buy rate calculation
+    branchIds: v.optional(v.array(v.id("branches"))), // Branches where this currency is available
+    flagEmoji: v.optional(v.string()), // Country flag emoji for display
     isActive: v.boolean(),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_code", ["code"]),
+    .index("by_code", ["code"])
+    .index("by_alias", ["alias"]),
 
   // Exchange rates
   exchangeRates: defineTable({

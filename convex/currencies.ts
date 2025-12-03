@@ -1,6 +1,7 @@
 import { v } from "convex/values"
-import { mutation, query } from "./_generated/server"
+import { action, mutation, query } from "./_generated/server"
 import { getAuthUserId } from "@convex-dev/auth/server"
+import { api } from "./_generated/api"
 
 export const list = query({
   args: {},
@@ -47,6 +48,11 @@ export const create = mutation({
     name: v.string(),
     symbol: v.string(),
     decimalPlaces: v.number(),
+    alias: v.optional(v.string()),
+    markupPercent: v.optional(v.number()),
+    markdownPercent: v.optional(v.number()),
+    branchIds: v.optional(v.array(v.id("branches"))),
+    flagEmoji: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx)
@@ -57,8 +63,18 @@ export const create = mutation({
       .withIndex("by_code", (q) => q.eq("code", args.code))
       .first()
 
-    if (existing) {
+    if (existing && !args.alias) {
       throw new Error(`Currency ${args.code} already exists`)
+    }
+
+    if (args.alias) {
+      const existingAlias = await ctx.db
+        .query("currencies")
+        .withIndex("by_alias", (q) => q.eq("alias", args.alias))
+        .first()
+      if (existingAlias) {
+        throw new Error(`Currency alias ${args.alias} already exists`)
+      }
     }
 
     const now = Date.now()
@@ -67,6 +83,11 @@ export const create = mutation({
       name: args.name,
       symbol: args.symbol,
       decimalPlaces: args.decimalPlaces,
+      alias: args.alias,
+      markupPercent: args.markupPercent,
+      markdownPercent: args.markdownPercent,
+      branchIds: args.branchIds,
+      flagEmoji: args.flagEmoji,
       isActive: true,
       createdAt: now,
       updatedAt: now,
@@ -80,6 +101,11 @@ export const update = mutation({
     name: v.optional(v.string()),
     symbol: v.optional(v.string()),
     decimalPlaces: v.optional(v.number()),
+    alias: v.optional(v.string()),
+    markupPercent: v.optional(v.number()),
+    markdownPercent: v.optional(v.number()),
+    branchIds: v.optional(v.array(v.id("branches"))),
+    flagEmoji: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -157,5 +183,92 @@ export const seedDefaultCurrencies = mutation({
     }
 
     return { seeded: true, message: `Seeded ${defaultCurrencies.length} currencies` }
+  },
+})
+
+interface LiveRateResult {
+  baseCurrency: string
+  targetCurrency: string
+  midRate: number
+  buyRate: number
+  sellRate: number
+  source: string
+  fetchedAt: number
+}
+
+async function fetchLiveRateInternal(
+  baseCurrency: string,
+  targetCurrency: string,
+  markupPercent: number,
+  markdownPercent: number
+): Promise<LiveRateResult> {
+  const response = await fetch(
+    `https://open.er-api.com/v6/latest/${baseCurrency}`
+  )
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch live exchange rate")
+  }
+
+  const data = await response.json()
+
+  if (data.result !== "success") {
+    throw new Error("Exchange rate API returned an error")
+  }
+
+  const midRate = data.rates?.[targetCurrency]
+
+  if (!midRate) {
+    throw new Error(`Rate not available for ${targetCurrency}`)
+  }
+
+  const buyRate = midRate * (1 - markdownPercent / 100)
+  const sellRate = midRate * (1 + markupPercent / 100)
+
+  return {
+    baseCurrency,
+    targetCurrency,
+    midRate,
+    buyRate,
+    sellRate,
+    source: "open.er-api.com",
+    fetchedAt: Date.now(),
+  }
+}
+
+export const fetchLiveRate = action({
+  args: {
+    baseCurrency: v.string(),
+    targetCurrency: v.string(),
+    markupPercent: v.optional(v.number()),
+    markdownPercent: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<LiveRateResult> => {
+    const { baseCurrency, targetCurrency, markupPercent = 0, markdownPercent = 0 } = args
+    return fetchLiveRateInternal(baseCurrency, targetCurrency, markupPercent, markdownPercent)
+  },
+})
+
+export const applyLiveRate = action({
+  args: {
+    baseCurrency: v.string(),
+    targetCurrency: v.string(),
+    markupPercent: v.optional(v.number()),
+    markdownPercent: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<LiveRateResult> => {
+    const { baseCurrency, targetCurrency, markupPercent = 0, markdownPercent = 0 } = args
+
+    const liveRate = await fetchLiveRateInternal(baseCurrency, targetCurrency, markupPercent, markdownPercent)
+
+    await ctx.runMutation(api.exchangeRates.setRate, {
+      baseCurrency,
+      targetCurrency,
+      buyRate: liveRate.buyRate,
+      sellRate: liveRate.sellRate,
+      source: "api",
+    })
+
+    return liveRate
   },
 })
