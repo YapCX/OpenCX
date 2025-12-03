@@ -9,6 +9,7 @@ import { SettingsPage } from './pages/SettingsPage'
 import { RateBoardPage } from './pages/RateBoardPage'
 import { ModulesPage } from './pages/ModulesPage'
 import { CompliancePage } from './pages/CompliancePage'
+import { TreasuryPage } from './pages/TreasuryPage'
 import { Layout } from './components/common/Layout'
 import { LoadingSpinner } from './components/common/LoadingSpinner'
 import { RoleProtectedRoute } from './components/common/RoleProtectedRoute'
@@ -46,6 +47,7 @@ function App() {
                     <Route path="/pos" element={<POSPage />} />
                     <Route path="/currencies" element={<CurrenciesPage />} />
                     <Route path="/customers" element={<CustomersPage />} />
+                    <Route path="/treasury" element={<TreasuryPage />} />
                     <Route
                       path="/compliance"
                       element={

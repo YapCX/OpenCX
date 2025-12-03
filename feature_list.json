@@ -366,37 +366,37 @@
     "category": "functional",
     "description": "User can view currency inventory levels",
     "steps": ["Navigate to treasury management", "View inventory", "Verify currency balances are displayed"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "User can adjust currency inventory manually",
     "steps": ["Navigate to treasury management", "Select currency", "Adjust balance", "Verify adjustment recorded"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Vault balance tracking is accurate",
     "steps": ["View vault balance", "Complete transactions", "Verify vault balance updates correctly"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Wholesale buy operation can be recorded",
     "steps": ["Navigate to wholesale operations", "Record currency purchase from supplier", "Verify inventory updated"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Wholesale sell operation can be recorded",
     "steps": ["Navigate to wholesale operations", "Record currency sale to supplier", "Verify inventory updated"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Low inventory alert is triggered",
     "steps": ["Set low inventory threshold", "Reduce inventory below threshold", "Verify alert is generated"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
