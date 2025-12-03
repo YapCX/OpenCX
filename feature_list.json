@@ -126,7 +126,7 @@
       "Step 4: Click 'View Bank Notes' to visualize the bill",
       "Step 5: Save and verify the denomination is added to the list"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

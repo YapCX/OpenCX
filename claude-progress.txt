@@ -175,3 +175,45 @@ Priority features for next session:
 - Display order controls sorting in dropdowns
 - isActive flag allows disabling options without deleting
 - seedDefaults creates 5 categories with common values
+
+---
+
+## Session 5 - Dec 3, 2025
+
+### Completed This Session
+1. **Implemented Currency Denomination Configuration (Admin > Denominations)**
+   - Added `denominations` table to schema with currencyCode, value, type, description, isActive fields
+   - Created convex/denominations.ts with full CRUD backend functions:
+     - list, listByCurrency, listActiveByCurrency queries
+     - create, update, remove mutations
+     - seedDefaults mutation with default denominations for USD, EUR, GBP, CAD, JPY, CHF, AUD, MXN
+   - Implemented DenominationsSection UI with:
+     - Filter by Currency dropdown
+     - Table showing Currency, Value, Type (Banknote/Coin), Description, Status, Actions
+     - Add Denomination modal with currency selection, value, type, and description fields
+     - Edit and Delete functionality
+     - Toggle Active/Inactive status
+     - "Load Default Denominations" button to seed banknotes and coins per currency
+   - Added Denominations tab to Settings page
+   - Added Denominations item to Admin sidebar menu
+
+### Tests Marked as Passing (1 new, 15 total)
+- "Currency Denomination Configuration" - Full denomination management verified with CAD example
+
+### Current Status
+- **15/82 tests passing**
+- Admin section now includes Denominations management
+- All standard banknotes and coins can be tracked for currency inventory
+
+### What's Next
+Priority features for next session:
+1. Currency Inventory and Rate Setup with markup/markdown
+2. POS page improvements
+3. Dashboard charts implementation
+4. Customer management (KYC/AML)
+
+### Technical Notes
+- Denominations are filtered by currency code in the UI
+- Types are distinguished with color-coded badges (green=banknote, yellow=coin)
+- seedDefaults creates denominations specific to each currency (e.g., CAD has $100, $50, $20, $10, $5 bills and $2, $1, $0.25, $0.10, $0.05 coins)
+- Values are sorted in descending order (highest first)

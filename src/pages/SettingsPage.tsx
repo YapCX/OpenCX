@@ -17,9 +17,11 @@ import {
   Save,
   Upload,
   List,
+  Coins,
+  RefreshCw,
 } from 'lucide-react'
 
-type SettingsTab = 'preferences' | 'company' | 'branches' | 'users' | 'lookups'
+type SettingsTab = 'preferences' | 'company' | 'branches' | 'users' | 'lookups' | 'denominations'
 
 interface Branch {
   _id: Id<"branches">
@@ -54,6 +56,7 @@ export function SettingsPage() {
     { id: 'branches' as const, name: 'Branches', icon: GitBranch },
     { id: 'users' as const, name: 'Users', icon: Users },
     { id: 'lookups' as const, name: 'Lookups', icon: List },
+    { id: 'denominations' as const, name: 'Denominations', icon: Coins },
   ]
 
   return (
@@ -88,6 +91,7 @@ export function SettingsPage() {
         {activeTab === 'branches' && <BranchesSection />}
         {activeTab === 'users' && <UsersSection />}
         {activeTab === 'lookups' && <LookupsSection />}
+        {activeTab === 'denominations' && <DenominationsSection />}
       </div>
     </div>
   )
@@ -1525,6 +1529,409 @@ function LookupsSection() {
               <h3 className="text-lg font-semibold text-dark-50 mb-2">Delete Lookup?</h3>
               <p className="text-dark-400 text-sm">
                 This action cannot be undone. This lookup value will be permanently removed.
+              </p>
+            </div>
+            <div className="flex gap-3 p-4 border-t border-dark-700">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirm)}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface Denomination {
+  _id: Id<"denominations">
+  currencyCode: string
+  value: number
+  type: string
+  description?: string
+  isActive: boolean
+  createdAt: number
+  updatedAt: number
+}
+
+function DenominationsSection() {
+  const denominations = useQuery(api.denominations.list)
+  const currencies = useQuery(api.currencies.list)
+  const createDenomination = useMutation(api.denominations.create)
+  const updateDenomination = useMutation(api.denominations.update)
+  const deleteDenomination = useMutation(api.denominations.remove)
+  const seedDefaults = useMutation(api.denominations.seedDefaults)
+
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [editingDenom, setEditingDenom] = useState<Denomination | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<Id<"denominations"> | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('')
+  const [isSeeding, setIsSeeding] = useState(false)
+
+  const [formData, setFormData] = useState({
+    currencyCode: '',
+    value: '',
+    type: 'banknote',
+    description: '',
+  })
+
+  const resetForm = () => {
+    setFormData({
+      currencyCode: selectedCurrency || currencies?.[0]?.code || '',
+      value: '',
+      type: 'banknote',
+      description: '',
+    })
+    setError(null)
+  }
+
+  const handleAdd = async () => {
+    if (!formData.currencyCode || !formData.value) {
+      setError('Currency and Value are required')
+      return
+    }
+
+    try {
+      await createDenomination({
+        currencyCode: formData.currencyCode,
+        value: parseFloat(formData.value),
+        type: formData.type,
+        description: formData.description || undefined,
+      })
+      setShowAddModal(false)
+      resetForm()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create denomination')
+    }
+  }
+
+  const handleEdit = async () => {
+    if (!editingDenom) return
+
+    try {
+      await updateDenomination({
+        id: editingDenom._id,
+        type: formData.type,
+        description: formData.description || undefined,
+      })
+      setEditingDenom(null)
+      resetForm()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update denomination')
+    }
+  }
+
+  const handleDelete = async (id: Id<"denominations">) => {
+    try {
+      await deleteDenomination({ id })
+      setDeleteConfirm(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete denomination')
+      setDeleteConfirm(null)
+    }
+  }
+
+  const handleToggleActive = async (denom: Denomination) => {
+    await updateDenomination({
+      id: denom._id,
+      isActive: !denom.isActive,
+    })
+  }
+
+  const openEditModal = (denom: Denomination) => {
+    setFormData({
+      currencyCode: denom.currencyCode,
+      value: denom.value.toString(),
+      type: denom.type,
+      description: denom.description || '',
+    })
+    setEditingDenom(denom)
+    setError(null)
+  }
+
+  const handleSeedDefaults = async () => {
+    if (!selectedCurrency) {
+      setError('Please select a currency first')
+      return
+    }
+    setIsSeeding(true)
+    try {
+      await seedDefaults({ currencyCode: selectedCurrency })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to seed denominations')
+    } finally {
+      setIsSeeding(false)
+    }
+  }
+
+  const filteredDenominations = denominations?.filter((d) =>
+    !selectedCurrency || d.currencyCode === selectedCurrency
+  ) || []
+  const sortedDenominations = [...filteredDenominations].sort((a, b) => {
+    if (a.currencyCode !== b.currencyCode) return a.currencyCode.localeCompare(b.currencyCode)
+    return b.value - a.value
+  })
+
+  const currencyHasDenominations = (code: string) => {
+    return denominations?.some(d => d.currencyCode === code)
+  }
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <div className="bg-red-900/30 border border-red-800 rounded-lg p-4 flex items-center gap-3">
+          <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
+          <p className="text-red-300">{error}</p>
+          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-300">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-dark-100">Currency Denominations</h2>
+        <div className="flex gap-2">
+          {selectedCurrency && !currencyHasDenominations(selectedCurrency) && (
+            <button
+              onClick={handleSeedDefaults}
+              disabled={isSeeding}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isSeeding ? 'animate-spin' : ''}`} />
+              Load Default Denominations
+            </button>
+          )}
+          <button
+            onClick={() => {
+              resetForm()
+              setShowAddModal(true)
+            }}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Denomination
+          </button>
+        </div>
+      </div>
+
+      <div className="flex gap-4 items-center">
+        <label className="text-dark-300 text-sm">Filter by Currency:</label>
+        <select
+          value={selectedCurrency}
+          onChange={(e) => setSelectedCurrency(e.target.value)}
+          className="input w-64"
+        >
+          <option value="">All Currencies</option>
+          {currencies?.map((currency) => (
+            <option key={currency._id} value={currency.code}>
+              {currency.code} - {currency.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="card p-0">
+        {!denominations ? (
+          <div className="p-8 text-center text-dark-400">Loading denominations...</div>
+        ) : sortedDenominations.length === 0 ? (
+          <div className="p-8 text-center text-dark-400">
+            <Coins className="h-12 w-12 mx-auto mb-3 text-dark-600" />
+            <p>No denominations configured{selectedCurrency ? ` for ${selectedCurrency}` : ''}.</p>
+            <p className="text-sm mt-1 text-dark-500">
+              {selectedCurrency
+                ? 'Click "Load Default Denominations" to add standard banknotes and coins.'
+                : 'Select a currency and click "Load Default Denominations" or "Add Denomination".'}
+            </p>
+          </div>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-dark-700">
+                <th className="text-left text-dark-400 font-medium py-3 px-4 text-sm">Currency</th>
+                <th className="text-right text-dark-400 font-medium py-3 px-4 text-sm">Value</th>
+                <th className="text-center text-dark-400 font-medium py-3 px-4 text-sm">Type</th>
+                <th className="text-left text-dark-400 font-medium py-3 px-4 text-sm">Description</th>
+                <th className="text-center text-dark-400 font-medium py-3 px-4 text-sm">Status</th>
+                <th className="text-right text-dark-400 font-medium py-3 px-4 text-sm">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedDenominations.map((denom) => {
+                const currency = currencies?.find(c => c.code === denom.currencyCode)
+                return (
+                  <tr key={denom._id} className="border-b border-dark-800 hover:bg-dark-800/50">
+                    <td className="py-3 px-4">
+                      <span className="font-mono text-primary-400 font-medium">{denom.currencyCode}</span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <span className="font-mono text-dark-100">
+                        {currency?.symbol}{denom.value.toLocaleString()}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className={`px-2 py-1 text-xs font-medium rounded ${
+                        denom.type === 'banknote'
+                          ? 'bg-green-900/30 text-green-400'
+                          : 'bg-yellow-900/30 text-yellow-400'
+                      }`}>
+                        {denom.type === 'banknote' ? 'Banknote' : 'Coin'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-dark-400">{denom.description || '-'}</td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        onClick={() => handleToggleActive(denom)}
+                        className={`px-2 py-1 text-xs font-medium rounded ${
+                          denom.isActive
+                            ? 'bg-green-900/30 text-green-400'
+                            : 'bg-dark-700 text-dark-400'
+                        }`}
+                      >
+                        {denom.isActive ? 'Active' : 'Inactive'}
+                      </button>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openEditModal(denom)}
+                          className="p-1.5 text-dark-400 hover:text-dark-200 hover:bg-dark-700 rounded"
+                          title="Edit"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(denom._id)}
+                          className="p-1.5 text-dark-400 hover:text-red-400 hover:bg-dark-700 rounded"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {(showAddModal || editingDenom) && (
+        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-dark-900 border border-dark-700 rounded-xl w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-dark-700">
+              <h3 className="text-lg font-semibold text-dark-50">
+                {editingDenom ? 'Edit Denomination' : 'Add Denomination'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowAddModal(false)
+                  setEditingDenom(null)
+                  resetForm()
+                }}
+                className="text-dark-400 hover:text-dark-200"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              {error && (
+                <div className="bg-red-900/30 border border-red-800 rounded p-3 text-sm text-red-300">
+                  {error}
+                </div>
+              )}
+              <div>
+                <label className="label">Currency</label>
+                <select
+                  value={formData.currencyCode}
+                  onChange={(e) => setFormData({ ...formData, currencyCode: e.target.value })}
+                  className="input"
+                  disabled={!!editingDenom}
+                >
+                  <option value="">Select Currency</option>
+                  {currencies?.map((currency) => (
+                    <option key={currency._id} value={currency.code}>
+                      {currency.code} - {currency.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Value</label>
+                <input
+                  type="number"
+                  value={formData.value}
+                  onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+                  className="input"
+                  placeholder="e.g., 50, 20, 0.25"
+                  step="0.01"
+                  disabled={!!editingDenom}
+                />
+              </div>
+              <div>
+                <label className="label">Type</label>
+                <select
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                  className="input"
+                >
+                  <option value="banknote">Banknote</option>
+                  <option value="coin">Coin</option>
+                </select>
+              </div>
+              <div>
+                <label className="label">Description (optional)</label>
+                <input
+                  type="text"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="input"
+                  placeholder="e.g., Fifty Dollar Bill"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-4 border-t border-dark-700">
+              <button
+                onClick={() => {
+                  setShowAddModal(false)
+                  setEditingDenom(null)
+                  resetForm()
+                }}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={editingDenom ? handleEdit : handleAdd}
+                className="btn-primary"
+              >
+                {editingDenom ? 'Save Changes' : 'Add Denomination'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-dark-900 border border-dark-700 rounded-xl w-full max-w-sm">
+            <div className="p-6 text-center">
+              <div className="h-12 w-12 bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="h-6 w-6 text-red-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-dark-50 mb-2">Delete Denomination?</h3>
+              <p className="text-dark-400 text-sm">
+                This action cannot be undone. This denomination will be permanently removed.
               </p>
             </div>
             <div className="flex gap-3 p-4 border-t border-dark-700">

@@ -239,6 +239,19 @@ export default defineSchema({
   })
     .index("by_key", ["key"]),
 
+  // Currency denominations (banknotes and coins)
+  denominations: defineTable({
+    currencyCode: v.string(),
+    value: v.number(),
+    type: v.string(), // 'banknote' or 'coin'
+    description: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_currency", ["currencyCode"])
+    .index("by_currency_value", ["currencyCode", "value"]),
+
   // Lookup data for dynamic dropdowns (Customer Groups, Payment Methods, Sources of Funds, etc.)
   lookups: defineTable({
     lookupKey: v.string(), // e.g., 'customer_group', 'payment_method', 'source_of_funds', 'id_type'

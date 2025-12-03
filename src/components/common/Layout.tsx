@@ -45,6 +45,7 @@ const adminSubItems = [
   { name: 'Branches', href: '/settings?tab=branches', icon: GitBranch },
   { name: 'Users', href: '/settings?tab=users', icon: UserCog },
   { name: 'Lookups', href: '/settings?tab=lookups', icon: List },
+  { name: 'Denominations', href: '/settings?tab=denominations', icon: Coins },
 ]
 
 export function Layout({ children }: LayoutProps) {
