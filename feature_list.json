@@ -1,0 +1,476 @@
+[
+  {
+    "category": "functional",
+    "description": "User can log in with username and password",
+    "steps": ["Navigate to login page", "Enter valid credentials", "Click login button", "Verify redirect to dashboard"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User can log out",
+    "steps": ["Log in to the app", "Click logout button", "Verify redirect to login page", "Verify session is cleared"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Invalid login credentials show error message",
+    "steps": ["Navigate to login page", "Enter invalid credentials", "Click login button", "Verify error message displays"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Role-based access control restricts unauthorized pages",
+    "steps": ["Log in as non-admin user", "Attempt to access admin-only page", "Verify access denied or redirect"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Two-factor authentication can be enabled",
+    "steps": ["Navigate to security settings", "Enable 2FA", "Verify QR code or setup displayed", "Confirm 2FA is active"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Dashboard displays summary of daily transactions",
+    "steps": ["Log in to the app", "View dashboard", "Verify transaction summary widgets are visible"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Dashboard shows current exchange rates",
+    "steps": ["Log in to the app", "View dashboard", "Verify exchange rates panel is displayed with rates"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User can create a new currency buy transaction",
+    "steps": ["Navigate to POS", "Select 'Buy' transaction type", "Enter currency and amount", "Complete transaction", "Verify transaction recorded"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User can create a new currency sell transaction",
+    "steps": ["Navigate to POS", "Select 'Sell' transaction type", "Enter currency and amount", "Complete transaction", "Verify transaction recorded"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "POS displays real-time exchange rates",
+    "steps": ["Navigate to POS", "View rate display", "Verify rates update in real-time"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "POS calculates correct amounts based on exchange rate",
+    "steps": ["Navigate to POS", "Enter amount in source currency", "Verify calculated amount in target currency matches rate"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "POS allows applying custom rate/spread",
+    "steps": ["Navigate to POS", "Modify exchange rate/spread", "Verify calculated amounts update accordingly"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Transaction receipt can be printed",
+    "steps": ["Complete a transaction", "Click print receipt", "Verify print dialog or receipt preview appears"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Transaction receipt contains required details",
+    "steps": ["Complete a transaction", "View receipt", "Verify receipt shows date, amount, rate, customer info, transaction ID"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User can add a new customer",
+    "steps": ["Navigate to customer management", "Click add customer", "Fill in customer details", "Save customer", "Verify customer appears in list"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User can edit existing customer information",
+    "steps": ["Navigate to customer management", "Select a customer", "Edit customer details", "Save changes", "Verify changes persisted"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User can search for customers",
+    "steps": ["Navigate to customer management", "Enter search term", "Verify matching customers displayed"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Customer KYC documents can be uploaded",
+    "steps": ["Navigate to customer profile", "Click upload document", "Select file", "Verify document uploaded and displayed"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Customer profile shows complete transaction history",
+    "steps": ["Navigate to customer profile", "View transaction history section", "Verify all customer transactions are listed"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Customer can be linked to transaction at POS",
+    "steps": ["Navigate to POS", "Search and select customer", "Complete transaction", "Verify transaction linked to customer"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Sanction list screening runs on customer creation",
+    "steps": ["Add new customer", "Verify OFAC/sanction screening is triggered", "View screening result"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Sanction list hit blocks transaction",
+    "steps": ["Create customer matching sanction list", "Attempt transaction", "Verify transaction is blocked/flagged"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Suspicious transaction detection flags high-value transactions",
+    "steps": ["Create transaction above threshold", "Verify transaction is flagged for review"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "24-hour aggregation rule triggers on multiple transactions",
+    "steps": ["Create multiple transactions for same customer within 24 hours", "Exceed aggregation threshold", "Verify alert is generated"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "CTR (Currency Transaction Report) can be generated",
+    "steps": ["Navigate to compliance reports", "Select CTR generation", "Generate report", "Verify CTR contains required fields"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "SAR (Suspicious Activity Report) can be generated",
+    "steps": ["Navigate to compliance reports", "Select flagged transaction", "Generate SAR", "Verify SAR contains required fields"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Compliance alerts dashboard shows pending reviews",
+    "steps": ["Navigate to compliance section", "View alerts dashboard", "Verify pending alerts are displayed"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User can view currency inventory levels",
+    "steps": ["Navigate to treasury management", "View inventory", "Verify currency balances are displayed"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User can adjust currency inventory manually",
+    "steps": ["Navigate to treasury management", "Select currency", "Adjust balance", "Verify adjustment recorded"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Vault balance tracking is accurate",
+    "steps": ["View vault balance", "Complete transactions", "Verify vault balance updates correctly"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Wholesale buy operation can be recorded",
+    "steps": ["Navigate to wholesale operations", "Record currency purchase from supplier", "Verify inventory updated"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Wholesale sell operation can be recorded",
+    "steps": ["Navigate to wholesale operations", "Record currency sale to supplier", "Verify inventory updated"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Low inventory alert is triggered",
+    "steps": ["Set low inventory threshold", "Reduce inventory below threshold", "Verify alert is generated"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "General ledger displays account balances",
+    "steps": ["Navigate to accounting", "View general ledger", "Verify account balances are displayed"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Daily reconciliation report can be generated",
+    "steps": ["Navigate to accounting", "Generate daily reconciliation", "Verify report shows transactions vs cash balance"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Profit/loss per currency is tracked",
+    "steps": ["Navigate to accounting", "View P&L by currency", "Verify profit/loss figures per currency"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Financial reports can be exported",
+    "steps": ["Navigate to reports", "Select report type", "Export report", "Verify file download (PDF/CSV)"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Transaction journal entries are auto-generated",
+    "steps": ["Complete a transaction", "View journal entries", "Verify corresponding journal entry created"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Exchange rates can be manually set",
+    "steps": ["Navigate to rate management", "Set custom rate for currency pair", "Verify rate is applied"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Exchange rates can be fetched from external API",
+    "steps": ["Navigate to rate management", "Click refresh/fetch rates", "Verify rates updated from API"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Buy/sell spread can be configured per currency",
+    "steps": ["Navigate to rate management", "Set spread for currency", "Verify buy/sell rates reflect spread"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Rate history is tracked and viewable",
+    "steps": ["Navigate to rate management", "View rate history", "Verify historical rates displayed"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Multiple branches can be configured",
+    "steps": ["Navigate to branch settings", "Add new branch", "Verify branch appears in list"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User can switch between branches",
+    "steps": ["Log in as multi-branch user", "Switch to different branch", "Verify data context changes"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Real-time data sync across branches",
+    "steps": ["Update data in one branch", "View same data from another branch session", "Verify data is synchronized"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User roles can be created and assigned",
+    "steps": ["Navigate to user management", "Create new role", "Assign permissions", "Assign role to user"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User accounts can be created",
+    "steps": ["Navigate to user management", "Add new user", "Fill in details", "Verify user can log in"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "User accounts can be deactivated",
+    "steps": ["Navigate to user management", "Deactivate user", "Verify user cannot log in"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Transaction search with filters works",
+    "steps": ["Navigate to transactions", "Apply date/amount/currency filters", "Verify filtered results displayed"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Transaction details can be viewed",
+    "steps": ["Navigate to transactions", "Select a transaction", "Verify full transaction details displayed"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Transaction can be voided with authorization",
+    "steps": ["Select completed transaction", "Request void", "Authorize void", "Verify transaction marked as voided"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Audit log tracks user actions",
+    "steps": ["Perform various actions", "Navigate to audit log", "Verify actions are logged with timestamps and user"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "PDF receipt can be downloaded",
+    "steps": ["Complete transaction", "Click download PDF receipt", "Verify PDF file downloads"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "End of day report can be generated",
+    "steps": ["Navigate to reports", "Generate EOD report", "Verify report shows day summary"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "System settings can be configured",
+    "steps": ["Navigate to settings", "Modify system setting", "Save changes", "Verify setting persisted"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Currency list can be managed",
+    "steps": ["Navigate to currency settings", "Add/remove currency", "Verify currency list updated"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Decimal precision is configurable per currency",
+    "steps": ["Navigate to currency settings", "Set decimal precision", "Verify transactions use correct precision"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Password change functionality works",
+    "steps": ["Navigate to profile/security", "Change password", "Log out and log in with new password"],
+    "passes": false
+  },
+  {
+    "category": "functional",
+    "description": "Session timeout logs out inactive users",
+    "steps": ["Log in", "Wait for timeout period", "Attempt action", "Verify redirect to login"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Login page displays company branding",
+    "steps": ["Navigate to login page", "Verify logo and brand colors are displayed"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "App has consistent color scheme throughout",
+    "steps": ["Navigate through multiple pages", "Verify consistent use of primary/secondary colors"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Dashboard layout is organized with clear sections",
+    "steps": ["View dashboard", "Verify widgets are clearly separated and organized"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "POS interface is optimized for quick transactions",
+    "steps": ["Navigate to POS", "Verify large buttons, clear inputs, easy navigation"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "App is responsive on tablet viewport",
+    "steps": ["View app on tablet viewport (768px)", "Verify layout adapts appropriately"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Navigation menu is clearly visible and accessible",
+    "steps": ["View app", "Verify main navigation is prominent and functional"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Form inputs have clear labels and validation feedback",
+    "steps": ["Navigate to a form", "Verify labels are clear", "Submit invalid data", "Verify error messages are visible"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Tables have proper headers and sorting indicators",
+    "steps": ["Navigate to transaction list", "Verify table headers", "Click sortable column", "Verify sort indicator"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Loading states are displayed for async operations",
+    "steps": ["Trigger data fetch", "Verify loading indicator is shown", "Verify content replaces loader"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Success/error notifications are clearly visible",
+    "steps": ["Perform action that succeeds", "Verify success toast/notification", "Trigger error", "Verify error notification"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Currency amounts are formatted correctly with symbols",
+    "steps": ["View transactions with different currencies", "Verify correct currency symbols and formatting"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Date/time displays use consistent format",
+    "steps": ["View multiple areas with dates", "Verify consistent date/time formatting"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Icons are consistent and meaningful",
+    "steps": ["Navigate through app", "Verify icons are used consistently for similar actions"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Buttons have clear hover/active states",
+    "steps": ["Hover over buttons", "Click buttons", "Verify visual feedback on hover and click"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Modal dialogs are properly styled and centered",
+    "steps": ["Trigger a modal", "Verify modal is centered, has proper styling, overlay backdrop"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Print styles are optimized for receipts",
+    "steps": ["Print preview a receipt", "Verify print layout is clean and paper-friendly"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Data-heavy screens have proper visual hierarchy",
+    "steps": ["View accounting/reports pages", "Verify important data stands out, secondary info is subdued"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Empty states have helpful messaging",
+    "steps": ["View page with no data", "Verify empty state message and guidance displayed"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Sidebar/navigation collapses gracefully on smaller screens",
+    "steps": ["Resize viewport", "Verify navigation adapts (hamburger menu or collapsible sidebar)"],
+    "passes": false
+  },
+  {
+    "category": "style",
+    "description": "Typography is readable with proper line spacing",
+    "steps": ["Read text content across app", "Verify font sizes are readable, line heights appropriate"],
+    "passes": false
+  }
+]

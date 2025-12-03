@@ -1,0 +1,25 @@
+# OpenCX
+
+## Overview
+OpenCX is a free and open-source currency exchange operation management system designed for Money Service Businesses (MSBs), foreign exchange bureaus, and money transfer organizations. It provides a comprehensive solution for managing multi-currency point-of-sale transactions, customer relationships, regulatory compliance (AML/KYC), and accounting—serving as an alternative to commercial solutions like CurrencyXChanger for small to mid-sized exchange operations.
+
+## Core Features
+
+- **Multi-Currency POS**: Process buy/sell transactions across multiple currencies with real-time rate management, receipt printing, and cash drawer integration
+- **Customer Management (CRM)**: Centralized customer database with KYC profile storage, document management, and complete transaction history per customer
+- **AML/CTF Compliance**: Automated sanction list screening (OFAC, etc.), suspicious transaction detection with 24-hour aggregation rules, and regulatory reporting (CTR/SAR generation)
+- **Treasury & Inventory Management**: Track currency inventory levels, manage vault balances, and handle wholesale buy/sell operations with suppliers
+- **Accounting Integration**: Built-in general ledger, daily reconciliation, profit/loss tracking per currency, and exportable financial reports
+- **Multi-Branch Support**: Centralized deployment with real-time data synchronization, offline capability, and role-based access control
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | React + TypeScript, TailwindCSS, Vite |
+| Backend | Convex (serverless functions, real-time sync) |
+| Database | Convex (built-in, ACID-compliant, real-time) |
+| Authentication | Convex Auth with JWT, optional 2FA |
+| Rate API | Integration with open exchange rate providers (e.g., Open Exchange Rates, exchangerate.host) |
+| Reporting | PDF generation via PDFKit or jsPDF |
+| Deployment | Convex Cloud (managed), frontend on Vercel/Netlify |
