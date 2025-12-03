@@ -391,3 +391,63 @@ Priority features for next session:
 - VIP rates displayed in separate section with purple styling
 - Rate board auto-refreshes timestamp every 60 seconds
 - Rate Board URL can be copied/opened from Settings > Rate Board tab
+
+---
+
+## Session 9 - Dec 3, 2025
+
+### Completed This Session
+1. **Implemented Advanced KYC/AML Profiling (KYC/AML Tab)**
+   - Added new KYC/AML tab to CustomerDetailPanel
+   - Updated convex/schema.ts with new customer fields:
+     - estimatedAssetWorth (string)
+     - sourceOfFunds (string)
+     - isSuspicious (boolean), suspiciousReason (string)
+     - isPEP (boolean), pepDetails (string)
+   - Created updateKycAml mutation in convex/customers.ts
+   - KYC/AML tab features:
+     - Enhanced Due Diligence section header
+     - Estimated Asset Worth dropdown (Under $10K to Over $1M)
+     - Source of Funds dropdown (populated from lookups table)
+     - Mark as Suspicious checkbox with reason textarea
+     - Politically Exposed Person (PEP) checkbox with details textarea
+     - Save KYC/AML Data button
+   - Creates compliance alert when customer marked as suspicious
+
+2. **Implemented Sanction List Whitelisting**
+   - Added whitelist fields to schema:
+     - sanctionFalsePositive (boolean)
+     - falsePositiveBasis (string)
+     - isWhitelisted (boolean)
+     - whitelistExpiryDate (string)
+   - Created updateSanctionWhitelist mutation
+   - Whitelisting section shows only for flagged customers
+   - Features:
+     - "Match is false positive" checkbox
+     - Basis of Determination textarea
+     - Whitelist checkbox with expiry date picker
+     - Save Whitelist Settings button
+   - Automatically resolves compliance alert when whitelisted
+   - Shows "Customer Whitelisted" status card for whitelisted customers
+
+### Tests Marked as Passing (2 new, 23 total)
+- "Advanced KYC/AML Profiling" - Full KYC/AML tab with all required fields verified
+- "Sanction List Whitelisting" - False positive and whitelist functionality implemented
+
+### Current Status
+- **23/82 tests passing**
+- Customer KYC/AML features complete
+- Compliance workflow enhanced with suspicious flagging and whitelisting
+
+### What's Next
+Priority features for next session:
+1. General Ledger Main Account Setup
+2. Sub-Ledger Account Configuration
+3. Till (Cash Register) Management
+4. POS functionality improvements
+
+### Technical Notes
+- KYC/AML tab uses lookups for Source of Funds dropdown options
+- Sanction whitelisting section conditionally rendered based on sanctionScreeningStatus
+- Compliance alerts auto-created/resolved when customers flagged/whitelisted
+- Form state managed separately for KYC/AML and whitelist sections
