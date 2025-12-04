@@ -2,6 +2,10 @@ import { v } from "convex/values"
 import { mutation, query } from "./_generated/server"
 import { getAuthUserId } from "@convex-dev/auth/server"
 
+const HIGH_VALUE_THRESHOLD = 3000 // Threshold for suspicious transaction detection in base currency (USD)
+const AGGREGATION_THRESHOLD = 10000 // 24-hour aggregation threshold for CTR reporting
+const AGGREGATION_WINDOW_MS = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+
 function generateTransactionNumber(): string {
   const date = new Date()
   const year = date.getFullYear()
@@ -137,9 +141,32 @@ export const create = mutation({
       throw new Error("Source amount must be positive")
     }
 
+    const now = Date.now()
+
+    // Check for sanction screening if customer is provided
+    if (args.customerId) {
+      const customer = await ctx.db.get(args.customerId)
+      if (customer) {
+        // Block transaction if customer is sanctioned and NOT whitelisted
+        if (customer.sanctionScreeningStatus === "flagged" && !customer.isWhitelisted) {
+          throw new Error("SANCTION_BLOCKED: Transaction blocked - Customer is on sanction list. Please contact compliance.")
+        }
+
+        // Block if customer is marked as suspicious and not reviewed
+        if (customer.isSuspicious) {
+          throw new Error("SUSPICIOUS_BLOCKED: Transaction blocked - Customer is flagged as suspicious. Please contact compliance.")
+        }
+      }
+    }
+
     const totalAmount = args.targetAmount + (args.commission || 0)
     const transactionNumber = generateTransactionNumber()
-    const now = Date.now()
+
+    // Determine USD equivalent for threshold checks
+    // For simplicity, use totalAmount for USD transactions, otherwise estimate
+    const usdEquivalent = args.sourceCurrency === "USD" ? args.sourceAmount :
+                          args.targetCurrency === "USD" ? args.targetAmount :
+                          totalAmount
 
     const transactionId = await ctx.db.insert("transactions", {
       transactionNumber,
@@ -158,6 +185,69 @@ export const create = mutation({
       createdAt: now,
       createdBy: userId,
     })
+
+    // Create compliance alerts for high-value transactions
+    if (usdEquivalent >= HIGH_VALUE_THRESHOLD) {
+      await ctx.db.insert("complianceAlerts", {
+        alertType: "threshold_exceeded",
+        severity: usdEquivalent >= AGGREGATION_THRESHOLD ? "high" : "medium",
+        customerId: args.customerId,
+        transactionId,
+        description: `High-value transaction detected: ${args.transactionType.toUpperCase()} ${args.sourceAmount} ${args.sourceCurrency} -> ${args.targetAmount} ${args.targetCurrency} (Estimated USD: $${usdEquivalent.toFixed(2)})`,
+        status: "pending",
+        createdAt: now,
+      })
+    }
+
+    // Check 24-hour aggregation rule for the customer
+    if (args.customerId) {
+      const windowStart = now - AGGREGATION_WINDOW_MS
+
+      // Get all customer transactions in the last 24 hours
+      const recentTransactions = await ctx.db
+        .query("transactions")
+        .withIndex("by_customer", (q) => q.eq("customerId", args.customerId))
+        .collect()
+
+      const transactionsInWindow = recentTransactions.filter(
+        (t) => t.createdAt >= windowStart && t.status === "completed"
+      )
+
+      // Calculate total USD equivalent in window
+      // Use sourceAmount for USD transactions, otherwise use a simple estimate
+      const totalInWindow = transactionsInWindow.reduce((sum, t) => {
+        const txUsdEquivalent = t.sourceCurrency === "USD" ? t.sourceAmount :
+                                t.targetCurrency === "USD" ? t.targetAmount :
+                                t.totalAmount
+        return sum + txUsdEquivalent
+      }, 0)
+
+      // If total exceeds aggregation threshold, create alert
+      if (totalInWindow >= AGGREGATION_THRESHOLD) {
+        // Check if we already have a recent aggregation alert for this customer
+        const existingAggregationAlert = await ctx.db
+          .query("complianceAlerts")
+          .withIndex("by_customer", (q) => q.eq("customerId", args.customerId))
+          .filter((q) => q.and(
+            q.eq(q.field("alertType"), "aggregation_threshold"),
+            q.gte(q.field("createdAt"), windowStart)
+          ))
+          .first()
+
+        if (!existingAggregationAlert) {
+          const customer = await ctx.db.get(args.customerId)
+          await ctx.db.insert("complianceAlerts", {
+            alertType: "aggregation_threshold",
+            severity: "high",
+            customerId: args.customerId,
+            transactionId,
+            description: `24-hour aggregation threshold exceeded for customer "${customer?.firstName} ${customer?.lastName}": Total transactions = $${totalInWindow.toFixed(2)} (${transactionsInWindow.length} transactions in 24 hours). CTR may be required.`,
+            status: "pending",
+            createdAt: now,
+          })
+        }
+      }
+    }
 
     return { transactionId, transactionNumber }
   },

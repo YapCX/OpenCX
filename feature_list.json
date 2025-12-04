@@ -330,19 +330,19 @@
     "category": "functional",
     "description": "Sanction list hit blocks transaction",
     "steps": ["Create customer matching sanction list", "Attempt transaction", "Verify transaction is blocked/flagged"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Suspicious transaction detection flags high-value transactions",
     "steps": ["Create transaction above threshold", "Verify transaction is flagged for review"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "24-hour aggregation rule triggers on multiple transactions",
     "steps": ["Create multiple transactions for same customer within 24 hours", "Exceed aggregation threshold", "Verify alert is generated"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

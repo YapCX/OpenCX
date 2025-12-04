@@ -45,6 +45,7 @@ export function POSPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Id<"customers"> | null>(null)
   const [customerSearch, setCustomerSearch] = useState("")
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     if (defaultBranch === null) {
@@ -139,6 +140,7 @@ export function POSPage() {
     if (!defaultBranch || !fromAmount || !toAmount) return
 
     setIsProcessing(true)
+    setErrorMessage(null)
     try {
       const result = await createTransaction({
         transactionType,
@@ -166,6 +168,17 @@ export function POSPage() {
       }, 3000)
     } catch (error) {
       console.error("Transaction failed:", error)
+      const errorMsg = error instanceof Error ? error.message : "Transaction failed"
+      if (errorMsg.includes("SANCTION_BLOCKED")) {
+        setErrorMessage("Transaction BLOCKED: Customer is on sanction list. Please contact compliance department.")
+      } else if (errorMsg.includes("SUSPICIOUS_BLOCKED")) {
+        setErrorMessage("Transaction BLOCKED: Customer is flagged as suspicious. Please contact compliance department.")
+      } else {
+        setErrorMessage(errorMsg)
+      }
+      setTimeout(() => {
+        setErrorMessage(null)
+      }, 8000)
     } finally {
       setIsProcessing(false)
     }
@@ -446,6 +459,23 @@ export function POSPage() {
                     {lastTransaction.type === "buy" ? "Buy" : "Sell"} transaction {lastTransaction.number} has been recorded.
                   </p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="card p-4 bg-red-900/20 border-red-700">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-red-600 flex items-center justify-center">
+                  <X className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-red-400">Transaction Failed</p>
+                  <p className="text-sm text-dark-400">{errorMessage}</p>
+                </div>
+                <button onClick={() => setErrorMessage(null)} className="p-1 hover:bg-dark-700 rounded">
+                  <X className="h-4 w-4 text-dark-400" />
+                </button>
               </div>
             </div>
           )}

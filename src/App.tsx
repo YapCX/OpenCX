@@ -10,6 +10,7 @@ import { RateBoardPage } from './pages/RateBoardPage'
 import { ModulesPage } from './pages/ModulesPage'
 import { CompliancePage } from './pages/CompliancePage'
 import { TreasuryPage } from './pages/TreasuryPage'
+import { ReportsPage } from './pages/ReportsPage'
 import { Layout } from './components/common/Layout'
 import { LoadingSpinner } from './components/common/LoadingSpinner'
 import { RoleProtectedRoute } from './components/common/RoleProtectedRoute'
@@ -69,6 +70,14 @@ function App() {
                       element={
                         <RoleProtectedRoute allowedRoles={["admin"]}>
                           <SettingsPage />
+                        </RoleProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/reports"
+                      element={
+                        <RoleProtectedRoute allowedRoles={["admin", "compliance", "manager"]}>
+                          <ReportsPage />
                         </RoleProtectedRoute>
                       }
                     />
