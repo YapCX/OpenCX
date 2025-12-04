@@ -1073,3 +1073,78 @@ Priority features for next session:
 - Branch selector conditionally shows dropdown only for roaming users
 - Audit log entries include user name from userProfiles table
 - Deactivated user detection happens in UserProfileInitializer before rendering main app
+
+---
+
+## Session 19 - Dec 4, 2025
+
+### Completed This Session
+1. **Implemented PDF Receipt Download**
+   - Created src/utils/receiptGenerator.ts with jsPDF:
+     - Professional receipt format (80mm thermal receipt width)
+     - Company name header
+     - Transaction details (number, date, time, type, branch, teller)
+     - Customer info (name, email)
+     - Exchange details (From, To, Rate)
+     - Total amount in USD
+     - Thank you message
+   - Updated src/pages/TransactionsPage.tsx:
+     - Added Download icon import
+     - Added handleDownloadReceipt function
+     - Added "Download Receipt" button to transaction details modal
+   - Uses jsPDF library (already installed in package.json)
+
+2. **Implemented End of Day Report in Reports Page**
+   - Updated src/pages/ReportsPage.tsx:
+     - Added "End of Day Report" as first tab (default)
+     - Date picker for report date
+     - Uses existing getDailyReconciliation query from accounting
+     - Summary cards: Transactions, Total Buy, Total Sell, Net Position
+     - Currency Breakdown table
+     - Transaction Details table with time, transaction #, type, from, to
+     - Print and Export CSV buttons
+     - handleExportEODReport function for CSV download
+   - Professional report styling with print optimization
+
+3. **Implemented Password Change Functionality**
+   - Created src/pages/ProfilePage.tsx:
+     - Profile Information section (Name, Email, Role, Branch)
+     - Change Password form with:
+       - Current Password field
+       - New Password field (min 6 characters)
+       - Confirm New Password field
+       - Show/hide password toggles for all fields
+       - Form validation (passwords match, different from current)
+       - Success/error notifications
+   - Updated convex/users.ts:
+     - Added changePassword mutation using scrypt-kdf
+     - Verifies current password
+     - Hashes new password
+     - Creates audit log entry
+   - Added /profile route to App.tsx
+   - Added Profile link to Layout sidebar (above Sign Out)
+   - Installed scrypt-kdf package
+
+### Tests Marked as Passing (3 new, 63 total)
+- "PDF receipt can be downloaded" - Download Receipt button generates PDF
+- "End of day report can be generated" - EOD tab with date selection and export
+- "Password change functionality works" - Profile page with change password form
+
+### Current Status
+- **63/82 tests passing** (up from 60)
+- 3 new functional features implemented
+- 19 tests remaining (mostly style tests)
+
+### What's Next
+Priority features for next session:
+1. Real-time data sync across branches
+2. Decimal precision per currency
+3. Session timeout
+4. Style tests (POS optimization, responsive design, etc.)
+
+### Technical Notes
+- Receipt PDF uses 80mm format for thermal printers
+- EOD report reuses getDailyReconciliation query from accounting module
+- Password hashing uses scrypt-kdf with logN: 15
+- Profile page accessible to all authenticated users (no role restriction)
+- changePassword mutation queries authAccounts table for password hash

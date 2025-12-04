@@ -15,10 +15,13 @@ import {
   ChevronRight,
   X,
   Printer,
+  TrendingUp,
+  ArrowDownRight,
+  ArrowUpRight,
 } from "lucide-react"
 import clsx from "clsx"
 
-type TabType = "ctr" | "sar"
+type TabType = "eod" | "ctr" | "sar"
 
 interface CTRTransaction {
   _id: Id<"transactions">
@@ -59,16 +62,26 @@ interface SARAlert {
 }
 
 export function ReportsPage() {
-  const [activeTab, setActiveTab] = useState<TabType>("ctr")
+  const [activeTab, setActiveTab] = useState<TabType>("eod")
   const [dateFrom, setDateFrom] = useState<string>("")
   const [dateTo, setDateTo] = useState<string>("")
   const [selectedCustomerId, setSelectedCustomerId] = useState<Id<"customers"> | null>(null)
   const [selectedAlertId, setSelectedAlertId] = useState<Id<"complianceAlerts"> | null>(null)
   const [showCTRPreview, setShowCTRPreview] = useState(false)
   const [showSARPreview, setShowSARPreview] = useState(false)
+  const [eodDate, setEodDate] = useState<string>(() => {
+    const today = new Date()
+    return today.toISOString().split("T")[0]
+  })
 
   const dateFromMs = dateFrom ? new Date(dateFrom).getTime() : undefined
   const dateToMs = dateTo ? new Date(dateTo + "T23:59:59").getTime() : undefined
+  const eodDateTimestamp = eodDate ? new Date(eodDate).getTime() : Date.now()
+
+  const eodReport = useQuery(api.accounting.getDailyReconciliation, {
+    date: eodDateTimestamp,
+    branchId: undefined,
+  })
 
   const ctrTransactions = useQuery(api.compliance.getCTRTransactions, {
     dateFrom: dateFromMs,
@@ -140,6 +153,39 @@ export function ReportsPage() {
     URL.revokeObjectURL(url)
   }
 
+  const handleExportEODReport = () => {
+    if (!eodReport) return
+
+    const csvContent = [
+      `End of Day Report - ${eodDate}`,
+      "",
+      "Summary",
+      `Total Transactions,${eodReport.transactionCount}`,
+      `Voided Transactions,${eodReport.voidedCount}`,
+      `Total Buy Amount,$${eodReport.totalBuyAmount.toFixed(2)}`,
+      `Total Sell Amount,$${eodReport.totalSellAmount.toFixed(2)}`,
+      `Net Position,$${eodReport.netAmount.toFixed(2)}`,
+      "",
+      "Currency Breakdown",
+      "Currency,Buy Count,Buy Volume,Sell Count,Sell Volume,Net Volume",
+      ...Object.entries(eodReport.currencyBreakdown).map(([currency, data]) =>
+        `${currency},${data.buyCount},${data.bought.toFixed(2)},${data.sellCount},${data.sold.toFixed(2)},${(data.bought - data.sold).toFixed(2)}`
+      ),
+      "",
+      "Transaction Details",
+      "Time,Transaction #,Type,From,To",
+      ...eodReport.transactions.map((t) =>
+        `${new Date(t.createdAt).toLocaleTimeString()},${t.transactionNumber},${t.type},${t.sourceAmount.toFixed(2)} ${t.sourceCurrency},${t.targetAmount.toFixed(2)} ${t.targetCurrency}`
+      ),
+    ].join("\n")
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const link = document.createElement("a")
+    link.href = URL.createObjectURL(blob)
+    link.download = `EOD-Report-${eodDate}.csv`
+    link.click()
+  }
+
   const getSeverityBadge = (severity: string) => {
     const colors: Record<string, string> = {
       critical: "bg-red-900/50 text-red-400 border-red-700",
@@ -162,6 +208,20 @@ export function ReportsPage() {
       {/* Tabs */}
       <div className="card">
         <div className="flex border-b border-dark-700">
+          <button
+            onClick={() => setActiveTab("eod")}
+            className={clsx(
+              "px-6 py-3 text-sm font-medium transition-colors",
+              activeTab === "eod"
+                ? "text-primary-400 border-b-2 border-primary-500"
+                : "text-dark-400 hover:text-dark-200"
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              End of Day Report
+            </div>
+          </button>
           <button
             onClick={() => setActiveTab("ctr")}
             className={clsx(
@@ -193,47 +253,248 @@ export function ReportsPage() {
         </div>
 
         <div className="p-4">
-          {/* Date Filters */}
-          <div className="flex flex-wrap items-center gap-4 mb-6">
-            <div className="flex items-center gap-2 text-dark-400">
-              <Filter className="h-4 w-4" />
-              <span className="text-sm font-medium">Filters:</span>
-            </div>
+          {/* Date Filters - only show for CTR/SAR tabs */}
+          {activeTab !== "eod" && (
+            <div className="flex flex-wrap items-center gap-4 mb-6">
+              <div className="flex items-center gap-2 text-dark-400">
+                <Filter className="h-4 w-4" />
+                <span className="text-sm font-medium">Filters:</span>
+              </div>
 
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-dark-400" />
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="input text-sm py-1.5"
-                placeholder="From Date"
-              />
-            </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-dark-400" />
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="input text-sm py-1.5"
+                  placeholder="From Date"
+                />
+              </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-dark-400">to</span>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="input text-sm py-1.5"
-              />
-            </div>
+              <div className="flex items-center gap-2">
+                <span className="text-dark-400">to</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="input text-sm py-1.5"
+                />
+              </div>
 
-            {(dateFrom || dateTo) && (
-              <button
-                onClick={() => {
-                  setDateFrom("")
-                  setDateTo("")
-                }}
-                className="text-sm text-dark-400 hover:text-dark-200 flex items-center gap-1"
-              >
-                <X className="h-4 w-4" />
-                Clear Dates
-              </button>
-            )}
-          </div>
+              {(dateFrom || dateTo) && (
+                <button
+                  onClick={() => {
+                    setDateFrom("")
+                    setDateTo("")
+                  }}
+                  className="text-sm text-dark-400 hover:text-dark-200 flex items-center gap-1"
+                >
+                  <X className="h-4 w-4" />
+                  Clear Dates
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* EOD Tab Content */}
+          {activeTab === "eod" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <label className="block text-xs text-dark-400 mb-1">Report Date</label>
+                    <input
+                      type="date"
+                      value={eodDate}
+                      onChange={(e) => setEodDate(e.target.value)}
+                      className="input text-sm py-1.5"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handlePrintReport}
+                    className="btn-secondary flex items-center gap-2"
+                  >
+                    <Printer className="h-4 w-4" />
+                    Print
+                  </button>
+                  <button
+                    onClick={handleExportEODReport}
+                    className="btn-primary flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export CSV
+                  </button>
+                </div>
+              </div>
+
+              {eodReport && (
+                <div className="space-y-6 print:text-black">
+                  <div className="text-center border-b border-dark-700 pb-4 print:border-gray-300">
+                    <h2 className="text-xl font-bold text-dark-50 print:text-black">END OF DAY REPORT</h2>
+                    <p className="text-sm text-dark-400 print:text-gray-600">
+                      {new Date(eodDate).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-dark-800/50 border border-dark-700 rounded-lg p-4 print:bg-gray-100 print:border-gray-300">
+                      <div className="flex items-center justify-between">
+                        <span className="text-dark-400 text-sm print:text-gray-600">Transactions</span>
+                        <FileText className="h-5 w-5 text-primary-500" />
+                      </div>
+                      <div className="mt-2 text-2xl font-bold text-dark-50 print:text-black">
+                        {eodReport.transactionCount}
+                      </div>
+                      <div className="text-xs text-dark-500 print:text-gray-500 mt-1">
+                        {eodReport.voidedCount} voided
+                      </div>
+                    </div>
+                    <div className="bg-dark-800/50 border border-dark-700 rounded-lg p-4 print:bg-gray-100 print:border-gray-300">
+                      <div className="flex items-center justify-between">
+                        <span className="text-dark-400 text-sm print:text-gray-600">Total Buy</span>
+                        <ArrowDownRight className="h-5 w-5 text-green-500" />
+                      </div>
+                      <div className="mt-2 text-2xl font-bold text-green-400 print:text-green-700">
+                        {formatCurrency(eodReport.totalBuyAmount)}
+                      </div>
+                    </div>
+                    <div className="bg-dark-800/50 border border-dark-700 rounded-lg p-4 print:bg-gray-100 print:border-gray-300">
+                      <div className="flex items-center justify-between">
+                        <span className="text-dark-400 text-sm print:text-gray-600">Total Sell</span>
+                        <ArrowUpRight className="h-5 w-5 text-red-500" />
+                      </div>
+                      <div className="mt-2 text-2xl font-bold text-red-400 print:text-red-700">
+                        {formatCurrency(eodReport.totalSellAmount)}
+                      </div>
+                    </div>
+                    <div className="bg-dark-800/50 border border-dark-700 rounded-lg p-4 print:bg-gray-100 print:border-gray-300">
+                      <div className="flex items-center justify-between">
+                        <span className="text-dark-400 text-sm print:text-gray-600">Net Position</span>
+                        <DollarSign className="h-5 w-5 text-primary-500" />
+                      </div>
+                      <div
+                        className={clsx(
+                          "mt-2 text-2xl font-bold",
+                          eodReport.netAmount >= 0 ? "text-green-400 print:text-green-700" : "text-red-400 print:text-red-700"
+                        )}
+                      >
+                        {formatCurrency(eodReport.netAmount)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-dark-800/50 border border-dark-700 rounded-lg print:bg-white print:border-gray-300">
+                    <div className="px-4 py-3 border-b border-dark-700 print:border-gray-300">
+                      <h3 className="font-medium text-dark-200 print:text-black">Currency Breakdown</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="text-dark-400 text-sm border-b border-dark-700 print:text-gray-600 print:border-gray-300">
+                            <th className="text-left px-4 py-3 font-medium">Currency</th>
+                            <th className="text-right px-4 py-3 font-medium">Buy Count</th>
+                            <th className="text-right px-4 py-3 font-medium">Buy Volume</th>
+                            <th className="text-right px-4 py-3 font-medium">Sell Count</th>
+                            <th className="text-right px-4 py-3 font-medium">Sell Volume</th>
+                            <th className="text-right px-4 py-3 font-medium">Net Volume</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(eodReport.currencyBreakdown).map(([currency, data]) => (
+                            <tr key={currency} className="border-b border-dark-700/50 hover:bg-dark-700/30 print:border-gray-200">
+                              <td className="px-4 py-3 font-medium text-dark-200 print:text-black">{currency}</td>
+                              <td className="text-right px-4 py-3 text-dark-300 print:text-gray-700">{data.buyCount}</td>
+                              <td className="text-right px-4 py-3 text-green-400 print:text-green-700">
+                                {data.bought.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                              <td className="text-right px-4 py-3 text-dark-300 print:text-gray-700">{data.sellCount}</td>
+                              <td className="text-right px-4 py-3 text-red-400 print:text-red-700">
+                                {data.sold.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                              <td
+                                className={clsx(
+                                  "text-right px-4 py-3 font-medium",
+                                  data.bought - data.sold >= 0 ? "text-green-400 print:text-green-700" : "text-red-400 print:text-red-700"
+                                )}
+                              >
+                                {(data.bought - data.sold).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                            </tr>
+                          ))}
+                          {Object.keys(eodReport.currencyBreakdown).length === 0 && (
+                            <tr>
+                              <td colSpan={6} className="px-4 py-8 text-center text-dark-400 print:text-gray-500">
+                                No transactions for this date
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="bg-dark-800/50 border border-dark-700 rounded-lg print:bg-white print:border-gray-300">
+                    <div className="px-4 py-3 border-b border-dark-700 print:border-gray-300">
+                      <h3 className="font-medium text-dark-200 print:text-black">Transaction Details</h3>
+                    </div>
+                    <div className="overflow-x-auto max-h-96 print:max-h-none">
+                      <table className="w-full">
+                        <thead className="sticky top-0 bg-dark-800 print:bg-white">
+                          <tr className="text-dark-400 text-sm border-b border-dark-700 print:text-gray-600 print:border-gray-300">
+                            <th className="text-left px-4 py-3 font-medium">Time</th>
+                            <th className="text-left px-4 py-3 font-medium">Transaction #</th>
+                            <th className="text-left px-4 py-3 font-medium">Type</th>
+                            <th className="text-right px-4 py-3 font-medium">From</th>
+                            <th className="text-right px-4 py-3 font-medium">To</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {eodReport.transactions.map((t) => (
+                            <tr key={t._id} className="border-b border-dark-700/50 hover:bg-dark-700/30 print:border-gray-200">
+                              <td className="px-4 py-2 text-dark-400 text-sm print:text-gray-600">
+                                {new Date(t.createdAt).toLocaleTimeString()}
+                              </td>
+                              <td className="px-4 py-2 font-mono text-sm text-dark-300 print:text-gray-700">
+                                {t.transactionNumber}
+                              </td>
+                              <td className="px-4 py-2">
+                                <span
+                                  className={clsx(
+                                    "px-2 py-0.5 rounded text-xs font-medium",
+                                    t.type === "buy"
+                                      ? "bg-green-500/20 text-green-400 print:bg-green-100 print:text-green-700"
+                                      : "bg-red-500/20 text-red-400 print:bg-red-100 print:text-red-700"
+                                  )}
+                                >
+                                  {t.type.toUpperCase()}
+                                </span>
+                              </td>
+                              <td className="text-right px-4 py-2 text-dark-300 print:text-gray-700">
+                                {t.sourceAmount.toFixed(2)} {t.sourceCurrency}
+                              </td>
+                              <td className="text-right px-4 py-2 text-dark-300 print:text-gray-700">
+                                {t.targetAmount.toFixed(2)} {t.targetCurrency}
+                              </td>
+                            </tr>
+                          ))}
+                          {eodReport.transactions.length === 0 && (
+                            <tr>
+                              <td colSpan={5} className="px-4 py-8 text-center text-dark-400 print:text-gray-500">
+                                No transactions for this date
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* CTR Tab Content */}
           {activeTab === "ctr" && (

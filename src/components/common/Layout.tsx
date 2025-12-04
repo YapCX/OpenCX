@@ -24,6 +24,7 @@ import {
   Layers,
   History,
   MapPin,
+  User,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
@@ -244,7 +245,20 @@ export function Layout({ children }: LayoutProps) {
           )}
         </nav>
 
-        <div className="border-t border-dark-700 p-4">
+        <div className="border-t border-dark-700 p-4 space-y-1">
+          <Link
+            to="/profile"
+            onClick={() => setSidebarOpen(false)}
+            className={clsx(
+              "flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium transition-colors",
+              location.pathname === '/profile'
+                ? 'bg-primary-600/20 text-primary-400'
+                : 'text-dark-300 hover:bg-dark-800 hover:text-dark-100'
+            )}
+          >
+            <User className="h-5 w-5" />
+            Profile
+          </Link>
           <button
             onClick={handleSignOut}
             className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-dark-300 hover:bg-dark-800 hover:text-dark-100 transition-colors"

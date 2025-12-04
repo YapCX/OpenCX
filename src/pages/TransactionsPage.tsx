@@ -15,7 +15,9 @@ import {
   ChevronRight,
   Ban,
   Eye,
+  Download,
 } from "lucide-react"
+import { generateReceiptPDF } from "../utils/receiptGenerator"
 import clsx from "clsx"
 
 interface Transaction {
@@ -108,6 +110,29 @@ export function TransactionsPage() {
     await voidTransaction({ id: selectedTransaction, reason: voidReason })
     setShowVoidModal(false)
     setVoidReason("")
+  }
+
+  const handleDownloadReceipt = () => {
+    if (!transactionDetails) return
+
+    generateReceiptPDF({
+      transactionNumber: transactionDetails.transactionNumber,
+      transactionType: transactionDetails.transactionType,
+      date: new Date(transactionDetails.createdAt),
+      sourceCurrency: transactionDetails.sourceCurrency,
+      targetCurrency: transactionDetails.targetCurrency,
+      sourceAmount: transactionDetails.sourceAmount,
+      targetAmount: transactionDetails.targetAmount,
+      exchangeRate: transactionDetails.exchangeRate,
+      totalAmount: transactionDetails.totalAmount,
+      customerName: transactionDetails.customer
+        ? `${transactionDetails.customer.firstName} ${transactionDetails.customer.lastName}`
+        : undefined,
+      customerEmail: transactionDetails.customer?.email,
+      branchName: transactionDetails.branch?.name,
+      branchCode: transactionDetails.branch?.code,
+      companyName: "OpenCX Exchange",
+    })
   }
 
   return (
@@ -431,8 +456,15 @@ export function TransactionsPage() {
                 </div>
               </div>
 
-              {transactionDetails.status === "completed" && (
-                <div className="flex justify-end pt-4 border-t border-dark-700">
+              <div className="flex justify-end gap-3 pt-4 border-t border-dark-700">
+                <button
+                  onClick={handleDownloadReceipt}
+                  className="btn-secondary flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Receipt
+                </button>
+                {transactionDetails.status === "completed" && (
                   <button
                     onClick={() => setShowVoidModal(true)}
                     className="btn-secondary text-red-400 border-red-700 hover:bg-red-900/30 flex items-center gap-2"
@@ -440,8 +472,8 @@ export function TransactionsPage() {
                     <Ban className="h-4 w-4" />
                     Void Transaction
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>

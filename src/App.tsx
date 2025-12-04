@@ -14,6 +14,7 @@ import { ReportsPage } from './pages/ReportsPage'
 import { TransactionsPage } from './pages/TransactionsPage'
 import { AccountingPage } from './pages/AccountingPage'
 import { AuditLogPage } from './pages/AuditLogPage'
+import { ProfilePage } from './pages/ProfilePage'
 import { Layout } from './components/common/Layout'
 import { LoadingSpinner } from './components/common/LoadingSpinner'
 import { RoleProtectedRoute } from './components/common/RoleProtectedRoute'
@@ -96,6 +97,7 @@ function App() {
                         </RoleProtectedRoute>
                       }
                     />
+                    <Route path="/profile" element={<ProfilePage />} />
                   </Routes>
                   </Layout>
                 </BranchProvider>

@@ -474,13 +474,13 @@
     "category": "functional",
     "description": "PDF receipt can be downloaded",
     "steps": ["Complete transaction", "Click download PDF receipt", "Verify PDF file downloads"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "End of day report can be generated",
     "steps": ["Navigate to reports", "Generate EOD report", "Verify report shows day summary"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -492,7 +492,7 @@
     "category": "functional",
     "description": "Password change functionality works",
     "steps": ["Navigate to profile/security", "Change password", "Log out and log in with new password"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
