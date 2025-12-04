@@ -1008,3 +1008,68 @@ Priority features for next session:
 - P&L calculated using spread difference between transaction rate and mid rate
 - Rate history query supports filtering by target currency
 - CSV export uses Blob API for file download
+
+---
+
+## Session 18 - Dec 4, 2025
+
+### Completed This Session
+1. **Implemented Branch Switching Feature**
+   - Created src/contexts/BranchContext.tsx:
+     - BranchProvider component managing current branch state
+     - useBranch hook for accessing branch context
+     - Supports localStorage persistence for selected branch
+     - "Roaming" users (no branchId) can switch between all branches
+     - Non-roaming users see only their assigned branch
+   - Updated src/components/common/Layout.tsx:
+     - Added branch selector to sidebar (below OpenCX logo)
+     - Shows current branch name and code with MapPin icon
+     - Dropdown menu to switch branches (for roaming users)
+     - Non-roaming users see their branch but cannot switch
+   - Updated src/App.tsx:
+     - Added BranchProvider to wrap Layout
+
+2. **Verified User Account Deactivation (Already Implemented)**
+   - UserProfileInitializer.tsx already handles deactivated users:
+     - Checks if profile.isActive === false
+     - Shows "Account Deactivated" message with ShieldX icon
+     - Auto-signs out user after 3 seconds
+     - Professional UI with error styling
+
+3. **Verified Audit Log Feature (Already Implemented)**
+   - AuditLogPage.tsx exists with full functionality:
+     - Stats cards (Total Events, Today, This Week, Active Users)
+     - Search by action, user, or details
+     - Entity Type filter (Transactions, Users, Customers, etc.)
+     - Date filter (All Time, Today, This Week, This Month)
+     - Action entries with icons and color coding
+     - User name and timestamp display
+   - convex/audit.ts backend with list, log, getStats queries/mutations
+   - Audit logging added to:
+     - transactions.ts: transaction_created, transaction_voided
+     - users.ts: user_created, user_updated, user_activated, user_deactivated
+
+### Tests Marked as Passing (3 new, 60 total)
+- "User can switch between branches" - Branch selector in sidebar, roaming users can switch
+- "User accounts can be deactivated" - Deactivation shows message and auto-signs out
+- "Audit log tracks user actions" - Full audit log page with filtering and search
+
+### Current Status
+- **60/82 tests passing** (up from 57)
+- Branch switching fully functional
+- User deactivation working correctly
+- Audit log complete with comprehensive logging
+
+### What's Next
+Priority features for next session:
+1. Real-time data sync across branches
+2. PDF receipt download
+3. End of day report
+4. Decimal precision per currency
+5. Password change functionality
+
+### Technical Notes
+- BranchContext uses localStorage for persistence across sessions
+- Branch selector conditionally shows dropdown only for roaming users
+- Audit log entries include user name from userProfiles table
+- Deactivated user detection happens in UserProfileInitializer before rendering main app

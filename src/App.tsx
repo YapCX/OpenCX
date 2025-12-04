@@ -13,10 +13,12 @@ import { TreasuryPage } from './pages/TreasuryPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { TransactionsPage } from './pages/TransactionsPage'
 import { AccountingPage } from './pages/AccountingPage'
+import { AuditLogPage } from './pages/AuditLogPage'
 import { Layout } from './components/common/Layout'
 import { LoadingSpinner } from './components/common/LoadingSpinner'
 import { RoleProtectedRoute } from './components/common/RoleProtectedRoute'
 import { UserProfileInitializer } from './components/common/UserProfileInitializer'
+import { BranchProvider } from './contexts/BranchContext'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useConvexAuth()
@@ -43,7 +45,8 @@ function App() {
           element={
             <ProtectedRoute>
               <UserProfileInitializer>
-                <Layout>
+                <BranchProvider>
+                  <Layout>
                   <Routes>
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     <Route path="/dashboard" element={<DashboardPage />} />
@@ -85,8 +88,17 @@ function App() {
                         </RoleProtectedRoute>
                       }
                     />
+                    <Route
+                      path="/audit"
+                      element={
+                        <RoleProtectedRoute allowedRoles={["admin"]}>
+                          <AuditLogPage />
+                        </RoleProtectedRoute>
+                      }
+                    />
                   </Routes>
-                </Layout>
+                  </Layout>
+                </BranchProvider>
               </UserProfileInitializer>
             </ProtectedRoute>
           }

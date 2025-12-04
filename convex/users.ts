@@ -136,7 +136,7 @@ export const create = mutation({
     }
 
     const now = Date.now()
-    return await ctx.db.insert("userProfiles", {
+    const profileId = await ctx.db.insert("userProfiles", {
       userId: targetUserId,
       firstName: args.firstName,
       lastName: args.lastName,
@@ -146,6 +146,18 @@ export const create = mutation({
       createdAt: now,
       updatedAt: now,
     })
+
+    // Log audit entry
+    await ctx.db.insert("auditLog", {
+      userId,
+      action: "user_created",
+      entityType: "user",
+      entityId: profileId,
+      details: `Created user: ${args.firstName} ${args.lastName} (${args.email}) with role ${args.role}`,
+      createdAt: now,
+    })
+
+    return profileId
   },
 })
 
@@ -180,10 +192,23 @@ export const update = mutation({
       Object.entries(updates).filter(([_, v]) => v !== undefined)
     )
 
-    return await ctx.db.patch(id, {
+    const now = Date.now()
+    await ctx.db.patch(id, {
       ...filteredUpdates,
-      updatedAt: Date.now(),
+      updatedAt: now,
     })
+
+    // Log audit entry
+    await ctx.db.insert("auditLog", {
+      userId,
+      action: "user_updated",
+      entityType: "user",
+      entityId: id,
+      details: `Updated user: ${profile.firstName} ${profile.lastName}`,
+      createdAt: now,
+    })
+
+    return id
   },
 })
 
@@ -218,10 +243,25 @@ export const toggleActive = mutation({
     const profile = await ctx.db.get(args.id)
     if (!profile) throw new Error("User profile not found")
 
-    return await ctx.db.patch(args.id, {
-      isActive: !profile.isActive,
-      updatedAt: Date.now(),
+    const newStatus = !profile.isActive
+    const now = Date.now()
+
+    await ctx.db.patch(args.id, {
+      isActive: newStatus,
+      updatedAt: now,
     })
+
+    // Log audit entry
+    await ctx.db.insert("auditLog", {
+      userId,
+      action: newStatus ? "user_activated" : "user_deactivated",
+      entityType: "user",
+      entityId: args.id,
+      details: `${newStatus ? "Activated" : "Deactivated"} user: ${profile.firstName} ${profile.lastName}`,
+      createdAt: now,
+    })
+
+    return args.id
   },
 })
 

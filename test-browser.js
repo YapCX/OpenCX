@@ -43,7 +43,7 @@ async function testAuth() {
   try {
     // Test 1: Navigate to login page
     console.log('Test 1: Navigate to login page');
-    await page.goto('http://localhost:5173/login', { waitUntil: 'networkidle2' });
+    await page.goto('http://localhost:5175/login', { waitUntil: 'networkidle2' });
     await takeScreenshot(page, '01-login-page');
 
     // Check for company branding
@@ -73,7 +73,7 @@ async function testAuth() {
     console.log('\nTest 3: Sign up flow');
 
     // Reload the page to start fresh
-    await page.goto('http://localhost:5173/login', { waitUntil: 'networkidle2' });
+    await page.goto('http://localhost:5175/login', { waitUntil: 'networkidle2' });
 
     // Click sign up link
     const signUpLink = await page.evaluateHandle(() => {

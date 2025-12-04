@@ -22,9 +22,12 @@ import {
   UserCog,
   List,
   Layers,
+  History,
+  MapPin,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
+import { useBranch } from '../../contexts/BranchContext'
 
 interface LayoutProps {
   children: ReactNode
@@ -57,20 +60,25 @@ const adminSubItems = [
   { name: 'Users', href: '/settings?tab=users', icon: UserCog },
   { name: 'Lookups', href: '/settings?tab=lookups', icon: List },
   { name: 'Denominations', href: '/settings?tab=denominations', icon: Coins },
+  { name: 'Audit Log', href: '/audit', icon: History },
 ]
 
 export function Layout({ children }: LayoutProps) {
   const location = useLocation()
   const { signOut } = useAuthActions()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [adminExpanded, setAdminExpanded] = useState(location.pathname.startsWith('/settings'))
+  const [adminExpanded, setAdminExpanded] = useState(location.pathname.startsWith('/settings') || location.pathname === '/audit')
+  const [branchSelectorOpen, setBranchSelectorOpen] = useState(false)
   const { user, isAdmin } = useCurrentUser()
+  const { currentBranch, setCurrentBranch, availableBranches } = useBranch()
+
+  const canSwitchBranches = !user?.branchId && availableBranches.length > 1
 
   const handleSignOut = () => {
     void signOut()
   }
 
-  const isAdminActive = location.pathname.startsWith('/settings')
+  const isAdminActive = location.pathname.startsWith('/settings') || location.pathname === '/audit'
 
   const filteredNavigation = mainNavigation.filter((item) => {
     if (!item.roles) return true
@@ -107,6 +115,60 @@ export function Layout({ children }: LayoutProps) {
             <X className="h-6 w-6" />
           </button>
         </div>
+
+        {currentBranch && (
+          <div className="px-3 py-3 border-b border-dark-700">
+            <div className="relative">
+              <button
+                onClick={() => canSwitchBranches && setBranchSelectorOpen(!branchSelectorOpen)}
+                className={clsx(
+                  'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors',
+                  canSwitchBranches
+                    ? 'bg-dark-800 hover:bg-dark-700 cursor-pointer'
+                    : 'bg-dark-800/50 cursor-default'
+                )}
+              >
+                <MapPin className="h-4 w-4 text-primary-400" />
+                <div className="flex-1 text-left">
+                  <div className="text-dark-100 font-medium">{currentBranch.name}</div>
+                  <div className="text-xs text-dark-500">{currentBranch.code}</div>
+                </div>
+                {canSwitchBranches && (
+                  <ChevronDown className={clsx(
+                    'h-4 w-4 text-dark-400 transition-transform',
+                    branchSelectorOpen && 'rotate-180'
+                  )} />
+                )}
+              </button>
+
+              {branchSelectorOpen && canSwitchBranches && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-dark-800 border border-dark-600 rounded-lg shadow-xl z-50 py-1 max-h-60 overflow-y-auto">
+                  {availableBranches.map((branch) => (
+                    <button
+                      key={branch._id}
+                      onClick={() => {
+                        setCurrentBranch(branch)
+                        setBranchSelectorOpen(false)
+                      }}
+                      className={clsx(
+                        'w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors',
+                        currentBranch._id === branch._id
+                          ? 'bg-primary-600/20 text-primary-400'
+                          : 'text-dark-300 hover:bg-dark-700'
+                      )}
+                    >
+                      <MapPin className="h-4 w-4" />
+                      <div className="text-left">
+                        <div className="font-medium">{branch.name}</div>
+                        <div className="text-xs text-dark-500">{branch.code}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
           {filteredNavigation.map((item) => {
@@ -154,9 +216,11 @@ export function Layout({ children }: LayoutProps) {
               {adminExpanded && (
                 <div className="mt-1 ml-4 pl-4 border-l border-dark-700 space-y-1">
                   {adminSubItems.map((item) => {
-                    const isActive = location.pathname === '/settings' &&
-                      (location.search.includes(item.href.split('?tab=')[1]) ||
-                       (!location.search && item.href.includes('branches')))
+                    const isActive = item.href === '/audit'
+                      ? location.pathname === '/audit'
+                      : location.pathname === '/settings' &&
+                        (location.search.includes(item.href.split('?tab=')[1]) ||
+                         (!location.search && item.href.includes('branches')))
                     return (
                       <Link
                         key={item.name}

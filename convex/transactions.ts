@@ -249,6 +249,16 @@ export const create = mutation({
       }
     }
 
+    // Log audit entry
+    await ctx.db.insert("auditLog", {
+      userId,
+      action: "transaction_created",
+      entityType: "transaction",
+      entityId: transactionId,
+      details: `Created ${args.transactionType.toUpperCase()} transaction ${transactionNumber}: ${args.sourceAmount} ${args.sourceCurrency} -> ${args.targetAmount} ${args.targetCurrency}`,
+      createdAt: now,
+    })
+
     return { transactionId, transactionNumber }
   },
 })
@@ -269,11 +279,23 @@ export const voidTransaction = mutation({
       throw new Error("Transaction is already voided")
     }
 
+    const now = Date.now()
+
     await ctx.db.patch(args.id, {
       status: "voided",
       voidReason: args.reason,
-      voidedAt: Date.now(),
+      voidedAt: now,
       voidedBy: userId,
+    })
+
+    // Log audit entry
+    await ctx.db.insert("auditLog", {
+      userId,
+      action: "transaction_voided",
+      entityType: "transaction",
+      entityId: args.id,
+      details: `Voided transaction ${transaction.transactionNumber}. Reason: ${args.reason}`,
+      createdAt: now,
     })
 
     return { success: true }

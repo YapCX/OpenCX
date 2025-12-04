@@ -432,7 +432,7 @@
     "category": "functional",
     "description": "User can switch between branches",
     "steps": ["Log in as multi-branch user", "Switch to different branch", "Verify data context changes"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -444,7 +444,7 @@
     "category": "functional",
     "description": "User accounts can be deactivated",
     "steps": ["Navigate to user management", "Deactivate user", "Verify user cannot log in"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -468,7 +468,7 @@
     "category": "functional",
     "description": "Audit log tracks user actions",
     "steps": ["Perform various actions", "Navigate to audit log", "Verify actions are logged with timestamps and user"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
