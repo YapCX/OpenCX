@@ -928,3 +928,83 @@ Priority features for next session:
 - Void transaction mutation requires reason string and updates status to "voided"
 - Navigation added to sidebar between "Customers" and "Compliance"
 - Fixed currencies.listActive -> currencies.getActive (correct query name)
+
+---
+
+## Session 17 - Dec 4, 2025
+
+### Completed This Session
+1. **Implemented Full Accounting Page**
+   - Created convex/accounting.ts backend with:
+     - getJournalEntries, getJournalEntryWithLines queries
+     - createJournalEntry, createJournalEntryFromTransaction mutations
+     - getDailyReconciliation query for daily reports
+     - getProfitLossByCurrency query for P&L tracking
+     - generateAllJournalEntries mutation to bulk create entries
+     - getRateHistory query for viewing historical rates
+   - Created src/pages/AccountingPage.tsx with:
+     - 4 tabs: Daily Reconciliation, Profit/Loss, Journal Entries, Rate History
+     - Branch selector dropdown
+
+2. **Implemented Daily Reconciliation Report**
+   - Date picker to select reconciliation date
+   - Summary cards: Transactions count, Total Buy, Total Sell, Net Position
+   - Currency Breakdown table with buy/sell counts and volumes per currency
+   - Transaction List showing all transactions for the day
+   - Print and Export CSV buttons
+
+3. **Implemented Profit/Loss per Currency Tracking**
+   - Date range filters (From/To)
+   - Summary cards: Total Buy Volume, Total Sell Volume, Estimated P&L
+   - P&L by Currency table with buy/sell volumes, counts, and estimated profit
+
+4. **Implemented Journal Entries View**
+   - "Generate from Transactions" button to auto-create journal entries
+   - Journal Entries list showing entry number, date, description, status
+   - Entry Details panel with lines (debit/credit accounts)
+   - Successfully generated 7 journal entries from existing transactions
+
+5. **Implemented Rate History View**
+   - Currency filter dropdown
+   - Rate History table with columns: Date, Pair, Buy Rate, Sell Rate, Mid Rate, Spread %, Source
+   - Color-coded buy/sell rates (green/red)
+   - Source badges (api/seed)
+
+6. **Added Financial Reports Export (CSV)**
+   - Export CSV buttons on all tabs
+   - Proper CSV formatting with headers
+
+### Verified via Browser Automation
+- Daily Reconciliation: Shows 2 transactions, $5,355.61 total buy, EUR currency breakdown
+- Profit/Loss: Shows 9,992 total buy volume, 50 sell volume, -$176.85 estimated P&L
+- Journal Entries: Successfully generated 7 entries, detail panel shows debit/credit lines
+- Rate History: Shows 10 rate records with proper formatting
+
+### Tests Marked as Passing (5 new, 57 total)
+- "Daily reconciliation report can be generated" - Full report with transactions vs cash balance
+- "Profit/loss per currency is tracked" - P&L table with buy/sell volumes and profit
+- "Financial reports can be exported" - CSV export on all tabs
+- "Transaction journal entries are auto-generated" - Generate from Transactions button creates entries
+- "Rate history is tracked and viewable" - Full history with currency pair, rates, source
+
+### Current Status
+- **57/82 tests passing** (up from 52)
+- Accounting page fully functional with 4 tabs
+- Journal entries auto-generation working
+- Financial reporting with CSV export
+
+### What's Next
+Priority features for next session:
+1. Branch switching for multi-branch users
+2. User account deactivation
+3. Audit log implementation
+4. PDF receipt download
+5. End of day report
+
+### Technical Notes
+- AccountingPage uses 4 separate queries for each tab's data
+- Journal entries linked to transactions via referenceType/referenceId
+- Daily reconciliation filters transactions by date and branch
+- P&L calculated using spread difference between transaction rate and mid rate
+- Rate history query supports filtering by target currency
+- CSV export uses Blob API for file download

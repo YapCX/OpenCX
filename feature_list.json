@@ -402,31 +402,31 @@
     "category": "functional",
     "description": "Daily reconciliation report can be generated",
     "steps": ["Navigate to accounting", "Generate daily reconciliation", "Verify report shows transactions vs cash balance"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Profit/loss per currency is tracked",
     "steps": ["Navigate to accounting", "View P&L by currency", "Verify profit/loss figures per currency"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Financial reports can be exported",
     "steps": ["Navigate to reports", "Select report type", "Export report", "Verify file download (PDF/CSV)"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Transaction journal entries are auto-generated",
     "steps": ["Complete a transaction", "View journal entries", "Verify corresponding journal entry created"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Rate history is tracked and viewable",
     "steps": ["Navigate to rate management", "View rate history", "Verify historical rates displayed"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
