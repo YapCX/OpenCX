@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuthActions } from "@convex-dev/auth/react"
 import { useConvexAuth } from "convex/react"
-import { Navigate } from 'react-router-dom'
+import { Navigate, Link } from 'react-router-dom'
 import { DollarSign, Eye, EyeOff } from 'lucide-react'
 
 export function LoginPage() {
@@ -12,7 +12,6 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSignUp, setIsSignUp] = useState(false)
 
   if (isLoading) {
     return (
@@ -32,9 +31,9 @@ export function LoginPage() {
     setIsSubmitting(true)
 
     try {
-      await signIn('password', { email, password, flow: isSignUp ? 'signUp' : 'signIn' })
+      await signIn('password', { email, password, flow: 'signIn' })
     } catch (err) {
-      setError(isSignUp ? 'Could not create account. Try a different email.' : 'Invalid email or password')
+      setError('Invalid email or password')
     } finally {
       setIsSubmitting(false)
     }
@@ -57,7 +56,7 @@ export function LoginPage() {
 
         <div className="card">
           <h2 className="text-xl font-semibold text-dark-100 mb-6">
-            {isSignUp ? 'Create your account' : 'Sign in to your account'}
+            Sign in to your account
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -119,25 +118,17 @@ export function LoginPage() {
               disabled={isSubmitting}
               className="btn-primary w-full"
             >
-              {isSubmitting
-                ? (isSignUp ? 'Creating account...' : 'Signing in...')
-                : (isSignUp ? 'Create account' : 'Sign in')}
+              {isSubmitting ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignUp(!isSignUp)
-                setError('')
-              }}
+            <Link
+              to="/signup"
               className="text-sm text-primary-400 hover:text-primary-300"
             >
-              {isSignUp
-                ? 'Already have an account? Sign in'
-                : "Don't have an account? Sign up"}
-            </button>
+              Don't have an account? Sign up
+            </Link>
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useConvexAuth } from "convex/react"
 import { LoginPage } from './pages/LoginPage'
+import { SignupPage } from './pages/SignupPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { CurrenciesPage } from './pages/CurrenciesPage'
 import { POSPage } from './pages/POSPage'
@@ -40,6 +41,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
         <Route path="/rate-board" element={<RateBoardPage />} />
         <Route
           path="/*"

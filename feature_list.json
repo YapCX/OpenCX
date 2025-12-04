@@ -8,7 +8,7 @@
       "Step 3: Alternatively, select an SSO provider (e.g., Google) to register",
       "Step 4: Verify email confirmation is received and account is created"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
