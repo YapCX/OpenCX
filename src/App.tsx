@@ -11,6 +11,7 @@ import { ModulesPage } from './pages/ModulesPage'
 import { CompliancePage } from './pages/CompliancePage'
 import { TreasuryPage } from './pages/TreasuryPage'
 import { ReportsPage } from './pages/ReportsPage'
+import { TransactionsPage } from './pages/TransactionsPage'
 import { Layout } from './components/common/Layout'
 import { LoadingSpinner } from './components/common/LoadingSpinner'
 import { RoleProtectedRoute } from './components/common/RoleProtectedRoute'
@@ -49,6 +50,7 @@ function App() {
                     <Route path="/currencies" element={<CurrenciesPage />} />
                     <Route path="/customers" element={<CustomersPage />} />
                     <Route path="/treasury" element={<TreasuryPage />} />
+                    <Route path="/transactions" element={<TransactionsPage />} />
                     <Route
                       path="/compliance"
                       element={

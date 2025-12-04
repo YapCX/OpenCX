@@ -296,3 +296,91 @@ export const getRecent = query({
     return transactions
   },
 })
+
+export const listWithFilters = query({
+  args: {
+    search: v.optional(v.string()),
+    transactionType: v.optional(v.string()),
+    status: v.optional(v.string()),
+    currency: v.optional(v.string()),
+    dateFrom: v.optional(v.number()),
+    dateTo: v.optional(v.number()),
+    minAmount: v.optional(v.number()),
+    maxAmount: v.optional(v.number()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx)
+    if (!userId) return []
+
+    const transactions = await ctx.db
+      .query("transactions")
+      .order("desc")
+      .collect()
+
+    let filtered = transactions
+
+    if (args.search) {
+      const searchLower = args.search.toLowerCase()
+      filtered = filtered.filter((t) =>
+        t.transactionNumber.toLowerCase().includes(searchLower)
+      )
+    }
+
+    if (args.transactionType) {
+      filtered = filtered.filter((t) => t.transactionType === args.transactionType)
+    }
+
+    if (args.status) {
+      filtered = filtered.filter((t) => t.status === args.status)
+    }
+
+    if (args.currency) {
+      filtered = filtered.filter(
+        (t) => t.sourceCurrency === args.currency || t.targetCurrency === args.currency
+      )
+    }
+
+    if (args.dateFrom) {
+      filtered = filtered.filter((t) => t.createdAt >= args.dateFrom!)
+    }
+
+    if (args.dateTo) {
+      filtered = filtered.filter((t) => t.createdAt <= args.dateTo!)
+    }
+
+    if (args.minAmount !== undefined) {
+      filtered = filtered.filter((t) => t.totalAmount >= args.minAmount!)
+    }
+
+    if (args.maxAmount !== undefined) {
+      filtered = filtered.filter((t) => t.totalAmount <= args.maxAmount!)
+    }
+
+    const limit = args.limit || 100
+    return filtered.slice(0, limit)
+  },
+})
+
+export const getWithCustomer = query({
+  args: { id: v.id("transactions") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx)
+    if (!userId) return null
+
+    const transaction = await ctx.db.get(args.id)
+    if (!transaction) return null
+
+    let customer = null
+    if (transaction.customerId) {
+      customer = await ctx.db.get(transaction.customerId)
+    }
+
+    let branch = null
+    if (transaction.branchId) {
+      branch = await ctx.db.get(transaction.branchId)
+    }
+
+    return { ...transaction, customer, branch }
+  },
+})

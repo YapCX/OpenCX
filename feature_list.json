@@ -348,13 +348,13 @@
     "category": "functional",
     "description": "CTR (Currency Transaction Report) can be generated",
     "steps": ["Navigate to compliance reports", "Select CTR generation", "Generate report", "Verify CTR contains required fields"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "SAR (Suspicious Activity Report) can be generated",
     "steps": ["Navigate to compliance reports", "Select flagged transaction", "Generate SAR", "Verify SAR contains required fields"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -450,19 +450,19 @@
     "category": "functional",
     "description": "Transaction search with filters works",
     "steps": ["Navigate to transactions", "Apply date/amount/currency filters", "Verify filtered results displayed"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Transaction details can be viewed",
     "steps": ["Navigate to transactions", "Select a transaction", "Verify full transaction details displayed"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
     "description": "Transaction can be voided with authorization",
     "steps": ["Select completed transaction", "Request void", "Authorize void", "Verify transaction marked as voided"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

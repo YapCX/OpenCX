@@ -42,6 +42,7 @@ const mainNavigation: NavItem[] = [
   { name: 'POS', href: '/pos', icon: Receipt },
   { name: 'Currencies', href: '/currencies', icon: Coins },
   { name: 'Customers', href: '/customers', icon: Users },
+  { name: 'Transactions', href: '/transactions', icon: List },
   { name: 'Compliance', href: '/compliance', icon: Shield, roles: ['admin', 'compliance'] },
   { name: 'Treasury', href: '/treasury', icon: Vault },
   { name: 'Accounting', href: '/accounting', icon: BookOpen },
