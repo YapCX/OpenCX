@@ -10,7 +10,6 @@ import {
   AlertTriangle,
   DollarSign,
   Filter,
-  Clock,
   FileWarning,
   ChevronRight,
   X,
@@ -94,8 +93,6 @@ export function ReportsPage() {
     dateTo: dateToMs,
     status: "pending",
   }) as SARAlert[] | undefined
-
-  const customers = useQuery(api.customers.list, { limit: 100 })
 
   const ctrReport = useQuery(
     api.compliance.generateCTRReport,

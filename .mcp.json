@@ -1,13 +1,8 @@
 {
   "mcpServers": {
-    "puppeteer": {
-      "type": "stdio",
+    "puppeteer-mcp-claude": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-puppeteer"
-      ],
-      "env": {}
+      "args": ["-y", "puppeteer-mcp-claude", "serve"]
     }
   }
 }

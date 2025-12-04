@@ -36,7 +36,7 @@ function MainAccountsSection() {
   const seedDefaults = useMutation(api.mainAccounts.seedDefaults)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingAccount, setEditingAccount] = useState<typeof accounts extends (infer T)[] | undefined ? T : never>(null)
+  const [editingAccount, setEditingAccount] = useState<NonNullable<typeof accounts>[number] | null>(null)
   const [formData, setFormData] = useState({
     accountCode: '',
     accountName: '',
@@ -318,7 +318,7 @@ function AccountsSection() {
   const deleteAccount = useMutation(api.accounts.remove)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingAccount, setEditingAccount] = useState<typeof accounts extends (infer T)[] | undefined ? T : never>(null)
+  const [editingAccount, setEditingAccount] = useState<NonNullable<typeof accounts>[number] | null>(null)
   const [formData, setFormData] = useState({
     accountCode: '',
     accountName: '',
@@ -700,7 +700,7 @@ function TillsSection() {
   const createCashAccounts = useMutation(api.tills.createCashAccounts)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingTill, setEditingTill] = useState<typeof tillsData extends (infer T)[] | undefined ? T : never>(null)
+  const [editingTill, setEditingTill] = useState<NonNullable<typeof tillsData>[number] | null>(null)
   const [formData, setFormData] = useState({
     tillId: '',
     name: '',

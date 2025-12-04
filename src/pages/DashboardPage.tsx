@@ -9,7 +9,7 @@ const CHART_COLORS = ['#3b82f6', '#22c55e', '#eab308', '#ef4444', '#8b5cf6', '#e
 export function DashboardPage() {
   const currentRates = useQuery(api.exchangeRates.getCurrentRates, { baseCurrency: "USD" })
   const currencies = useQuery(api.currencies.list)
-  const transactions = useQuery(api.transactions.list)
+  const transactions = useQuery(api.transactions.list, {})
 
   const getCurrencyName = (code: string) => {
     return currencies?.find(c => c.code === code)?.name || code

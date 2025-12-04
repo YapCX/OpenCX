@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation } from 'convex/react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { api } from '../../convex/_generated/api'
 import { Id } from '../../convex/_generated/dataModel'
 import {
@@ -23,6 +23,7 @@ import {
   Copy,
   ExternalLink,
 } from 'lucide-react'
+import { getAllTimezones } from '../utils/currencyData'
 
 type SettingsTab = 'preferences' | 'company' | 'branches' | 'users' | 'lookups' | 'denominations' | 'rateboard'
 
@@ -144,12 +145,11 @@ function PreferencesSection() {
               onChange={(e) => setTimeZone(e.target.value)}
               className="input"
             >
-              <option value="America/New_York">Eastern Time (ET)</option>
-              <option value="America/Chicago">Central Time (CT)</option>
-              <option value="America/Denver">Mountain Time (MT)</option>
-              <option value="America/Los_Angeles">Pacific Time (PT)</option>
-              <option value="Europe/London">London (GMT)</option>
-              <option value="Europe/Paris">Paris (CET)</option>
+              {getAllTimezones().map((tz) => (
+                <option key={tz.value} value={tz.value}>
+                  {tz.label}
+                </option>
+              ))}
             </select>
           </div>
           <div>

@@ -1,7 +1,6 @@
 import { v } from "convex/values"
-import { mutation, query, internalMutation } from "./_generated/server"
+import { mutation, query } from "./_generated/server"
 import { getAuthUserId } from "@convex-dev/auth/server"
-import { internal } from "./_generated/api"
 
 const SANCTION_LIST_NAMES = [
   "kim jong un", "vladimir putin", "bashar al-assad", "nicolás maduro",
@@ -64,7 +63,6 @@ export const search = query({
     if (!userId) return []
 
     const searchLower = args.searchTerm.toLowerCase()
-
     const allCustomers = await ctx.db.query("customers").collect()
 
     return allCustomers.filter(

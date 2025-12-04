@@ -15,42 +15,7 @@ import {
   Globe,
   Building2,
 } from 'lucide-react'
-
-const CURRENCY_FLAGS: Record<string, string> = {
-  USD: '🇺🇸',
-  EUR: '🇪🇺',
-  GBP: '🇬🇧',
-  CAD: '🇨🇦',
-  JPY: '🇯🇵',
-  CHF: '🇨🇭',
-  AUD: '🇦🇺',
-  MXN: '🇲🇽',
-  PLN: '🇵🇱',
-  CNY: '🇨🇳',
-  INR: '🇮🇳',
-  BRL: '🇧🇷',
-  KRW: '🇰🇷',
-  SGD: '🇸🇬',
-  HKD: '🇭🇰',
-  NZD: '🇳🇿',
-  SEK: '🇸🇪',
-  NOK: '🇳🇴',
-  DKK: '🇩🇰',
-  RUB: '🇷🇺',
-  ZAR: '🇿🇦',
-  TRY: '🇹🇷',
-  AED: '🇦🇪',
-  SAR: '🇸🇦',
-  PHP: '🇵🇭',
-  THB: '🇹🇭',
-  MYR: '🇲🇾',
-  IDR: '🇮🇩',
-  VND: '🇻🇳',
-  COP: '🇨🇴',
-  CLP: '🇨🇱',
-  ARS: '🇦🇷',
-  PEN: '🇵🇪',
-}
+import { getCurrencyFlag } from '../utils/currencyData'
 
 interface CurrencyFormData {
   code: string
@@ -79,9 +44,7 @@ export function CurrenciesPage() {
   const deleteCurrency = useMutation(api.currencies.remove)
   const seedCurrencies = useMutation(api.currencies.seedDefaultCurrencies)
   const setRate = useMutation(api.exchangeRates.setRate)
-  const seedRates = useMutation(api.exchangeRates.seedDefaultRates)
-  const fetchLiveRate = useAction(api.currencies.fetchLiveRate)
-  const applyLiveRate = useAction(api.currencies.applyLiveRate)
+  const fetchAllLiveRates = useAction(api.currencies.fetchAllLiveRates)
 
   const [showCurrencyModal, setShowCurrencyModal] = useState(false)
   const [showRateModal, setShowRateModal] = useState(false)
@@ -89,7 +52,7 @@ export function CurrenciesPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [fetchingRate, setFetchingRate] = useState<string | null>(null)
+  const [fetchingAllRates, setFetchingAllRates] = useState(false)
 
   const [currencyForm, setCurrencyForm] = useState<CurrencyFormData>({
     code: '',
@@ -142,38 +105,22 @@ export function CurrenciesPage() {
     }
   }
 
-  const handleSeedRates = async () => {
-    setIsLoading(true)
+  const handleFetchAllLiveRates = async () => {
+    setFetchingAllRates(true)
     setError(null)
     try {
-      await seedRates()
-      setSuccess('Default exchange rates seeded successfully')
-      setTimeout(() => setSuccess(null), 3000)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to seed rates')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleFetchLiveRate = async (currency: NonNullable<typeof currencies>[0]) => {
-    const displayName = currency.alias || currency.code
-    setFetchingRate(displayName)
-    setError(null)
-    try {
-      const result = await applyLiveRate({
-        baseCurrency: 'USD',
-        targetCurrency: currency.code,
-        markupPercent: currency.markupPercent || 2,
-        markdownPercent: currency.markdownPercent || 2,
-        alias: currency.alias,
-      })
-      setSuccess(`Live rate applied for ${displayName}: Buy ${result.buyRate.toFixed(4)}, Sell ${result.sellRate.toFixed(4)}`)
+      const result = await fetchAllLiveRates({ baseCurrency: 'USD' })
+      if (result.success.length > 0) {
+        setSuccess(`Live rates updated for ${result.success.length} currencies: ${result.success.join(', ')}`)
+      }
+      if (result.failed.length > 0) {
+        setError(`Failed to update: ${result.failed.map(f => f.currency).join(', ')}`)
+      }
       setTimeout(() => setSuccess(null), 5000)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch live rate')
+      setError(e instanceof Error ? e.message : 'Failed to fetch live rates')
     } finally {
-      setFetchingRate(null)
+      setFetchingAllRates(false)
     }
   }
 
@@ -191,7 +138,7 @@ export function CurrenciesPage() {
         markupPercent: parseFloat(currencyForm.markupPercent) || 0,
         markdownPercent: parseFloat(currencyForm.markdownPercent) || 0,
         branchIds: currencyForm.branchIds.length > 0 ? currencyForm.branchIds : undefined,
-        flagEmoji: CURRENCY_FLAGS[currencyForm.code.toUpperCase()] || undefined,
+        flagEmoji: getCurrencyFlag(currencyForm.code.toUpperCase()) || undefined,
       }
 
       if (editingCurrency) {
@@ -328,12 +275,12 @@ export function CurrenciesPage() {
           )}
           {currencies && currencies.length > 0 && (!currentRates || currentRates.length === 0) && (
             <button
-              onClick={handleSeedRates}
-              disabled={isLoading}
+              onClick={handleFetchAllLiveRates}
+              disabled={fetchingAllRates}
               className="btn-secondary flex items-center gap-2"
             >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Load Default Rates
+              <Globe className={`w-4 h-4 ${fetchingAllRates ? 'animate-spin' : ''}`} />
+              {fetchingAllRates ? 'Fetching...' : 'Fetch Live Rates'}
             </button>
           )}
           <button
@@ -375,7 +322,20 @@ export function CurrenciesPage() {
             <DollarSign className="w-5 h-5 text-blue-400" />
           </div>
           <h2 className="text-lg font-medium text-white">Currency Configuration</h2>
-          <span className="text-sm text-slate-400 ml-auto">Base Currency: USD</span>
+          <div className="flex items-center gap-3 ml-auto">
+            <span className="text-sm text-slate-400">Base Currency: USD</span>
+            {currencies && currencies.length > 1 && (
+              <button
+                onClick={handleFetchAllLiveRates}
+                disabled={fetchingAllRates}
+                className="btn-secondary flex items-center gap-2 text-sm"
+                title="Fetch live rates for all currencies"
+              >
+                <Globe className={`w-4 h-4 ${fetchingAllRates ? 'animate-spin' : ''}`} />
+                {fetchingAllRates ? 'Fetching...' : 'Get Live Rates'}
+              </button>
+            )}
+          </div>
         </div>
 
         {!currencies ? (
@@ -410,7 +370,7 @@ export function CurrenciesPage() {
                     <tr key={currency._id} className="border-b border-slate-800 hover:bg-slate-800/50">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
-                          <span className="text-xl">{currency.flagEmoji || CURRENCY_FLAGS[currency.code] || '💱'}</span>
+                          <span className="text-xl">{currency.flagEmoji || getCurrencyFlag(currency.code) || '💱'}</span>
                           <div>
                             <span className="font-mono text-white font-medium">{currency.code}</span>
                             <p className="text-slate-400 text-sm">{currency.name}</p>
@@ -464,16 +424,6 @@ export function CurrenciesPage() {
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex justify-end gap-2">
-                          {currency.code !== 'USD' && (
-                            <button
-                              onClick={() => handleFetchLiveRate(currency)}
-                              disabled={fetchingRate === currency.code}
-                              className="p-1.5 text-slate-400 hover:text-green-400 hover:bg-slate-700 rounded"
-                              title="Get Live Rate"
-                            >
-                              <Globe className={`w-4 h-4 ${fetchingRate === currency.code ? 'animate-spin' : ''}`} />
-                            </button>
-                          )}
                           <button
                             onClick={() => handleEditCurrency(currency)}
                             className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-700 rounded"

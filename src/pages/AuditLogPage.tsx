@@ -4,10 +4,8 @@ import { api } from '../../convex/_generated/api'
 import {
   History,
   Search,
-  Filter,
   RefreshCw,
   User,
-  FileText,
   Shield,
   DollarSign,
   Users,

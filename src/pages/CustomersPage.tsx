@@ -78,18 +78,6 @@ const emptyFormData: CustomerFormData = {
   notes: "",
 }
 
-const emptyBankFormData: BankFormData = {
-  bankName: "",
-  accountName: "",
-  accountNumber: "",
-  routingNumber: "",
-  swiftCode: "",
-  iban: "",
-  bankAddress: "",
-  currency: "USD",
-  isDefault: false,
-}
-
 export function CustomersPage() {
   const customers = useQuery(api.customers.list, {}) || []
   const createCustomer = useMutation(api.customers.create)

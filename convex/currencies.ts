@@ -246,19 +246,6 @@ async function fetchLiveRateInternal(
   }
 }
 
-export const fetchLiveRate = action({
-  args: {
-    baseCurrency: v.string(),
-    targetCurrency: v.string(),
-    markupPercent: v.optional(v.number()),
-    markdownPercent: v.optional(v.number()),
-  },
-  handler: async (ctx, args): Promise<LiveRateResult> => {
-    const { baseCurrency, targetCurrency, markupPercent = 0, markdownPercent = 0 } = args
-    return fetchLiveRateInternal(baseCurrency, targetCurrency, markupPercent, markdownPercent)
-  },
-})
-
 export const applyLiveRate = action({
   args: {
     baseCurrency: v.string(),
@@ -281,5 +268,94 @@ export const applyLiveRate = action({
     })
 
     return liveRate
+  },
+})
+
+interface FetchAllResult {
+  success: string[]
+  failed: Array<{ currency: string; error: string }>
+  source: string
+  fetchedAt: number
+}
+
+export const fetchAllLiveRates = action({
+  args: {
+    baseCurrency: v.string(),
+  },
+  handler: async (ctx, args): Promise<FetchAllResult> => {
+    const { baseCurrency } = args
+
+    // Fetch all currencies to get their markup/markdown settings
+    const currencies = await ctx.runQuery(api.currencies.list)
+    const nonBaseCurrencies = currencies.filter(c => c.code !== baseCurrency && c.isActive)
+
+    if (nonBaseCurrencies.length === 0) {
+      return {
+        success: [],
+        failed: [],
+        source: "open.er-api.com",
+        fetchedAt: Date.now(),
+      }
+    }
+
+    // Make a single API call to get all rates
+    const response = await fetch(
+      `https://open.er-api.com/v6/latest/${baseCurrency}`
+    )
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch live exchange rates")
+    }
+
+    const data = await response.json()
+
+    if (data.result !== "success") {
+      throw new Error("Exchange rate API returned an error")
+    }
+
+    const success: string[] = []
+    const failed: Array<{ currency: string; error: string }> = []
+
+    // Process each currency using the rates from the single API call
+    for (const currency of nonBaseCurrencies) {
+      try {
+        const midRate = data.rates?.[currency.code]
+
+        if (!midRate) {
+          failed.push({ currency: currency.code, error: `Rate not available` })
+          continue
+        }
+
+        const markupPercent = currency.markupPercent ?? 2
+        const markdownPercent = currency.markdownPercent ?? 2
+        const buyRate = midRate * (1 - markdownPercent / 100)
+        const sellRate = midRate * (1 + markupPercent / 100)
+
+        // Use alias if set, otherwise use currency code
+        const targetCurrency = currency.alias || currency.code
+
+        await ctx.runMutation(api.exchangeRates.setRate, {
+          baseCurrency,
+          targetCurrency,
+          buyRate,
+          sellRate,
+          source: "api",
+        })
+
+        success.push(currency.alias || currency.code)
+      } catch (error) {
+        failed.push({
+          currency: currency.code,
+          error: error instanceof Error ? error.message : "Unknown error",
+        })
+      }
+    }
+
+    return {
+      success,
+      failed,
+      source: "open.er-api.com",
+      fetchedAt: Date.now(),
+    }
   },
 })

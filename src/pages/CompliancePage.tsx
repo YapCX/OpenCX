@@ -13,15 +13,12 @@ import {
   FileText,
   X,
   Eye,
-  ChevronDown,
   Filter,
   RefreshCw,
 } from "lucide-react"
 import clsx from "clsx"
 
 type AlertStatus = "pending" | "reviewed" | "resolved" | "escalated"
-type AlertSeverity = "low" | "medium" | "high" | "critical"
-type AlertType = "sanction_match" | "suspicious_activity" | "threshold_exceeded"
 
 interface AlertWithDetails {
   _id: Id<"complianceAlerts">

@@ -2,32 +2,7 @@ import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { DollarSign, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
-
-const CURRENCY_FLAGS: Record<string, string> = {
-  USD: '🇺🇸',
-  EUR: '🇪🇺',
-  GBP: '🇬🇧',
-  CAD: '🇨🇦',
-  JPY: '🇯🇵',
-  CHF: '🇨🇭',
-  AUD: '🇦🇺',
-  MXN: '🇲🇽',
-  PLN: '🇵🇱',
-  CNY: '🇨🇳',
-  INR: '🇮🇳',
-  BRL: '🇧🇷',
-  KRW: '🇰🇷',
-  SGD: '🇸🇬',
-  HKD: '🇭🇰',
-  NZD: '🇳🇿',
-  SEK: '🇸🇪',
-  NOK: '🇳🇴',
-  DKK: '🇩🇰',
-  ZAR: '🇿🇦',
-  TRY: '🇹🇷',
-  AED: '🇦🇪',
-  SAR: '🇸🇦',
-}
+import { getCurrencyFlag } from '../utils/currencyData'
 
 export function RateBoardPage() {
   const currencies = useQuery(api.currencies.getActivePublic)
@@ -97,7 +72,7 @@ export function RateBoardPage() {
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-3">
                             <span className="text-3xl">
-                              {currency.flagEmoji || CURRENCY_FLAGS[currency.code] || '💱'}
+                              {currency.flagEmoji || getCurrencyFlag(currency.code) || '💱'}
                             </span>
                             <div>
                               <span className="font-mono text-xl font-bold text-white">{currency.code}</span>
@@ -155,7 +130,7 @@ export function RateBoardPage() {
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-3">
                             <span className="text-3xl">
-                              {currency.flagEmoji || CURRENCY_FLAGS[currency.code] || '💱'}
+                              {currency.flagEmoji || getCurrencyFlag(currency.code) || '💱'}
                             </span>
                             <div>
                               <span className="font-mono text-xl font-bold text-white">{currency.code}</span>

@@ -57,12 +57,10 @@ export const getByUserId = query({
     const authUserId = await getAuthUserId(ctx)
     if (!authUserId) return null
 
-    const profile = await ctx.db
+    return await ctx.db
       .query("userProfiles")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
       .first()
-
-    return profile
   },
 })
 
@@ -300,18 +298,37 @@ export const seedCurrentUser = mutation({
     const existingProfiles = await ctx.db.query("userProfiles").collect()
     const isFirstUser = existingProfiles.length === 0
 
+    // Get or create a default branch for the user
+    let defaultBranch = await ctx.db.query("branches").first()
+
+    if (!defaultBranch) {
+      // Create default branch if none exists
+      const now = Date.now()
+      const branchId = await ctx.db.insert("branches", {
+        name: "Head Office",
+        code: "HOF",
+        address: "123 Main Street",
+        phone: "+1 (555) 000-0000",
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      })
+      defaultBranch = await ctx.db.get(branchId)
+    }
+
     const now = Date.now()
     const profileId = await ctx.db.insert("userProfiles", {
       userId,
       firstName: args.firstName,
       lastName: args.lastName,
       role: isFirstUser ? "admin" : "teller",
+      branchId: defaultBranch?._id,
       isActive: true,
       createdAt: now,
       updatedAt: now,
     })
 
-    return { created: true, message: "Profile created", profileId }
+    return { created: true, message: "Profile created", profileId, branchId: defaultBranch?._id }
   },
 })
 

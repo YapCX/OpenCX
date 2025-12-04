@@ -24,9 +24,23 @@ export const list = query({
     const userId = await getAuthUserId(ctx)
     if (!userId) return []
 
-    let query = ctx.db.query("transactions").order("desc")
+    // Get user's profile to determine their branch
+    const userProfile = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first()
 
-    const transactions = await query.collect()
+    // If no profile or no branch, return empty (user not properly set up)
+    if (!userProfile || !userProfile.branchId) return []
+
+    const branchId = userProfile.branchId
+
+    // Query transactions filtered by user's branch
+    const transactions = await ctx.db
+      .query("transactions")
+      .withIndex("by_branch", (q) => q.eq("branchId", branchId))
+      .order("desc")
+      .collect()
 
     let filtered = transactions
     if (args.status) {
@@ -84,20 +98,31 @@ export const getTodayStats = query({
     const userId = await getAuthUserId(ctx)
     if (!userId) return { count: 0, totalBuy: 0, totalSell: 0 }
 
+    // Get user's profile to determine their branch
+    const userProfile = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first()
+
+    if (!userProfile || !userProfile.branchId) return { count: 0, totalBuy: 0, totalSell: 0 }
+
+    // Use provided branchId if given (and matches user's branch for security), otherwise use user's branch
+    const branchId = args.branchId === userProfile.branchId ? args.branchId : userProfile.branchId
+
     const startOfDay = new Date()
     startOfDay.setHours(0, 0, 0, 0)
     const startTimestamp = startOfDay.getTime()
 
     const transactions = await ctx.db
       .query("transactions")
+      .withIndex("by_branch", (q) => q.eq("branchId", branchId))
       .order("desc")
       .collect()
 
     const todayTransactions = transactions.filter(
       (t) =>
         t.createdAt >= startTimestamp &&
-        t.status === "completed" &&
-        (!args.branchId || t.branchId === args.branchId)
+        t.status === "completed"
     )
 
     const totalBuy = todayTransactions
@@ -308,10 +333,20 @@ export const getRecent = query({
     const userId = await getAuthUserId(ctx)
     if (!userId) return []
 
+    // Get user's profile to determine their branch
+    const userProfile = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first()
+
+    if (!userProfile || !userProfile.branchId) return []
+
+    const branchId = userProfile.branchId
     const limit = args.limit || 10
 
     const transactions = await ctx.db
       .query("transactions")
+      .withIndex("by_branch", (q) => q.eq("branchId", branchId))
       .order("desc")
       .take(limit)
 
@@ -335,8 +370,19 @@ export const listWithFilters = query({
     const userId = await getAuthUserId(ctx)
     if (!userId) return []
 
+    // Get user's profile to determine their branch
+    const userProfile = await ctx.db
+      .query("userProfiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .first()
+
+    if (!userProfile || !userProfile.branchId) return []
+
+    const branchId = userProfile.branchId
+
     const transactions = await ctx.db
       .query("transactions")
+      .withIndex("by_branch", (q) => q.eq("branchId", branchId))
       .order("desc")
       .collect()
 

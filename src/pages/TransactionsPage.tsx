@@ -10,8 +10,6 @@ import {
   ArrowRightLeft,
   User,
   Clock,
-  Hash,
-  DollarSign,
   ChevronRight,
   Ban,
   Eye,

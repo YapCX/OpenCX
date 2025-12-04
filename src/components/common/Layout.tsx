@@ -52,7 +52,7 @@ const mainNavigation: NavItem[] = [
   { name: 'Compliance', href: '/compliance', icon: Shield, roles: ['admin', 'compliance'] },
   { name: 'Treasury', href: '/treasury', icon: Vault },
   { name: 'Accounting', href: '/accounting', icon: BookOpen },
-  { name: 'Reports', href: '/reports', icon: FileText },
+  { name: 'Reports', href: '/reports', icon: FileText, roles: ['admin', 'manager', 'compliance'] },
   { name: 'Modules', href: '/modules', icon: Layers, roles: ['admin', 'manager'] },
 ]
 
