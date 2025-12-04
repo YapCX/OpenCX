@@ -1,55 +1,9 @@
-import { useState } from "react"
-import { useQuery, useMutation } from "convex/react"
+import { useQuery } from "convex/react"
 import { api } from "../../convex/_generated/api"
-import { User, Lock, Shield, Eye, EyeOff, Check, AlertTriangle } from "lucide-react"
+import { User, Lock, Info } from "lucide-react"
 
 export function ProfilePage() {
   const profile = useQuery(api.users.getCurrentUserProfile)
-  const changePassword = useMutation(api.users.changePassword)
-
-  const [currentPassword, setCurrentPassword] = useState("")
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setSuccess("")
-
-    if (newPassword.length < 6) {
-      setError("New password must be at least 6 characters")
-      return
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError("New passwords do not match")
-      return
-    }
-
-    if (currentPassword === newPassword) {
-      setError("New password must be different from current password")
-      return
-    }
-
-    setIsSubmitting(true)
-    try {
-      await changePassword({ currentPassword, newPassword })
-      setSuccess("Password changed successfully!")
-      setCurrentPassword("")
-      setNewPassword("")
-      setConfirmPassword("")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to change password")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
 
   if (!profile) {
     return (
@@ -100,115 +54,33 @@ export function ProfilePage() {
         <div className="card">
           <div className="flex items-center gap-3 mb-6">
             <Lock className="h-5 w-5 text-primary-400" />
-            <h2 className="text-lg font-semibold text-dark-50">Change Password</h2>
+            <h2 className="text-lg font-semibold text-dark-50">Password & Security</h2>
           </div>
 
-          <form onSubmit={handleChangePassword} className="space-y-4">
-            {error && (
-              <div className="bg-red-900/30 border border-red-700 text-red-400 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                {error}
-              </div>
-            )}
-
-            {success && (
-              <div className="bg-green-900/30 border border-green-700 text-green-400 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-                <Check className="h-4 w-4" />
-                {success}
-              </div>
-            )}
-
+          <div className="bg-primary-500/10 border border-primary-500/30 rounded-lg p-4 flex items-start gap-3">
+            <Info className="h-5 w-5 text-primary-400 mt-0.5" />
             <div>
-              <label htmlFor="currentPassword" className="label">
-                Current Password
-              </label>
-              <div className="relative">
-                <input
-                  id="currentPassword"
-                  type={showCurrentPassword ? "text" : "password"}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="input pr-10"
-                  placeholder="Enter current password"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 hover:text-dark-300"
-                >
-                  {showCurrentPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
+              <p className="text-dark-200 text-sm">
+                Password change functionality is managed through your authentication provider.
+              </p>
+              <p className="text-dark-400 text-sm mt-2">
+                Contact your administrator if you need to reset your password.
+              </p>
             </div>
+          </div>
 
+          <div className="mt-6 space-y-4">
             <div>
-              <label htmlFor="newPassword" className="label">
-                New Password
-              </label>
-              <div className="relative">
-                <input
-                  id="newPassword"
-                  type={showNewPassword ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="input pr-10"
-                  placeholder="Enter new password (min 6 characters)"
-                  required
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 hover:text-dark-300"
-                >
-                  {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
+              <label className="block text-xs text-dark-400 mb-1">Account Status</label>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                Active
+              </span>
             </div>
-
             <div>
-              <label htmlFor="confirmPassword" className="label">
-                Confirm New Password
-              </label>
-              <div className="relative">
-                <input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input pr-10"
-                  placeholder="Confirm new password"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 hover:text-dark-300"
-                >
-                  {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
+              <label className="block text-xs text-dark-400 mb-1">Account Created</label>
+              <p className="text-dark-200 text-sm">{profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : 'N/A'}</p>
             </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="btn-primary w-full flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Changing Password...
-                </>
-              ) : (
-                <>
-                  <Shield className="h-4 w-4" />
-                  Change Password
-                </>
-              )}
-            </button>
-          </form>
+          </div>
         </div>
       </div>
     </div>

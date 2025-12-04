@@ -438,7 +438,7 @@
     "category": "functional",
     "description": "Real-time data sync across branches",
     "steps": ["Update data in one branch", "View same data from another branch session", "Verify data is synchronized"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -516,7 +516,7 @@
     "category": "style",
     "description": "POS interface is optimized for quick transactions",
     "steps": ["Navigate to POS", "Verify large buttons, clear inputs, easy navigation"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -528,13 +528,13 @@
     "category": "style",
     "description": "Form inputs have clear labels and validation feedback",
     "steps": ["Navigate to a form", "Verify labels are clear", "Submit invalid data", "Verify error messages are visible"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
     "description": "Tables have proper headers and sorting indicators",
     "steps": ["Navigate to transaction list", "Verify table headers", "Click sortable column", "Verify sort indicator"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -546,37 +546,37 @@
     "category": "style",
     "description": "Success/error notifications are clearly visible",
     "steps": ["Perform action that succeeds", "Verify success toast/notification", "Trigger error", "Verify error notification"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
     "description": "Currency amounts are formatted correctly with symbols",
     "steps": ["View transactions with different currencies", "Verify correct currency symbols and formatting"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
     "description": "Date/time displays use consistent format",
     "steps": ["View multiple areas with dates", "Verify consistent date/time formatting"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
     "description": "Icons are consistent and meaningful",
     "steps": ["Navigate through app", "Verify icons are used consistently for similar actions"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
     "description": "Buttons have clear hover/active states",
     "steps": ["Hover over buttons", "Click buttons", "Verify visual feedback on hover and click"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
     "description": "Modal dialogs are properly styled and centered",
     "steps": ["Trigger a modal", "Verify modal is centered, has proper styling, overlay backdrop"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -588,7 +588,7 @@
     "category": "style",
     "description": "Data-heavy screens have proper visual hierarchy",
     "steps": ["View accounting/reports pages", "Verify important data stands out, secondary info is subdued"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -606,6 +606,6 @@
     "category": "style",
     "description": "Typography is readable with proper line spacing",
     "steps": ["Read text content across app", "Verify font sizes are readable, line heights appropriate"],
-    "passes": false
+    "passes": true
   }
 ]

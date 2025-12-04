@@ -1,17 +1,6 @@
 import { v } from "convex/values"
 import { mutation, query } from "./_generated/server"
 import { getAuthUserId } from "@convex-dev/auth/server"
-import Scrypt from "scrypt-kdf"
-
-async function hashPassword(password: string): Promise<string> {
-  const keyBuffer = await Scrypt.kdf(password, { logN: 15 })
-  return keyBuffer.toString("base64")
-}
-
-async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  const keyBuffer = Buffer.from(hash, "base64")
-  return Scrypt.verify(keyBuffer, password)
-}
 
 export const list = query({
   args: {},
@@ -326,44 +315,3 @@ export const seedCurrentUser = mutation({
   },
 })
 
-export const changePassword = mutation({
-  args: {
-    currentPassword: v.string(),
-    newPassword: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx)
-    if (!userId) throw new Error("Unauthorized")
-
-    const authAccount = await ctx.db
-      .query("authAccounts")
-      .filter((q) => q.eq(q.field("userId"), userId))
-      .first()
-
-    if (!authAccount) throw new Error("No auth account found")
-
-    const secret = authAccount.secret
-    if (!secret) throw new Error("No password set")
-
-    const isValid = await verifyPassword(args.currentPassword, secret)
-    if (!isValid) throw new Error("Current password is incorrect")
-
-    if (args.newPassword.length < 6) {
-      throw new Error("New password must be at least 6 characters")
-    }
-
-    const newHash = await hashPassword(args.newPassword)
-    await ctx.db.patch(authAccount._id, { secret: newHash })
-
-    await ctx.db.insert("auditLog", {
-      userId,
-      action: "password_changed",
-      entityType: "user",
-      entityId: userId,
-      details: "User changed their password",
-      createdAt: Date.now(),
-    })
-
-    return { success: true }
-  },
-})
