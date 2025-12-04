@@ -486,7 +486,7 @@
     "category": "functional",
     "description": "Decimal precision is configurable per currency",
     "steps": ["Navigate to currency settings", "Set decimal precision", "Verify transactions use correct precision"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -498,7 +498,7 @@
     "category": "functional",
     "description": "Session timeout logs out inactive users",
     "steps": ["Log in", "Wait for timeout period", "Attempt action", "Verify redirect to login"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",

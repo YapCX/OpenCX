@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react'
+import { ReactNode, useState, useCallback } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuthActions } from "@convex-dev/auth/react"
 import {
@@ -25,10 +25,12 @@ import {
   History,
   MapPin,
   User,
+  Clock,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useBranch } from '../../contexts/BranchContext'
+import { useSessionTimeout } from '../../hooks/useSessionTimeout'
 
 interface LayoutProps {
   children: ReactNode
@@ -70,13 +72,32 @@ export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [adminExpanded, setAdminExpanded] = useState(location.pathname.startsWith('/settings') || location.pathname === '/audit')
   const [branchSelectorOpen, setBranchSelectorOpen] = useState(false)
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false)
   const { user, isAdmin } = useCurrentUser()
   const { currentBranch, setCurrentBranch, availableBranches } = useBranch()
+
+  const handleTimeoutWarning = useCallback(() => {
+    setShowTimeoutWarning(true)
+  }, [])
+
+  const handleTimeout = useCallback(() => {
+    setShowTimeoutWarning(false)
+  }, [])
+
+  const { resetTimer } = useSessionTimeout({
+    onWarning: handleTimeoutWarning,
+    onTimeout: handleTimeout,
+  })
 
   const canSwitchBranches = !user?.branchId && availableBranches.length > 1
 
   const handleSignOut = () => {
     void signOut()
+  }
+
+  const handleStayLoggedIn = () => {
+    setShowTimeoutWarning(false)
+    resetTimer()
   }
 
   const isAdminActive = location.pathname.startsWith('/settings') || location.pathname === '/audit'
@@ -287,6 +308,40 @@ export function Layout({ children }: LayoutProps) {
 
         <main className="p-6">{children}</main>
       </div>
+
+      {showTimeoutWarning && (
+        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-dark-900 border border-dark-700 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-12 w-12 bg-amber-500/20 rounded-full flex items-center justify-center">
+                <Clock className="h-6 w-6 text-amber-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Session Timeout Warning</h3>
+                <p className="text-sm text-dark-400">Your session is about to expire</p>
+              </div>
+            </div>
+            <p className="text-dark-300 mb-6">
+              Due to inactivity, you will be automatically logged out in less than 1 minute.
+              Click "Stay Logged In" to continue your session.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleSignOut}
+                className="flex-1 px-4 py-2 bg-dark-800 text-dark-300 rounded-lg hover:bg-dark-700 transition-colors"
+              >
+                Log Out Now
+              </button>
+              <button
+                onClick={handleStayLoggedIn}
+                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              >
+                Stay Logged In
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

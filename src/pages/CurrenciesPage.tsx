@@ -393,6 +393,7 @@ export function CurrenciesPage() {
                 <tr className="border-b border-slate-700">
                   <th className="text-left text-slate-400 font-medium py-3 px-4">Currency</th>
                   <th className="text-left text-slate-400 font-medium py-3 px-4">Alias</th>
+                  <th className="text-center text-slate-400 font-medium py-3 px-4">Decimals</th>
                   <th className="text-center text-slate-400 font-medium py-3 px-4">Markup %</th>
                   <th className="text-center text-slate-400 font-medium py-3 px-4">Markdown %</th>
                   <th className="text-right text-slate-400 font-medium py-3 px-4">Buy Rate</th>
@@ -424,6 +425,9 @@ export function CurrenciesPage() {
                         ) : (
                           <span className="text-slate-500">-</span>
                         )}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className="font-mono text-slate-300">{currency.decimalPlaces}</span>
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span className="text-amber-400 font-mono">{currency.markupPercent || 0}%</span>

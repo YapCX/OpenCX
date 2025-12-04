@@ -82,6 +82,11 @@ export function POSPage() {
     }
   }
 
+  const getDecimalPlaces = (code: string): number => {
+    const currency = currencies.find((c) => c.code === code)
+    return currency?.decimalPlaces ?? 2
+  }
+
   const calculateToAmount = (amount: string) => {
     const numAmount = parseFloat(amount)
     if (isNaN(numAmount) || numAmount <= 0) {
@@ -90,7 +95,8 @@ export function POSPage() {
     }
     const rate = getCurrentRate()
     const result = numAmount * rate
-    setToAmount(result.toFixed(2))
+    const decimals = getDecimalPlaces(toCurrency)
+    setToAmount(result.toFixed(decimals))
   }
 
   const calculateFromAmount = (amount: string) => {
@@ -101,7 +107,8 @@ export function POSPage() {
     }
     const rate = getCurrentRate()
     const result = numAmount / rate
-    setFromAmount(result.toFixed(2))
+    const decimals = getDecimalPlaces(fromCurrency)
+    setFromAmount(result.toFixed(decimals))
   }
 
   const handleFromAmountChange = (value: string) => {
@@ -191,7 +198,8 @@ export function POSPage() {
 
   const formatCurrency = (amount: number, code: string): string => {
     const symbol = getCurrencySymbol(code)
-    return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    const decimals = getDecimalPlaces(code)
+    return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`
   }
 
   const formatDate = (timestamp: number): string => {
@@ -531,7 +539,7 @@ export function POSPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-mono text-dark-100">
-                        {tx.targetAmount.toFixed(2)} {tx.targetCurrency}
+                        {tx.targetAmount.toFixed(getDecimalPlaces(tx.targetCurrency))} {tx.targetCurrency}
                       </p>
                       <p className="text-xs text-dark-500">{formatDate(tx.createdAt)}</p>
                     </div>

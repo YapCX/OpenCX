@@ -1278,3 +1278,54 @@ Priority for next session:
 - Mobile header visible only on smaller screens (lg:hidden)
 - Sidebar overlay uses z-30 positioning with backdrop blur
 - Loading states use conditional rendering based on query undefined state
+
+---
+
+## Session 22 - Dec 4, 2025
+
+### Completed This Session
+1. **Implemented Decimal Precision per Currency**
+   - CurrenciesPage.tsx already had decimalPlaces field in the edit form
+   - Added "Decimals" column to the currency grid table
+   - Updated POSPage.tsx to use currency-specific decimal places:
+     - Added `getDecimalPlaces()` helper function
+     - Updated `calculateToAmount()` to use target currency decimals
+     - Updated `calculateFromAmount()` to use from currency decimals
+     - Updated `formatCurrency()` to use currency-specific decimals
+     - Updated Recent Transactions display to use currency decimals
+   - Verified with JPY (0 decimals): 100 USD → 15150 JPY (no decimals displayed)
+
+2. **Implemented Session Timeout Feature**
+   - Created src/hooks/useSessionTimeout.ts:
+     - SESSION_TIMEOUT_MS = 15 minutes of inactivity
+     - WARNING_BEFORE_MS = 1 minute before timeout (shows warning at 14 min)
+     - Tracks user activity (mousedown, mousemove, keydown, scroll, touchstart, click)
+     - Returns `resetTimer` function and `getRemainingTime()` helper
+   - Updated Layout.tsx:
+     - Added session timeout hook integration
+     - Added timeout warning modal with:
+       - Clock icon and warning message
+       - "Stay Logged In" button to reset timer
+       - "Log Out Now" button to immediately sign out
+     - Modal appears 1 minute before automatic logout
+
+### Tests Marked as Passing (2 new, 81 total)
+- "Decimal precision is configurable per currency" - Currencies grid shows decimals, POS uses correct precision
+- "Session timeout logs out inactive users" - 15-minute timeout with 1-minute warning implemented
+
+### Current Status
+- **81/82 tests passing** (up from 79)
+- Only 1 test remaining: "User Registration with Multi-factor and SSO support"
+
+### Remaining Test (1)
+1. User Registration with Multi-factor and SSO support
+   - Requires OAuth provider configuration (Google, Microsoft, etc.)
+   - Requires email confirmation system
+   - Out of scope for current implementation
+
+### Technical Notes
+- Decimal precision stored in currencies.decimalPlaces field
+- JPY correctly shows 0 decimals (Japanese Yen doesn't use cents)
+- Session timeout uses event listeners for passive activity tracking
+- Warning modal uses fixed z-50 positioning to overlay all content
+- Timer resets on any user interaction (mouse, keyboard, touch, scroll)
