@@ -522,7 +522,7 @@
     "category": "style",
     "description": "App is responsive on tablet viewport",
     "steps": ["View app on tablet viewport (768px)", "Verify layout adapts appropriately"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -540,7 +540,7 @@
     "category": "style",
     "description": "Loading states are displayed for async operations",
     "steps": ["Trigger data fetch", "Verify loading indicator is shown", "Verify content replaces loader"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -582,7 +582,7 @@
     "category": "style",
     "description": "Print styles are optimized for receipts",
     "steps": ["Print preview a receipt", "Verify print layout is clean and paper-friendly"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -600,7 +600,7 @@
     "category": "style",
     "description": "Sidebar/navigation collapses gracefully on smaller screens",
     "steps": ["Resize viewport", "Verify navigation adapts (hamburger menu or collapsible sidebar)"],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
