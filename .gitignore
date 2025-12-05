@@ -8,7 +8,7 @@ dist
 build
 
 # Convex
-convex/_generated
+# Note: convex/_generated is committed - needed for builds
 
 # Environment variables
 .env
