@@ -2,14 +2,12 @@ import { useState, useMemo } from 'react'
 import { useAuthActions } from "@convex-dev/auth/react"
 import { useConvexAuth } from "convex/react"
 import { Navigate, Link } from 'react-router-dom'
-import { DollarSign, Eye, EyeOff, Check, Mail } from 'lucide-react'
+import { DollarSign, Eye, EyeOff } from 'lucide-react'
 import { COUNTRIES, CURRENCIES, getDefaultCurrency, getCountryTimezones } from '../utils/currencyData'
 
 export function SignupPage() {
   const { isAuthenticated, isLoading } = useConvexAuth()
   const { signIn } = useAuthActions()
-
-  const [step, setStep] = useState<'form' | 'confirmation'>('form')
 
   const [companyName, setCompanyName] = useState('')
   const [userName, setUserName] = useState('')
@@ -64,69 +62,12 @@ export function SignupPage() {
 
     try {
       await signIn('password', { email, password, flow: 'signUp' })
-      setStep('confirmation')
+      // After successful signup, user is authenticated and will be redirected to dashboard
     } catch (err) {
       setError('Could not create account. Email may already be in use.')
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  if (step === 'confirmation') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-dark-950 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <div className="flex justify-center">
-              <div className="h-20 w-20 bg-green-600/20 rounded-2xl flex items-center justify-center">
-                <Check className="h-12 w-12 text-green-500" />
-              </div>
-            </div>
-            <h1 className="mt-6 text-3xl font-bold text-dark-50">Account Created!</h1>
-            <p className="mt-2 text-dark-400">
-              Welcome to OpenCX, {userName || 'user'}
-            </p>
-          </div>
-
-          <div className="card">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-10 w-10 bg-primary-600/20 rounded-lg flex items-center justify-center">
-                <Mail className="h-5 w-5 text-primary-500" />
-              </div>
-              <div>
-                <h3 className="text-dark-100 font-medium">Check Your Email</h3>
-                <p className="text-sm text-dark-400">{email}</p>
-              </div>
-            </div>
-
-            <p className="text-dark-300 text-sm mb-6">
-              We've sent a confirmation email to verify your account.
-              Please check your inbox and click the verification link to activate your account.
-            </p>
-
-            <div className="bg-dark-800/50 rounded-lg p-4 mb-6">
-              <h4 className="text-dark-200 font-medium mb-2">Your Company Setup</h4>
-              <div className="space-y-1 text-sm">
-                <p className="text-dark-400">Company: <span className="text-dark-200">{companyName}</span></p>
-                <p className="text-dark-400">Base Currency: <span className="text-dark-200">{baseCurrency}</span></p>
-                <p className="text-dark-400">Time Zone: <span className="text-dark-200">{timeZone.replace(/_/g, ' ')}</span></p>
-              </div>
-            </div>
-
-            <Link
-              to="/login"
-              className="btn-primary w-full text-center block"
-            >
-              Continue to Sign In
-            </Link>
-          </div>
-
-          <p className="text-center text-sm text-dark-500">
-            OpenCX - Open Source Currency Exchange Management
-          </p>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -343,10 +284,6 @@ export function SignupPage() {
             </Link>
           </div>
         </div>
-
-        <p className="text-center text-sm text-dark-500">
-          OpenCX - Open Source Currency Exchange Management
-        </p>
       </div>
     </div>
   )

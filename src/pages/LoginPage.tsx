@@ -131,10 +131,6 @@ export function LoginPage() {
             </Link>
           </div>
         </div>
-
-        <p className="text-center text-sm text-dark-500">
-          OpenCX - Open Source Currency Exchange Management
-        </p>
       </div>
     </div>
   )
